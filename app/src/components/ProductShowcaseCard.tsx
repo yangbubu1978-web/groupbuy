@@ -21,8 +21,9 @@ function DropTimer({ seconds }: { seconds: number }) {
 }
 
 /** 首頁大圖商品卡 v2：照片為主視覺＋降價倒數＋庫存溫度。promo 非空＝促銷商品 */
-function ProductShowcaseCard({ product, index, promo, upcoming }: {
-  product: Product; index: number; promo?: { name: string; ends_at: string } | null; upcoming?: boolean
+function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 }: {
+  product: Product; index: number; promo?: { name: string; ends_at: string } | null
+  upcoming?: boolean; followCount?: number
 }) {
   const live = useLivePrice(product)
   const promoRemaining = promo ? Math.max(0, (new Date(promo.ends_at).getTime() - Date.now()) / 1000) : 0
@@ -58,6 +59,11 @@ function ProductShowcaseCard({ product, index, promo, upcoming }: {
           <span className="absolute top-3 left-3 rounded-md bg-ink-700 text-white px-2.5 py-1 text-[11px] font-bold shadow-md">
             🔒 即將開賣
           </span>
+          {followCount > 0 && (
+            <span className="absolute bottom-3 right-3 inline-flex items-center gap-0.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-pink-500 shadow-sm">
+              ♥ {followCount}
+            </span>
+          )}
         </div>
         <div className="p-4">
           <h3 className="font-semibold text-ink-900 leading-snug line-clamp-2">{product.name}</h3>
@@ -121,10 +127,15 @@ function ProductShowcaseCard({ product, index, promo, upcoming }: {
           </span>
         )}
         {soldOut && (
-          <span className="absolute inset-0 flex items-center justify-center bg-black/40
-                           text-white font-bold tracking-widest">已完售</span>
-        )}
-      </div>
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/40
+                                  text-white font-bold tracking-widest">已完售</span>
+                )}
+                {followCount > 0 && !soldOut && (
+                  <span className="absolute bottom-3 right-3 inline-flex items-center gap-0.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-pink-500 shadow-sm">
+                    ♥ {followCount}
+                  </span>
+                )}
+              </div>
 
       <div className="p-4">
         <h3 className="font-semibold text-ink-900 leading-snug line-clamp-2">{product.name}</h3>

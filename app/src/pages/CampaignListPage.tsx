@@ -26,6 +26,7 @@ export default function CampaignListPage() {
   const [regularProducts, setRegularProducts] = useState<Product[]>([])
   const [upcomingProducts, setUpcomingProducts] = useState<Product[]>([])
   const [promoInfo, setPromoInfo] = useState<Record<string, { name: string; ends_at: string }>>({})
+  const [followMap, setFollowMap] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
 
   // 直接載入所有可販售商品（不再分活動層級）
@@ -62,11 +63,18 @@ export default function CampaignListPage() {
       }
       const nowMs = Date.now()
       const isUpcoming = (p: Product) => !!p.sale_start_at && new Date(p.sale_start_at).getTime() > nowMs
+      // 各商品追蹤人數（RPC：product_follower_counts）
+      const { data: fc } = await supabase.rpc('product_follower_counts')
+      const fm: Record<string, number> = {}
+      for (const r of (fc ?? []) as { product_id: string; follower_count: number }[]) {
+        fm[r.product_id] = Number(r.follower_count)
+      }
       if (alive) {
         setPromoProducts(all.filter((p) => promoIds.has(p.id)))
         setUpcomingProducts(all.filter((p) => !promoIds.has(p.id) && isUpcoming(p)))
         setRegularProducts(all.filter((p) => !promoIds.has(p.id) && !isUpcoming(p)))
         setPromoInfo(promoInfoMap)
+        setFollowMap(fm)
         setLoading(false)
       }
     })()
@@ -155,7 +163,7 @@ export default function CampaignListPage() {
                 </div>
                 <div className="space-y-5">
                   {promoProducts.map((p, i) => (
-                    <ProductShowcaseCard key={p.id} product={p} index={i} promo={promoInfo[p.id] ?? null} />
+                    <ProductShowcaseCard key={p.id} product={p} index={i} promo={promoInfo[p.id] ?? null} followCount={followMap[p.id] ?? 0} />
                   ))}
                 </div>
               </section>
@@ -169,7 +177,7 @@ export default function CampaignListPage() {
                   <span className="ml-auto text-[11px] font-semibold text-accent-600">價格越晚越便宜？先搶先贏 →</span>
                 </div>
                 <div className="space-y-5">
-                  {regularProducts.map((p, i) => <ProductShowcaseCard key={p.id} product={p} index={i} />)}
+                  {regularProducts.map((p, i) => <ProductShowcaseCard key={p.id} product={p} index={i} followCount={followMap[p.id] ?? 0} />)}
                 </div>
               </>
             )}
@@ -183,7 +191,7 @@ export default function CampaignListPage() {
                 </div>
                 <div className="space-y-5">
                   {upcomingProducts.map((p, i) => (
-                    <ProductShowcaseCard key={p.id} product={p} index={i} upcoming />
+                    <ProductShowcaseCard key={p.id} product={p} index={i} upcoming followCount={followMap[p.id] ?? 0} />
                   ))}
                 </div>
               </>
