@@ -122,13 +122,10 @@ export default function CampaignListPage() {
             <h3 className="text-sm font-bold text-ink-900">怎麼買最划算？</h3>
           </div>
           <ul className="space-y-1.5 text-xs text-ink-600 leading-relaxed">
-            <li>・價格會隨時間 <b className="text-ink-900">自動往下調</b>，每件商品依自己的節奏隨機降價，越晚可能越便宜。</li>
-            <li>・不會一路降到底：降到 <b className="text-ink-900">最低價</b> 後會重新開始，但庫存有限、先買先贏。</li>
-            <li>・<b className="text-ink-900">賣完就下架</b>，錯過不再補。</li>
-            <li>・降到最低價後若一陣子都沒人買，系統會 <b className="text-ink-900">自動收檔結束</b>——太猶豫就沒了。</li>
-            <li>・「<b className="text-ink-900">限時促銷</b>」商品有活動時間限制，時間一到即回到一般價。</li>
+            <li>・價格會隨時間 <b className="text-ink-900">自動往下調</b>，每件商品依自己的節奏隨機降價，越晚下手越便宜。</li>
+            <li>・<b className="text-ink-900">價格只會越來越低</b>：但庫存有限、先買先贏，錯過就不再回來，猶豫太久會後悔。</li>
           </ul>
-          <p className="mt-2 text-xs font-semibold text-accent-600">心動就下手，別等到最後一秒！</p>
+          <p className="mt-2 text-xs font-semibold text-accent-600">❤️ 心動就下手，別等到最後一秒！</p>
         </section>
 
         {loading && (
