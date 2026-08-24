@@ -135,7 +135,7 @@ export default function AdminBannersPage() {
               onChange={(e) => onPickFile(e.target.files?.[0])} />
             {form.image_url ? (
               <div className="relative">
-                <img src={form.image_url} alt="預覽" className="w-full aspect-[3/1] object-cover rounded-xl border border-ink-100" />
+                <img src={form.image_url} alt="預覽" className="w-full aspect-[2/1] object-cover rounded-xl border border-ink-100" />
                 <button onClick={() => fileRef.current?.click()} disabled={uploading}
                   className="absolute bottom-2 right-2 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-black/55 text-white">
                   {uploading ? '上傳中…' : '更換圖片'}
@@ -145,7 +145,7 @@ export default function AdminBannersPage() {
               <button onClick={() => fileRef.current?.click()} disabled={uploading}
                 className="w-full h-24 rounded-xl border-2 border-dashed border-ink-200 text-sm text-ink-400
                            flex items-center justify-center disabled:opacity-50">
-                {uploading ? '上傳中…' : '📷 點擊上傳圖片（建議 1200×400）'}
+                {uploading ? '上傳中…' : '📷 點擊上傳圖片（建議 1200×600）'}
               </button>
             )}
 
@@ -183,7 +183,7 @@ export default function AdminBannersPage() {
         <section className="space-y-3">
           {banners.map((b) => (
             <div key={b.id} className={`bg-white rounded-2xl border border-ink-100 overflow-hidden shadow-sm ${!b.is_active ? 'opacity-60' : ''}`}>
-              <img src={b.image_url} alt={b.title ?? ''} className="w-full aspect-[3/1] object-cover" />
+              <img src={b.image_url} alt={b.title ?? ''} className="w-full aspect-[2/1] object-cover" />
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>

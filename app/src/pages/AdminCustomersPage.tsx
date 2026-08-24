@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase'
 import type { Company, Customer, CustomerGroup } from '../lib/types'
 import { fmtDateTime } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
+import { useCustomerImport } from '../lib/customerImport'
+import { ImportResultPanel } from '../lib/customerImportPanel'
 
 const STATUS_LABEL: Record<string, string> = {
   active: '啟用', inactive: '停用', blocked: '封鎖',
@@ -80,6 +82,7 @@ export default function AdminCustomersPage() {
     }
   }
   useEffect(() => { load() }, [])
+  const { fileRef, importing, result, downloadTemplate, importFile, setResult } = useCustomerImport(load)
 
   // ---------- 新增 ----------
   const submit = async () => {
@@ -268,13 +271,26 @@ export default function AdminCustomersPage() {
             ←
           </Link>
           <h1 className="text-base font-bold text-ink-900">客戶管理</h1>
-          <button onClick={() => setShowForm((v) => !v)} className="text-xs font-semibold text-accent-600">
-            {showForm ? '收起' : '＋ 新增'}
-          </button>
+          <div className="flex items-center gap-3">
+            <input ref={fileRef} type="file" accept=".xls,.xlsx,.csv" className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) importFile(f) }} />
+            <button onClick={downloadTemplate} disabled={importing}
+              className="text-xs font-semibold text-ink-500 disabled:opacity-40">
+              ⬇ 範本
+            </button>
+            <button onClick={() => fileRef.current?.click()} disabled={importing}
+              className="text-xs font-semibold text-accent-600 disabled:opacity-40">
+              {importing ? '匯入中…' : '⬆ 匯入'}
+            </button>
+            <button onClick={() => setShowForm((v) => !v)} className="text-xs font-semibold text-accent-600">
+              {showForm ? '收起' : '＋ 新增'}
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
+        {result && <ImportResultPanel result={result} onClose={() => setResult(null)} />}
         {showForm && (
           <section className="bg-white rounded-2xl border border-ink-100 p-5 space-y-3 shadow-sm">
             <h2 className="text-sm font-bold text-ink-900">新增客戶（白名單）</h2>
