@@ -19,9 +19,12 @@ function DropTimer({ seconds }: { seconds: number }) {
   )
 }
 
-/** 首頁大圖商品卡 v2：照片為主視覺＋降價倒數＋庫存溫度 */
-function ProductShowcaseCard({ product, index }: { product: Product; index: number }) {
+/** 首頁大圖商品卡 v2：照片為主視覺＋降價倒數＋庫存溫度。promo 非空＝促銷商品 */
+function ProductShowcaseCard({ product, index, promo }: {
+  product: Product; index: number; promo?: { name: string; ends_at: string } | null
+}) {
   const live = useLivePrice(product)
+  const promoRemaining = promo ? Math.max(0, (new Date(promo.ends_at).getTime() - Date.now()) / 1000) : 0
   const original = Number(product.original_price)
   const dropped = Math.max(0, original - live.price)
   const dropPct = original > 0 ? Math.round((dropped / original) * 100) : 0
@@ -31,11 +34,24 @@ function ProductShowcaseCard({ product, index }: { product: Product; index: numb
   return (
     <Link
       to={`/product/${product.id}`}
-      className={`group block bg-white rounded-2xl border border-ink-100 shadow-sm overflow-hidden
+      className={`group block bg-white rounded-2xl border shadow-sm overflow-hidden
                   active:scale-[0.99] hover:shadow-lg hover:-translate-y-0.5
-                  transition-all duration-200 will-change-transform anim-fade-up ${soldOut ? 'opacity-60' : ''}`}
+                  transition-all duration-200 will-change-transform anim-fade-up ${
+                    soldOut ? 'opacity-60' : ''
+                  } ${promo ? 'border-accent-300 ring-2 ring-accent-100 shadow-accent-200/40 shadow-lg' : 'border-ink-100'}`}
       style={{ animationDelay: `${Math.min(index * 60, 300)}ms` }}
     >
+      {/* 限時促銷帶（促銷商品專屬） */}
+      {promo && (
+        <div className="bg-gradient-to-r from-accent-500 to-accent-600 text-white px-3 py-2
+                        flex items-center justify-between gap-2">
+          <span className="text-[11px] font-bold truncate">🏷️ 限時促銷 · {promo.name}</span>
+          {promoRemaining > 0 && (
+            <span className="shrink-0 text-[11px] font-bold tabular-nums">⏰ 剩 {formatCountdown(promoRemaining)}</span>
+          )}
+        </div>
+      )}
+
       {/* 大幅照片（1:1） */}
       <div className="aspect-square bg-ink-100 flex items-center justify-center overflow-hidden relative">
         {product.image_url ? (

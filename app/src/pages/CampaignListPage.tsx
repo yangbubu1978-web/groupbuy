@@ -23,7 +23,9 @@ function CardSkeleton() {
 
 export default function CampaignListPage() {
   const { customer, isAdmin } = useAuth()
-  const [products, setProducts] = useState<Product[]>([])
+  const [promoProducts, setPromoProducts] = useState<Product[]>([])
+  const [regularProducts, setRegularProducts] = useState<Product[]>([])
+  const [promoInfo, setPromoInfo] = useState<Record<string, { name: string; ends_at: string }>>({})
   const [loading, setLoading] = useState(true)
   type PromoBanner = { id: string; name: string; ends_at: string; _countdown: number | null }
   const [runningPromoBanners, setRunningPromoBanners] = useState<PromoBanner[]>([])
@@ -37,7 +39,7 @@ export default function CampaignListPage() {
       // 進行中的促銷活動（時間窗內＋已啟用）
       const { data: runningPromos } = await supabase
         .from('promotions')
-        .select('id, promotion_items(product_id)')
+        .select('id, name, ends_at, promotion_items(product_id)')
         .lte('starts_at', nowIso)
         .gte('ends_at', nowIso)
         .eq('is_active', true)
@@ -49,18 +51,23 @@ export default function CampaignListPage() {
         .eq('status', 'active')
         .order('created_at', { ascending: false })
 
-      let list = (data ?? []) as Product[]
-      if (runningPromos && runningPromos.length > 0) {
-        // 有進行中活動 → 只陳列活動內的商品；活動結束自動下架
-        const allowed = new Set<string>()
-        for (const promo of runningPromos) {
-          for (const item of (promo.promotion_items ?? []) as { product_id: string }[]) {
-            allowed.add(item.product_id)
+      // 全部 active 商品都陳列；進行中促銷商品 →「限時促銷」專區，其餘 → 一般區
+      const all = (data ?? []) as Product[]
+      const promoIds = new Set<string>()
+      const promoInfoMap: Record<string, { name: string; ends_at: string }> = {}
+      for (const promo of runningPromos ?? []) {
+        for (const item of (promo.promotion_items ?? []) as { product_id: string }[]) {
+          promoIds.add(item.product_id)
+          if (!promoInfoMap[item.product_id]) {
+            promoInfoMap[item.product_id] = { name: promo.name, ends_at: promo.ends_at }
           }
         }
-        list = list.filter((p) => allowed.has(p.id))
       }
-      if (alive) setProducts(list)
+      if (alive) {
+        setPromoProducts(all.filter((p) => promoIds.has(p.id)))
+        setRegularProducts(all.filter((p) => !promoIds.has(p.id)))
+        setPromoInfo(promoInfoMap)
+      }
 
       // 橫幅：進行中優先，否則即將開始
       const { data: bannerPromos } = await supabase
@@ -163,23 +170,47 @@ export default function CampaignListPage() {
             <CardSkeleton />
           </div>
         )}
-        {!loading && products.length === 0 && (
+        {!loading && promoProducts.length === 0 && regularProducts.length === 0 && (
           <div className="text-center py-16 anim-fade-up">
             <div className="text-4xl mb-3">🛍️</div>
             <p className="text-sm text-ink-400">目前沒有進行中的團購商品</p>
           </div>
         )}
-        {!loading && products.length > 0 && (
+        {!loading && (promoProducts.length + regularProducts.length) > 0 && (
           <>
-            {/* 區塊標題：限時好物（電商風左對齊＋橘色標記） */}
-            <div className="pt-1 flex items-center gap-2 anim-fade-up">
-              <span className="w-1 h-5 rounded-full bg-accent-500" aria-hidden="true" />
-              <h3 className="text-lg font-extrabold text-ink-900">限時好物</h3>
-              <span className="ml-auto text-[11px] font-semibold text-accent-600">價格越晚越便宜？先搶先贏 →</span>
-            </div>
-            <div className="space-y-5">
-              {products.map((p, i) => <ProductShowcaseCard key={p.id} product={p} index={i} />)}
-            </div>
+            {/* 限時促銷專區（置頂，突顯促銷商品） */}
+            {promoProducts.length > 0 && (
+              <section className="space-y-4">
+                <div className="rounded-2xl overflow-hidden shadow-md anim-fade-up">
+                  <div className="bg-gradient-to-r from-accent-500 to-accent-600 px-4 py-3 flex items-center gap-2">
+                    <span className="text-xl" aria-hidden="true">🏷️</span>
+                    <div>
+                      <p className="text-[10px] font-bold tracking-widest text-accent-100">僅限促銷期間</p>
+                      <h3 className="text-base font-extrabold text-white leading-tight">限時促銷專區</h3>
+                    </div>
+                    <span className="ml-auto text-[11px] font-semibold text-white/90">手刀搶購 →</span>
+                  </div>
+                </div>
+                <div className="space-y-5">
+                  {promoProducts.map((p, i) => (
+                    <ProductShowcaseCard key={p.id} product={p} index={i} promo={promoInfo[p.id] ?? null} />
+                  ))}
+                </div>
+              </section>
+            )}
+            {/* 一般降價商品區 */}
+            {regularProducts.length > 0 && (
+              <>
+                <div className={`${promoProducts.length > 0 ? 'pt-2' : 'pt-1'} flex items-center gap-2 anim-fade-up`}>
+                  <span className="w-1 h-5 rounded-full bg-accent-500" aria-hidden="true" />
+                  <h3 className="text-lg font-extrabold text-ink-900">{promoProducts.length > 0 ? '其他好物' : '限時好物'}</h3>
+                  <span className="ml-auto text-[11px] font-semibold text-accent-600">價格越晚越便宜？先搶先贏 →</span>
+                </div>
+                <div className="space-y-5">
+                  {regularProducts.map((p, i) => <ProductShowcaseCard key={p.id} product={p} index={i} />)}
+                </div>
+              </>
+            )}
           </>
         )}
       </main>
