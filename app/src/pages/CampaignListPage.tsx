@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Product } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
-import { formatCountdown } from '../lib/pricing'
 import BannerCarousel from '../components/BannerCarousel'
 import ProductShowcaseCard from '../components/ProductShowcaseCard'
 
@@ -27,9 +26,6 @@ export default function CampaignListPage() {
   const [regularProducts, setRegularProducts] = useState<Product[]>([])
   const [promoInfo, setPromoInfo] = useState<Record<string, { name: string; ends_at: string }>>({})
   const [loading, setLoading] = useState(true)
-  type PromoBanner = { id: string; name: string; ends_at: string; _countdown: number | null }
-  const [runningPromoBanners, setRunningPromoBanners] = useState<PromoBanner[]>([])
-  const [phase, setPhase] = useState<'upcoming' | 'running'>('running')
 
   // 直接載入所有可販售商品（不再分活動層級）
   useEffect(() => {
@@ -67,30 +63,8 @@ export default function CampaignListPage() {
         setPromoProducts(all.filter((p) => promoIds.has(p.id)))
         setRegularProducts(all.filter((p) => !promoIds.has(p.id)))
         setPromoInfo(promoInfoMap)
+        setLoading(false)
       }
-
-      // 橫幅：進行中優先，否則即將開始
-      const { data: bannerPromos } = await supabase
-        .from('promotions')
-        .select('id, name, starts_at, ends_at')
-        .eq('is_active', true)
-        .eq('status', 'active')
-        .gte('ends_at', nowIso)
-        .order('starts_at', { ascending: true })
-      if (alive && bannerPromos) {
-        const now = Date.now()
-        const mapped = bannerPromos.map((p) => {
-          const running = new Date(p.starts_at).getTime() <= now
-          return {
-            id: p.id, name: p.name, ends_at: p.ends_at,
-            _countdown: running ? Math.max(0, (new Date(p.ends_at).getTime() - now) / 1000) : null,
-          }
-        })
-        const runningList = mapped.filter((m) => m._countdown !== null)
-        setRunningPromoBanners(runningList.length > 0 ? runningList.slice(0, 2) : mapped.slice(0, 1))
-        setPhase(runningList.length > 0 ? 'running' : 'upcoming')
-      }
-      if (alive) setLoading(false)
     })()
     return () => { alive = false }
   }, [])
@@ -141,29 +115,21 @@ export default function CampaignListPage() {
         {/* 首頁廣告看板輪播 */}
         <BannerCarousel />
 
-        {/* 促銷活動橫幅（點入活動商品區） */}
-        {runningPromoBanners.length > 0 && (
-          <section className="space-y-2" aria-label="促銷活動">
-            {runningPromoBanners.map((p, i) => (
-              <Link key={p.id} to={`/?promo=${p.id}`}
-                className="block rounded-2xl bg-gradient-to-r from-accent-500 to-accent-600
-                           text-white px-4 py-3 shadow-md anim-fade-up active:scale-[0.99] transition"
-                style={{ animationDelay: `${i * 60}ms` }}>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold tracking-widest opacity-80">🏷️ 限時促銷</p>
-                    <p className="text-sm font-bold truncate">{p.name}</p>
-                  </div>
-                  {phase === 'running' && p._countdown !== null && (
-                    <span className="shrink-0 rounded-full bg-white/20 px-2 py-1 text-[11px] font-bold tabular-nums">
-                      ⏰ {formatCountdown(p._countdown)}
-                    </span>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </section>
-        )}
+        {/* 下單規則說明（廣告看板 ↔ 促銷/商品標題之間） */}
+        <section className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm anim-fade-up">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm" aria-hidden="true">🛒</span>
+            <h3 className="text-sm font-bold text-ink-900">怎麼買最划算？</h3>
+          </div>
+          <ul className="space-y-1.5 text-xs text-ink-600 leading-relaxed">
+            <li>・價格會隨時間 <b className="text-ink-900">自動往下調</b>，每件商品依自己的節奏隨機降價，越晚可能越便宜。</li>
+            <li>・不會一路降到底：降到 <b className="text-ink-900">最低價</b> 後會重新開始，但庫存有限、先買先贏。</li>
+            <li>・<b className="text-ink-900">賣完就下架</b>，錯過不再補。</li>
+            <li>・降到最低價後若一陣子都沒人買，系統會 <b className="text-ink-900">自動收檔結束</b>——太猶豫就沒了。</li>
+            <li>・「<b className="text-ink-900">限時促銷</b>」商品有活動時間限制，時間一到即回到一般價。</li>
+          </ul>
+          <p className="mt-2 text-xs font-semibold text-accent-600">心動就下手，別等到最後一秒！</p>
+        </section>
 
         {loading && (
           <div className="space-y-5">
@@ -181,15 +147,10 @@ export default function CampaignListPage() {
             {/* 限時促銷專區（置頂，突顯促銷商品） */}
             {promoProducts.length > 0 && (
               <section className="space-y-4">
-                <div className="rounded-2xl overflow-hidden shadow-md anim-fade-up">
-                  <div className="bg-gradient-to-r from-accent-500 to-accent-600 px-4 py-3 flex items-center gap-2">
-                    <span className="text-xl" aria-hidden="true">🏷️</span>
-                    <div>
-                      <p className="text-[10px] font-bold tracking-widest text-accent-100">僅限促銷期間</p>
-                      <h3 className="text-base font-extrabold text-white leading-tight">限時促銷專區</h3>
-                    </div>
-                    <span className="ml-auto text-[11px] font-semibold text-white/90">手刀搶購 →</span>
-                  </div>
+                <div className="pt-1 flex items-center gap-2 anim-fade-up">
+                  <span className="w-1 h-5 rounded-full bg-accent-500" aria-hidden="true" />
+                  <h3 className="text-lg font-extrabold text-ink-900">限時促銷</h3>
+                  <span className="ml-auto text-[11px] font-semibold text-accent-600">限量優惠，先搶先贏 →</span>
                 </div>
                 <div className="space-y-5">
                   {promoProducts.map((p, i) => (
