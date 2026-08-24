@@ -12,6 +12,7 @@ import AdminOrdersPage from './pages/AdminOrdersPage'
 import AdminCompaniesPage from './pages/AdminCompaniesPage'
 import ProfilePage from './pages/ProfilePage'
 import AdminBannersPage from './pages/AdminBannersPage'
+import AdminPromotionsPage from './pages/AdminPromotionsPage'
 
 /** 需要登入的頁面守衛（含首次登入強制改密碼） */
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/admin/customers" element={<RequireAuth><AdminCustomersPage /></RequireAuth>} />
         <Route path="/admin/orders" element={<RequireAuth><AdminOrdersPage /></RequireAuth>} />
         <Route path="/admin/banners" element={<RequireAuth><AdminBannersPage /></RequireAuth>} />
+        <Route path="/admin/promotions" element={<RequireAuth><AdminPromotionsPage /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

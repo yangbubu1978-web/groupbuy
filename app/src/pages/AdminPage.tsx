@@ -70,6 +70,15 @@ export default function AdminPage() {
               <div className="text-[11px] text-ink-400">成交紀錄</div>
             </div>
           </Link>
+          <Link to="/admin/promotions" className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm
+                                                 flex items-center gap-3 active:scale-[0.98] transition
+                                                 hover:border-orange-200">
+            <span className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-lg">🏷️</span>
+            <div>
+              <div className="text-sm font-bold text-ink-900">促銷活動</div>
+              <div className="text-[11px] text-ink-400">限時上架</div>
+            </div>
+          </Link>
         </section>
 
         {/* 登出（管理員不經個人頁，後台直接提供） */}

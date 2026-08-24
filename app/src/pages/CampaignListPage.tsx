@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Product } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
+import { formatCountdown } from '../lib/pricing'
 import BannerCarousel from '../components/BannerCarousel'
 import ProductShowcaseCard from '../components/ProductShowcaseCard'
 
@@ -24,17 +25,62 @@ export default function CampaignListPage() {
   const { customer, isAdmin } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  type PromoBanner = { id: string; name: string; ends_at: string; _countdown: number | null }
+  const [runningPromoBanners, setRunningPromoBanners] = useState<PromoBanner[]>([])
+  const [phase, setPhase] = useState<'upcoming' | 'running'>('running')
 
   // 直接載入所有可販售商品（不再分活動層級）
   useEffect(() => {
     let alive = true
     ;(async () => {
+      const nowIso = new Date().toISOString()
+      // 進行中的促銷活動（時間窗內＋已啟用）
+      const { data: runningPromos } = await supabase
+        .from('promotions')
+        .select('id, promotion_items(product_id)')
+        .lte('starts_at', nowIso)
+        .gte('ends_at', nowIso)
+        .eq('is_active', true)
+
       const { data } = await supabase
         .from('products')
         .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
-      if (alive && data) setProducts(data as Product[])
+
+      let list = (data ?? []) as Product[]
+      if (runningPromos && runningPromos.length > 0) {
+        // 有進行中活動 → 只陳列活動內的商品；活動結束自動下架
+        const allowed = new Set<string>()
+        for (const promo of runningPromos) {
+          for (const item of (promo.promotion_items ?? []) as { product_id: string }[]) {
+            allowed.add(item.product_id)
+          }
+        }
+        list = list.filter((p) => allowed.has(p.id))
+      }
+      if (alive) setProducts(list)
+
+      // 橫幅：進行中優先，否則即將開始
+      const { data: bannerPromos } = await supabase
+        .from('promotions')
+        .select('id, name, starts_at, ends_at')
+        .eq('is_active', true)
+        .gte('ends_at', nowIso)
+        .order('starts_at', { ascending: true })
+      if (alive && bannerPromos) {
+        const now = Date.now()
+        const mapped = bannerPromos.map((p) => {
+          const running = new Date(p.starts_at).getTime() <= now
+          return {
+            id: p.id, name: p.name, ends_at: p.ends_at,
+            _countdown: running ? Math.max(0, (new Date(p.ends_at).getTime() - now) / 1000) : null,
+          }
+        })
+        const runningList = mapped.filter((m) => m._countdown !== null)
+        setRunningPromoBanners(runningList.length > 0 ? runningList.slice(0, 2) : mapped.slice(0, 1))
+        setPhase(runningList.length > 0 ? 'running' : 'upcoming')
+      }
       if (alive) setLoading(false)
     })()
     return () => { alive = false }
@@ -85,6 +131,30 @@ export default function CampaignListPage() {
 
         {/* 首頁廣告看板輪播 */}
         <BannerCarousel />
+
+        {/* 促銷活動橫幅（點入活動商品區） */}
+        {runningPromoBanners.length > 0 && (
+          <section className="space-y-2" aria-label="促銷活動">
+            {runningPromoBanners.map((p, i) => (
+              <Link key={p.id} to={`/?promo=${p.id}`}
+                className="block rounded-2xl bg-gradient-to-r from-accent-500 to-accent-600
+                           text-white px-4 py-3 shadow-md anim-fade-up active:scale-[0.99] transition"
+                style={{ animationDelay: `${i * 60}ms` }}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold tracking-widest opacity-80">🏷️ 限時促銷</p>
+                    <p className="text-sm font-bold truncate">{p.name}</p>
+                  </div>
+                  {phase === 'running' && p._countdown !== null && (
+                    <span className="shrink-0 rounded-full bg-white/20 px-2 py-1 text-[11px] font-bold tabular-nums">
+                      ⏰ {formatCountdown(p._countdown)}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </section>
+        )}
 
         {loading && (
           <div className="space-y-5">
