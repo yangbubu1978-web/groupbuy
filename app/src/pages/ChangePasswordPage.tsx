@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 
 /** 首次登入強制改密碼頁（企劃書：預設密碼 888888 首登必改） */
 export default function ChangePasswordPage() {
-  const { userId, customer, refresh } = useAuth()
+  const { customer, refresh } = useAuth()
   const navigate = useNavigate()
   const [newPassword, setNewPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -29,12 +29,12 @@ export default function ChangePasswordPage() {
       const { error: updErr } = await supabase.auth.updateUser({ password: newPassword })
       if (updErr) throw new Error('修改密碼失敗，請稍後再試')
 
-      // 2. 更新旗標（RLS：只能改自己那列）
-      if (userId) {
-        await supabase
-          .from('customers')
-          .update({ must_change_password: false })
-          .eq('auth_user_id', userId)
+      // 2. 清除旗標（security definer 函式；RLS 不開放直接 update）
+      const { data: flagRes, error: flagErr } = await supabase
+        .rpc('clear_must_change_password')
+      const flag = (flagRes ?? {}) as { ok?: boolean; reason?: string }
+      if (flagErr || !flag.ok) {
+        throw new Error('密碼已更新，但狀態更新失敗，請重新登入一次')
       }
       await refresh()
       navigate('/', { replace: true })
