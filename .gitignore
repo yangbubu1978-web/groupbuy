@@ -19,3 +19,4 @@ dist/
 
 # Logs
 *.log
+vip.env.local
