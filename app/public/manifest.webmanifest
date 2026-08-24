@@ -1,0 +1,32 @@
+{
+  "name": "吸引力生活好物 | 先買先贏",
+  "short_name": "吸引力生活好物",
+  "description": "封閉式動態降價團購平台 — 價格隨時間下降，先搶先贏",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fafafa",
+  "theme_color": "#ee4d2d",
+  "lang": "zh-Hant-TW",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

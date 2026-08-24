@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  @apply bg-ink-50 text-ink-900 antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC',
+    'PingFang TC', 'Microsoft JhengHei', sans-serif;
+}
+
+/* 數字用等寬，倒數計時不跳動 */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== 動畫 ===== */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pop-in {
+  0%   { opacity: 0; transform: scale(0.9) translateY(8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+/* 電商風：價格閃爍動畫（降價時吸睛） */
+@keyframes price-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.anim-fade-up { animation: fade-up 0.35s ease-out both; }
+.anim-pop-in { animation: pop-in 0.25s ease-out both; }
+
+/* 無障礙：使用者偏好減少動態時停用動畫 */
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-up,
+  .anim-pop-in {
+    animation: none;
+  }
+}
+
+/* ===== 骨架屏（載入佔位）：淺灰電商風 ===== */
+.skeleton {
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, #f4f4f5 25%, #fafafa 45%, #f4f4f5 65%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* ===== iOS 安全區域（底部 sticky 列不被 Home 條遮住） ===== */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }

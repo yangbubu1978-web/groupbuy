@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output
+app/dist/
+dist/
+
+# Environment & secrets（絕不入 Git）
+.env
+.env.local
+.env.*.local
+*.key
+
+# OS / Editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Logs
+*.log
