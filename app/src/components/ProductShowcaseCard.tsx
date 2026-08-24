@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Product } from '../lib/types'
 import { fmtMoney } from '../lib/types'
@@ -20,12 +21,61 @@ function DropTimer({ seconds }: { seconds: number }) {
 }
 
 /** 首頁大圖商品卡 v2：照片為主視覺＋降價倒數＋庫存溫度。promo 非空＝促銷商品 */
-function ProductShowcaseCard({ product, index, promo }: {
-  product: Product; index: number; promo?: { name: string; ends_at: string } | null
+function ProductShowcaseCard({ product, index, promo, upcoming }: {
+  product: Product; index: number; promo?: { name: string; ends_at: string } | null; upcoming?: boolean
 }) {
   const live = useLivePrice(product)
   const promoRemaining = promo ? Math.max(0, (new Date(promo.ends_at).getTime() - Date.now()) / 1000) : 0
   const original = Number(product.original_price)
+  // 即將開賣（開賣時間在未來）→ 鎖定卡：顯示「距開賣」倒數，不顯示降價、不可點
+  const isUpcoming = upcoming === true
+  const [saleRemain, setSaleRemain] = useState(isUpcoming && product.sale_start_at
+    ? Math.max(0, (new Date(product.sale_start_at).getTime() - Date.now()) / 1000)
+    : 0)
+  useEffect(() => {
+    if (!isUpcoming || !product.sale_start_at) return
+    const id = setInterval(
+      () => setSaleRemain(Math.max(0, (new Date(product.sale_start_at!).getTime() - Date.now()) / 1000)),
+      1000,
+    )
+    return () => clearInterval(id)
+  }, [isUpcoming, product.sale_start_at])
+
+  if (isUpcoming) {
+    return (
+      <div
+        className="group block bg-white rounded-2xl border border-ink-200 opacity-80 overflow-hidden active:scale-[0.99] anim-fade-up"
+        style={{ animationDelay: `${Math.min(index * 60, 300)}ms` }}
+      >
+        {/* 大幅照片（1:1） */}
+        <div className="aspect-square bg-ink-100 flex items-center justify-center overflow-hidden relative">
+          {product.image_url ? (
+            <img src={product.image_url} alt={product.name} loading={index > 1 ? 'lazy' : undefined}
+              className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-6xl opacity-20">🎁</span>
+          )}
+          <span className="absolute top-3 left-3 rounded-md bg-ink-700 text-white px-2.5 py-1 text-[11px] font-bold shadow-md">
+            🔒 即將開賣
+          </span>
+        </div>
+        <div className="p-4">
+          <h3 className="font-semibold text-ink-900 leading-snug line-clamp-2">{product.name}</h3>
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="text-sm font-extrabold text-ink-400">$</span>
+            <span className="text-2xl font-extrabold text-ink-600 tracking-tight tabular-nums leading-none">{fmtMoney(original)}</span>
+          </div>
+          <div className="mt-2">
+            <span className="inline-flex items-center gap-1 rounded-md bg-ink-100 text-ink-500 px-2 py-0.5 text-[10px] font-bold tabular-nums">
+              ⏳ {formatCountdown(saleRemain)} 後開賣
+            </span>
+          </div>
+          <p className="mt-2 text-[11px] text-ink-400">尚未開賣，敬請期待</p>
+        </div>
+      </div>
+    )
+  }
+
   const dropped = Math.max(0, original - live.price)
   const dropPct = original > 0 ? Math.round((dropped / original) * 100) : 0
   const stockPct = Math.max(0, Math.min(100, (live.stock / Math.max(1, product.initial_stock)) * 100))

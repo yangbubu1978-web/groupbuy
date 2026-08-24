@@ -23,6 +23,7 @@ const REASON_TEXT: Record<string, string> = {
   account_inactive: '帳號已停用，請聯絡管理員。',
   account_blocked: '帳號已被封鎖，請聯絡管理員。',
   offer_ended: '😅 太猶豫囉！此優惠已結束（到底價後無人購買，自動收檔）。',
+  not_open_yet: '⏳ 尚未開賣，敬請期待，時間一到即可下單。',
 }
 
 export default function ProductPage() {
@@ -157,15 +158,20 @@ export default function ProductPage() {
   }, [live.price])
 
   const now = Date.now()
+  // 尚未開賣（開賣時間在未來）→ 鎖定不可下單，顯示等待倒數
+  const saleStartMs = product?.sale_start_at ? new Date(product.sale_start_at).getTime() : 0
+  const notOpenYet = saleStartMs > now
+  const saleRemain = notOpenYet ? Math.max(0, (saleStartMs - now) / 1000) : 0
   const saleOpen = useMemo(() => {
     if (!product || !campaign) return false
     return (
       campaign.status === 'active' &&
       product.status === 'active' &&
+      !notOpenYet &&
       new Date(campaign.start_at).getTime() <= now &&
       now <= new Date(campaign.end_at).getTime()
     )
-  }, [product, campaign, now])
+  }, [product, campaign, now, notOpenYet])
 
   const buy = async () => {
     if (buyState.kind === 'buying') return
@@ -456,11 +462,13 @@ export default function ProductPage() {
           >
             {buyState.kind === 'buying'
               ? '搶購中…'
-              : !saleOpen
-                ? '活動未開放'
-                : live.stock <= 0
-                    ? '已完售'
-                    : `立即搶購｜${fmtMoney(live.price)} × ${quantity}`}
+              : notOpenYet
+                ? `⏳ ${formatCountdown(saleRemain)} 後開賣`
+                : !saleOpen
+                  ? '活動未開放'
+                  : live.stock <= 0
+                      ? '已完售'
+                      : `立即搶購｜${fmtMoney(live.price)} × ${quantity}`}
           </button>
         </div>
       </div>

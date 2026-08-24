@@ -24,6 +24,7 @@ export default function CampaignListPage() {
   const { customer, isAdmin } = useAuth()
   const [promoProducts, setPromoProducts] = useState<Product[]>([])
   const [regularProducts, setRegularProducts] = useState<Product[]>([])
+  const [upcomingProducts, setUpcomingProducts] = useState<Product[]>([])
   const [promoInfo, setPromoInfo] = useState<Record<string, { name: string; ends_at: string }>>({})
   const [loading, setLoading] = useState(true)
 
@@ -59,9 +60,12 @@ export default function CampaignListPage() {
           }
         }
       }
+      const nowMs = Date.now()
+      const isUpcoming = (p: Product) => !!p.sale_start_at && new Date(p.sale_start_at).getTime() > nowMs
       if (alive) {
         setPromoProducts(all.filter((p) => promoIds.has(p.id)))
-        setRegularProducts(all.filter((p) => !promoIds.has(p.id)))
+        setUpcomingProducts(all.filter((p) => !promoIds.has(p.id) && isUpcoming(p)))
+        setRegularProducts(all.filter((p) => !promoIds.has(p.id) && !isUpcoming(p)))
         setPromoInfo(promoInfoMap)
         setLoading(false)
       }
@@ -133,13 +137,13 @@ export default function CampaignListPage() {
             <CardSkeleton />
           </div>
         )}
-        {!loading && promoProducts.length === 0 && regularProducts.length === 0 && (
+        {!loading && promoProducts.length === 0 && regularProducts.length === 0 && upcomingProducts.length === 0 && (
           <div className="text-center py-16 anim-fade-up">
             <div className="text-4xl mb-3">🛍️</div>
             <p className="text-sm text-ink-400">目前沒有進行中的團購商品</p>
           </div>
         )}
-        {!loading && (promoProducts.length + regularProducts.length) > 0 && (
+        {!loading && (promoProducts.length + regularProducts.length + upcomingProducts.length) > 0 && (
           <>
             {/* 限時促銷專區（置頂，突顯促銷商品） */}
             {promoProducts.length > 0 && (
@@ -166,6 +170,21 @@ export default function CampaignListPage() {
                 </div>
                 <div className="space-y-5">
                   {regularProducts.map((p, i) => <ProductShowcaseCard key={p.id} product={p} index={i} />)}
+                </div>
+              </>
+            )}
+            {/* 即將開賣（最下方，鎖定展示） */}
+            {upcomingProducts.length > 0 && (
+              <>
+                <div className="pt-2 flex items-center gap-2 anim-fade-up">
+                  <span className="w-1 h-5 rounded-full bg-ink-300" aria-hidden="true" />
+                  <h3 className="text-lg font-extrabold text-ink-900">即將開賣</h3>
+                  <span className="ml-auto text-[11px] font-semibold text-ink-400">Coming Soon</span>
+                </div>
+                <div className="space-y-5">
+                  {upcomingProducts.map((p, i) => (
+                    <ProductShowcaseCard key={p.id} product={p} index={i} upcoming />
+                  ))}
                 </div>
               </>
             )}

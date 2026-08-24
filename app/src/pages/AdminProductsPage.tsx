@@ -6,6 +6,13 @@ import { fmtMoney } from '../lib/types'
 import { formatInterval } from '../lib/pricing'
 import { useAuth } from '../context/AuthContext'
 
+/** datetime-local 值 ↔ ISO（台北時間語義由瀏覽器處理） */
+function toLocalInputValue(iso: string): string {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 export default function AdminProductsPage() {
   const { isAdmin, loading: authLoading, userId } = useAuth()
   const [uploading, setUploading] = useState(false)
@@ -64,6 +71,7 @@ export default function AdminProductsPage() {
     price_interval_seconds: '43200', price_decrease: '1', price_decrease_max: '20',
     initial_stock: '20', max_per_customer: '2',
     unit: '件', items_per_unit: '1',
+    sale_start_at: '',
     status: 'active' as Product['status'],
     scope: 'all' as 'all' | 'companies' | 'groups',
     company_ids: [] as string[], group_ids: [] as string[],
@@ -128,6 +136,7 @@ export default function AdminProductsPage() {
           max_per_customer: String(p.max_per_customer),
           unit: p.unit ?? '件',
           items_per_unit: String(p.items_per_unit ?? 1),
+          sale_start_at: p.sale_start_at ? toLocalInputValue(p.sale_start_at) : '',
           status: p.status,
           scope: 'all',
           company_ids: [], group_ids: [],
@@ -207,6 +216,7 @@ export default function AdminProductsPage() {
           max_per_customer: Number(form.max_per_customer),
           unit: form.unit.trim() || '件',
           items_per_unit: Math.max(1, Number(form.items_per_unit) || 1),
+          sale_start_at: form.sale_start_at ? new Date(form.sale_start_at).toISOString() : null,
           status: form.status,
         }).eq('id', editId)
         if (error) throw new Error(error.message)
@@ -240,6 +250,7 @@ export default function AdminProductsPage() {
           max_per_customer: Number(form.max_per_customer),
           unit: form.unit.trim() || '件',
           items_per_unit: Math.max(1, Number(form.items_per_unit) || 1),
+          sale_start_at: form.sale_start_at ? new Date(form.sale_start_at).toISOString() : null,
           status: form.status,
         }).select('id').single()
         if (insertErr) throw new Error(insertErr.message)
@@ -418,6 +429,17 @@ export default function AdminProductsPage() {
                   className={`${inputCls} mt-1`} />
               </label>
             </div>
+
+            {/* 開賣時間（選填；留空＝立即上架） */}
+            <label className="block text-xs text-ink-500">
+              開賣時間（選填；設為未來＝「即將開賣」）
+              <input type="datetime-local" value={form.sale_start_at}
+                onChange={(e) => setForm({ ...form, sale_start_at: e.target.value })}
+                className={`${inputCls} mt-1`} />
+              <span className="mt-1 block text-[11px] text-ink-400">
+                ※ 設為未來的時間，前台會顯示「⏳ 距開賣倒數」並鎖定不可下單，時間一到自動開賣；留空＝現在即可購買。
+              </span>
+            </label>
 
             {/* 商品狀態（含草稿） */}
             <div>
