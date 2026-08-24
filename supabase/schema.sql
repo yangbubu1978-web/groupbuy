@@ -725,3 +725,17 @@ create policy banners_admin_write on public.banners
 insert into storage.buckets (id, name, public)
 values ('media', 'media', true)
 on conflict (id) do nothing;
+
+-- storage 上傳權限（管理員可寫，所有人可讀）
+drop policy if exists media_public_read on storage.objects;
+create policy media_public_read on storage.objects
+  for select using (bucket_id = 'media');
+drop policy if exists media_admin_write on storage.objects;
+create policy media_admin_write on storage.objects
+  for insert with check (bucket_id = 'media' and public.is_admin());
+drop policy if exists media_admin_update on storage.objects;
+create policy media_admin_update on storage.objects
+  for update using (bucket_id = 'media' and public.is_admin());
+drop policy if exists media_admin_delete on storage.objects;
+create policy media_admin_delete on storage.objects
+  for delete using (bucket_id = 'media' and public.is_admin());
