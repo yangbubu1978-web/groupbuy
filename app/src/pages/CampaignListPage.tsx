@@ -41,6 +41,7 @@ export default function CampaignListPage() {
         .lte('starts_at', nowIso)
         .gte('ends_at', nowIso)
         .eq('is_active', true)
+        .eq('status', 'active')
 
       const { data } = await supabase
         .from('products')
@@ -66,6 +67,7 @@ export default function CampaignListPage() {
         .from('promotions')
         .select('id, name, starts_at, ends_at')
         .eq('is_active', true)
+        .eq('status', 'active')
         .gte('ends_at', nowIso)
         .order('starts_at', { ascending: true })
       if (alive && bannerPromos) {

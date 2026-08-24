@@ -1,13 +1,47 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import type { Campaign, Company, CustomerGroup, Product } from '../lib/types'
+import type { Campaign, Company, CustomerGroup, Product, Promotion } from '../lib/types'
 import { fmtMoney } from '../lib/types'
 import { formatInterval } from '../lib/pricing'
 import { useAuth } from '../context/AuthContext'
 
 export default function AdminProductsPage() {
-  const { isAdmin, loading: authLoading } = useAuth()
+  const { isAdmin, loading: authLoading, userId } = useAuth()
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const isAdminUser = useRef(false)
+
+  // 商品圖上傳 → Supabase Storage（media bucket，免費圖床）
+  const uploadImage = async (file: File): Promise<string> => {
+    if (userId) {
+      const { data: a } = await supabase.from('admins').select('user_id').eq('user_id', userId).maybeSingle()
+      isAdminUser.current = !!a
+      if (!a) throw new Error('僅管理員可上傳圖片')
+    }
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'png'
+    const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+    const { error } = await supabase.storage.from('media').upload(path, file, {
+      contentType: file.type, cacheControl: '3600', upsert: false,
+    })
+    if (error) throw new Error(`圖片上傳失敗：${error.message}`)
+    const { data } = supabase.storage.from('media').getPublicUrl(path)
+    return data.publicUrl
+  }
+
+  const onPickFile = async (file: File | undefined) => {
+    if (!file) return
+    setUploading(true); setMsg(null)
+    try {
+      const url = await uploadImage(file)
+      setForm((f) => ({ ...f, image_url: url }))
+      setMsg('✅ 圖片已上傳，記得按儲存')
+    } catch (e) {
+      setMsg(`❌ ${e instanceof Error ? e.message : '上傳失敗'}`)
+    } finally {
+      setUploading(false)
+    }
+  }
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const editId = searchParams.get('id') // 有值 = 編輯模式
@@ -36,18 +70,23 @@ export default function AdminProductsPage() {
   }
   const [form, setForm] = useState(emptyForm)
 
+  // 促銷活動（商品 ↔ 多個促銷）
+  const [promotions, setPromotions] = useState<Promotion[]>([])
+  const [promoIds, setPromoIds] = useState<string[]>([])
+
   useEffect(() => {
     if (!authLoading && !isAdmin) navigate('/', { replace: true })
   }, [authLoading, isAdmin, navigate])
 
   useEffect(() => {
     ;(async () => {
-      const [{ data: ps }, { data: cs }, { data: cos }, { data: gs }] =
+      const [{ data: ps }, { data: cs }, { data: cos }, { data: gs }, { data: prs }] =
         await Promise.all([
           supabase.from('products').select('*').order('created_at', { ascending: false }),
           supabase.from('campaigns').select('*').order('created_at', { ascending: false }),
           supabase.from('companies').select('*'),
           supabase.from('customer_groups').select('*'),
+          supabase.from('promotions').select('*').order('created_at', { ascending: false }),
         ])
       if (ps) setProducts(ps as Product[])
       if (cs) {
@@ -57,6 +96,7 @@ export default function AdminProductsPage() {
       }
       if (cos) setCompanies(cos as Company[])
       if (gs) setGroups(gs as CustomerGroup[])
+      if (prs) setPromotions(prs as Promotion[])
     })()
   }, [])
 
@@ -92,6 +132,10 @@ export default function AdminProductsPage() {
           scope: 'all',
           company_ids: [], group_ids: [],
         })
+        // 載入商品已參與的促銷
+        const { data: items } = await supabase
+          .from('promotion_items').select('promotion_id').eq('product_id', editId)
+        if (items) setPromoIds(items.map((i) => i.promotion_id))
       }
       setLoaded(true)
     })()
@@ -166,13 +210,20 @@ export default function AdminProductsPage() {
           status: form.status,
         }).eq('id', editId)
         if (error) throw new Error(error.message)
+        // 同步促銷關聯（商品 ↔ 促銷）
+        await supabase.from('promotion_items').delete().eq('product_id', editId)
+        if (promoIds.length > 0) {
+          await supabase.from('promotion_items').insert(
+            promoIds.map((promotion_id) => ({ promotion_id, product_id: editId as string, sort_order: 0 }))
+          )
+        }
         setMsg('✅ 已儲存變更')
         await reloadProducts()
         setShowForm(false)
         navigate('/admin/products')
       } else {
         // ---------- 新增 ----------
-        const { error } = await supabase.from('products').insert({
+        const { data: created, error: insertErr } = await supabase.from('products').insert({
           campaign_id: campaignId,
           name: form.name,
           description: form.description || null,
@@ -189,9 +240,10 @@ export default function AdminProductsPage() {
           max_per_customer: Number(form.max_per_customer),
           unit: form.unit.trim() || '件',
           items_per_unit: Math.max(1, Number(form.items_per_unit) || 1),
-          status: 'active',
-        })
-        if (error) throw new Error(error.message)
+          status: form.status,
+        }).select('id').single()
+        if (insertErr) throw new Error(insertErr.message)
+        const newProductId = (created as { id: string }).id
 
         // 授權範圍寫入對應表
         if (form.scope !== 'all') {
@@ -202,6 +254,12 @@ export default function AdminProductsPage() {
             const rows = form.group_ids.map((id) => ({ campaign_id: campaignId, group_id: id }))
             if (rows.length > 0) await supabase.from('campaign_groups').upsert(rows)
           }
+        }
+        // 同步促銷關聯（商品 ↔ 促銷）
+        if (promoIds.length > 0) {
+          await supabase.from('promotion_items').insert(
+            promoIds.map((promotion_id) => ({ promotion_id, product_id: newProductId, sort_order: 0 }))
+          )
         }
         setMsg('✅ 已新增商品')
         setForm(emptyForm)
@@ -281,8 +339,26 @@ export default function AdminProductsPage() {
             <textarea placeholder="商品描述（選填）" value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               className={`${inputCls} h-20 py-2`} />
-            <input placeholder="圖片 URL（選填）" value={form.image_url}
-              onChange={(e) => setForm({ ...form, image_url: e.target.value })} className={inputCls} />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+                  className="flex-1 text-xs font-semibold bg-accent-50 text-accent-700 border border-accent-200 rounded-xl py-2.5 active:scale-[0.98] disabled:opacity-50">
+                  {uploading ? '⏳ 上傳中…' : '📷 上傳商品照片'}
+                </button>
+                {form.image_url && (
+                  <button type="button" onClick={() => setForm({ ...form, image_url: '' })}
+                    className="text-xs text-ink-400 underline py-2.5">清除</button>
+                )}
+              </div>
+              <input type="file" accept="image/*" ref={fileRef} className="hidden"
+                onChange={(e) => { onPickFile(e.target.files?.[0]); e.target.value = '' }} />
+              {form.image_url && (
+                <img src={form.image_url} alt="商品圖預覽"
+                  className="w-full aspect-square object-cover rounded-xl border border-ink-100" />
+              )}
+              <input placeholder="或貼圖片 URL（選填）" value={form.image_url}
+                onChange={(e) => setForm({ ...form, image_url: e.target.value })} className={inputCls} />
+            </div>
 
             <div className="grid grid-cols-2 gap-2">
               <label className="text-xs text-ink-500">
@@ -343,21 +419,55 @@ export default function AdminProductsPage() {
               </label>
             </div>
 
-            {/* 狀態（僅編輯模式） */}
-            {editId && (
+            {/* 商品狀態（含草稿） */}
+            <div>
+              <p className="text-xs font-medium text-ink-600 mb-1.5">商品狀態</p>
               <div className="flex gap-2">
-                {(['active', 'paused'] as const).map((s) => (
+                {(['active', 'paused', 'draft'] as const).map((s) => (
                   <button key={s} onClick={() => setForm({ ...form, status: s })}
                     className={`flex-1 h-10 rounded-xl text-xs font-medium ${
                       form.status === s
-                        ? s === 'active' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-ink-100 text-ink-700 border border-ink-200'
+                        ? s === 'draft'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-300'
+                          : s === 'active' ? 'bg-green-50 text-green-700 border border-green-200'
+                          : 'bg-ink-100 text-ink-700 border border-ink-200'
                         : 'border border-ink-200 text-ink-400'
                     }`}>
-                    {s === 'active' ? '販售中' : '已暫停'}
+                    {s === 'active' ? '販售中' : s === 'paused' ? '已暫停' : '📝 草稿'}
                   </button>
                 ))}
               </div>
-            )}
+              {form.status === 'draft' && (
+                <p className="mt-1.5 text-xs text-amber-600">
+                  ※ 草稿商品不會出現在任何前台頁面，發布前請切回「販售中」。
+                </p>
+              )}
+            </div>
+
+            {/* 參與促銷活動（商品 ↔ 促銷多選） */}
+            <div className="rounded-xl bg-ink-50 p-3 space-y-2">
+              <p className="text-xs font-medium text-ink-600">加入促銷活動（可多選）</p>
+              {promotions.length === 0 ? (
+                <p className="text-xs text-ink-400">尚無促銷活動，可先到「🏷️ 促銷活動」建立。</p>
+              ) : (
+                <div className="space-y-1 max-h-44 overflow-y-auto">
+                  {promotions.map((pro) => (
+                    <label key={pro.id} className="flex items-center gap-2 text-xs text-ink-700">
+                      <input type="checkbox" checked={promoIds.includes(pro.id)}
+                        onChange={(e) =>
+                          setPromoIds(e.target.checked
+                            ? [...promoIds, pro.id]
+                            : promoIds.filter((x) => x !== pro.id))
+                        } />
+                      <span>{pro.name}</span>
+                      <span className="ml-auto text-[10px] text-ink-400">
+                        {pro.status === 'draft' ? '📝 草稿' : pro.is_active ? '啟用中' : '已停用'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* 授權範圍（僅新增模式） */}
             {!editId && (
@@ -446,11 +556,13 @@ export default function AdminProductsPage() {
                   <span className={`shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ${
                     p.status === 'active'
                       ? 'bg-green-50 text-green-700'
-                      : p.status === 'ended'
-                        ? 'bg-orange-50 text-orange-600'
-                        : 'bg-ink-100 text-ink-500'
+                      : p.status === 'draft'
+                        ? 'bg-amber-50 text-amber-700'
+                        : p.status === 'ended'
+                          ? 'bg-orange-50 text-orange-600'
+                          : 'bg-ink-100 text-ink-500'
                   }`}>
-                    {p.status === 'active' ? '銷售中' : p.status === 'ended' ? '超時未售出' : '已暫停'}
+                    {p.status === 'active' ? '銷售中' : p.status === 'draft' ? '📝 草稿' : p.status === 'ended' ? '超時未售出' : '已暫停'}
                   </span>
                 </div>
                 <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-ink-500">
@@ -466,7 +578,7 @@ export default function AdminProductsPage() {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   <button onClick={() => toggleStatus(p)} disabled={busy}
                     className="px-3 py-1.5 rounded-lg bg-ink-100 text-ink-700 text-xs font-medium disabled:opacity-50">
-                    {p.status === 'active' ? '⏸ 暫停販售' : '▶ 恢復販售'}
+                    {p.status === 'active' ? '⏸ 暫停販售' : p.status === 'draft' ? '▶ 發布' : '▶ 恢復販售'}
                   </button>
                   <Link to={`/admin/products?id=${p.id}`}
                     className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium">

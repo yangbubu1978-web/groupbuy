@@ -2,7 +2,7 @@
 
 export type UserStatus = 'active' | 'inactive' | 'blocked'
 export type CampaignStatus = 'draft' | 'scheduled' | 'active' | 'ended' | 'cancelled'
-export type ProductStatus = 'active' | 'paused' | 'ended'
+export type ProductStatus = 'active' | 'paused' | 'ended' | 'draft'
 export type OrderStatus =
   | 'pending' | 'confirmed' | 'paid' | 'shipped' | 'completed'
   | 'refunding' | 'refunded' | 'cancelled'
@@ -38,6 +38,17 @@ export interface Campaign {
   start_at: string
   end_at: string
   status: CampaignStatus
+}
+
+export interface Promotion {
+  id: string
+  name: string
+  description: string | null
+  starts_at: string
+  ends_at: string
+  is_active: boolean
+  status: 'draft' | 'active'
+  created_at?: string | null
 }
 
 export interface Product {

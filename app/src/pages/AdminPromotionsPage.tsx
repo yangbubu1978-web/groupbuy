@@ -10,6 +10,7 @@ type Promo = {
   starts_at: string
   ends_at: string
   is_active: boolean
+  status?: 'draft' | 'active'
   items?: { product_id: string; products?: { name: string; sku: string } | null }[]
 }
 
@@ -52,6 +53,7 @@ export default function AdminPromotionsPage() {
     starts_at: toLocalInputValue(new Date().toISOString()),
     ends_at: toLocalInputValue(new Date(Date.now() + 7 * 86400_000).toISOString()),
     product_ids: [] as string[],
+    asDraft: true,
   }
   const [form, setForm] = useState(emptyForm)
   const [editId, setEditId] = useState<string | null>(null)
@@ -73,14 +75,19 @@ export default function AdminPromotionsPage() {
   const submit = async () => {
     setBusy(true); setMsg(null)
     try {
-      if (form.product_ids.length === 0) throw new Error('請至少選擇一個商品')
-      if (new Date(form.ends_at) <= new Date(form.starts_at)) throw new Error('結束時間必須晚於開始時間')
+      const draft = form.asDraft
+      if (!form.name.trim()) throw new Error('請填寫活動名稱')
+      if (!draft) {
+        if (form.product_ids.length === 0) throw new Error('請至少選擇一個商品')
+        if (new Date(form.ends_at) <= new Date(form.starts_at)) throw new Error('結束時間必須晚於開始時間')
+      }
 
       const payload = {
         name: form.name.trim(),
         description: form.description.trim() || null,
         starts_at: new Date(form.starts_at).toISOString(),
         ends_at: new Date(form.ends_at).toISOString(),
+        status: draft ? ('draft' as const) : ('active' as const),
       }
 
       let promoId = editId
@@ -119,6 +126,7 @@ export default function AdminPromotionsPage() {
       starts_at: toLocalInputValue(p.starts_at),
       ends_at: toLocalInputValue(p.ends_at),
       product_ids: (p.items ?? []).map((i) => i.product_id),
+      asDraft: p.status === 'draft',
     })
     setShowForm(true)
     window.scrollTo({ top: 0 })
@@ -126,7 +134,11 @@ export default function AdminPromotionsPage() {
 
   const toggleActive = async (p: Promo) => {
     setBusy(true)
-    await supabase.from('promotions').update({ is_active: !p.is_active }).eq('id', p.id)
+    if (p.status === 'draft') {
+      await supabase.from('promotions').update({ status: 'active', is_active: true }).eq('id', p.id)
+    } else {
+      await supabase.from('promotions').update({ is_active: !p.is_active }).eq('id', p.id)
+    }
     await load()
     setBusy(false)
   }
@@ -172,6 +184,22 @@ export default function AdminPromotionsPage() {
         {showForm && (
           <section className="bg-white rounded-2xl border border-ink-100 p-5 space-y-3 shadow-sm">
             <h2 className="text-sm font-bold text-ink-900">{editId ? '編輯活動' : '新增活動'}</h2>
+            {/* 儲存狀態：草稿 / 發布 */}
+            <div className="flex gap-2">
+              {(['draft', 'publish'] as const).map((m) => (
+                <button key={m} type="button" onClick={() => setForm({ ...form, asDraft: m === 'draft' })}
+                  className={`flex-1 h-10 rounded-xl text-xs font-medium ${
+                    form.asDraft === (m === 'draft')
+                      ? m === 'draft' ? 'bg-amber-50 text-amber-700 border border-amber-300' : 'bg-green-50 text-green-700 border border-green-200'
+                      : 'border border-ink-200 text-ink-400'
+                  }`}>
+                  {m === 'draft' ? '📝 存成草稿' : '🚀 直接發布'}
+                </button>
+              ))}
+            </div>
+            {form.asDraft && (
+              <p className="text-xs text-amber-600">※ 草稿活動不會出現在任何前台頁面，可先暫存未完成的內容，之後再發布。</p>
+            )}
             <input placeholder="活動名稱（例：中秋禮盒特賣）" value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
             <textarea placeholder="活動說明（選填）" rows={2} value={form.description}
@@ -212,7 +240,7 @@ export default function AdminPromotionsPage() {
             <button onClick={submit} disabled={busy}
               className="w-full h-11 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 text-white
                          text-sm font-bold shadow-md shadow-accent-500/25 active:scale-[0.99] transition disabled:opacity-50">
-              {busy ? '儲存中…' : editId ? '更新活動' : '建立活動'}
+              {busy ? '儲存中…' : form.asDraft ? (editId ? '更新草稿' : '儲存草稿') : (editId ? '發布活動' : '建立並發布')}
             </button>
           </section>
         )}
@@ -240,11 +268,17 @@ export default function AdminPromotionsPage() {
                   </p>
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-1">
-                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${PHASE_STYLE[phase]}`}>
-                    {PHASE_LABEL[phase]}
-                  </span>
-                  {!p.is_active && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-500">已停用</span>
+                  {p.status === 'draft' ? (
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">📝 草稿</span>
+                  ) : (
+                    <>
+                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${PHASE_STYLE[phase]}`}>
+                        {PHASE_LABEL[phase]}
+                      </span>
+                      {!p.is_active && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-500">已停用</span>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -257,8 +291,8 @@ export default function AdminPromotionsPage() {
                   ✏️ 編輯
                 </button>
                 <button onClick={() => toggleActive(p)} disabled={busy}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 ${p.is_active ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>
-                  {p.is_active ? '⏸ 停用' : '▶ 啟用'}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 ${p.status === 'draft' ? 'bg-green-50 text-green-700' : p.is_active ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'}`}>
+                  {p.status === 'draft' ? '🚀 發布' : p.is_active ? '⏸ 停用' : '▶ 啟用'}
                 </button>
                 <button onClick={() => remove(p)} disabled={busy}
                   className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-medium disabled:opacity-50">
