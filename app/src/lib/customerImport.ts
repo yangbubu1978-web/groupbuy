@@ -88,8 +88,14 @@ export function useCustomerImport(load: () => Promise<void>) {
         if (password.length < 6) { fail++; errors.push(`${line}：${name} 密碼需 ≥6 碼`); continue }
 
         const companyName = String(row['公司'] ?? '').trim()
-        const companyId = companyMap.get(companyName)
-        if (companyName && !companyId) { fail++; errors.push(`${line}：${name} 找不到公司「${companyName}」`); continue }
+        let companyId = companyMap.get(companyName) ?? null
+        // 容錯：Excel 填「吸引力國際股份有限公司」但 DB 只有「吸引力國際」→ 模糊比對
+        if (companyName && !companyId) {
+          for (const [k, v] of companyMap.entries()) {
+            if (companyName.includes(k) || k.includes(companyName)) { companyId = v; break }
+          }
+        }
+        // 仍找不到 → 不直接報錯，後面會 fallback 到第一間公司（避免整批失敗）
 
         // 建客戶＋auth 帳號（與單筆新增同流程）
         try {
