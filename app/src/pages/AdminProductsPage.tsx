@@ -5,6 +5,7 @@ import type { Campaign, Company, CustomerGroup, Product, Promotion } from '../li
 import { fmtMoney } from '../lib/types'
 import { formatInterval } from '../lib/pricing'
 import { useAuth } from '../context/AuthContext'
+import { useConfirm } from '../components/ConfirmDialog'
 
 /** datetime-local 值 ↔ ISO（台北時間語義由瀏覽器處理） */
 function toLocalInputValue(iso: string): string {
@@ -18,6 +19,7 @@ export default function AdminProductsPage() {
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const isAdminUser = useRef(false)
+  const ask = useConfirm()
 
   // 商品圖上傳 → Supabase Storage（media bucket，免費圖床）
   const uploadImage = async (file: File): Promise<string> => {
@@ -285,7 +287,7 @@ export default function AdminProductsPage() {
   }
 
   const remove = async (p: Product) => {
-    if (!window.confirm(`確定刪除商品「${p.name}」？\n此操作無法復原！`)) return
+    if (!(await ask({ title: '刪除商品', message: `確定刪除商品「${p.name}」？\n此操作無法復原！`, danger: true }))) return
     setBusy(true); setMsg(null)
     try {
       const { error } = await supabase.from('products').delete().eq('id', p.id)

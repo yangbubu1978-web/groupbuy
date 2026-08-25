@@ -6,6 +6,7 @@ import { fmtDateTime } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
 import { useCustomerImport } from '../lib/customerImport'
 import { ImportResultPanel } from '../lib/customerImportPanel'
+import { useConfirm } from '../components/ConfirmDialog'
 
 const STATUS_LABEL: Record<string, string> = {
   active: '啟用', inactive: '停用', blocked: '封鎖',
@@ -61,6 +62,7 @@ export default function AdminCustomersPage() {
     newPassword: '', hasAuth: false,
   }
   const [editForm, setEditForm] = useState(emptyEdit)
+  const ask = useConfirm()
 
   useEffect(() => {
     if (!authLoading && !isAdmin) navigate('/', { replace: true })
@@ -197,8 +199,8 @@ export default function AdminCustomersPage() {
 
   // ---------- 刪除 ----------
   const removeCustomer = async (c: Customer) => {
-    if (!window.confirm(`確定刪除客戶「${c.name}（${c.phone}）」？\n此操作無法復原！`)) return
-    if (!window.confirm(`最後確認：真的要刪除「${c.name}」嗎？\n※ 若此客戶已有訂單紀錄，刪除會被系統拒絕（建議改為「封鎖」）。`)) return
+    if (!(await ask({ title: '刪除客戶', message: `確定刪除客戶「${c.name}（${c.phone}）」？\n此操作無法復原！`, danger: true }))) return
+    if (!(await ask({ title: '刪除客戶', message: `最後確認：真的要刪除「${c.name}」嗎？\n※ 若此客戶已有訂單紀錄，刪除會被系統拒絕（建議改為「封鎖」）。`, danger: true }))) return
     setBusy(true); setMsg(null)
     try {
       // 1. 刪除登入帳號（沒綁帳號則略過；帳號本來就不存在也算成功）
@@ -236,7 +238,7 @@ export default function AdminCustomersPage() {
     const make = c.auth_user_id ? !adminIds.has(c.auth_user_id) : false
     if (
       !make &&
-      !window.confirm(`確定要取消「${c.name}」的管理員資格嗎？`)
+      !(await ask({ title: '取消管理員', message: `確定要取消「${c.name}」的管理員資格嗎？`, danger: true }))
     ) return
     setBusy(true)
     try {

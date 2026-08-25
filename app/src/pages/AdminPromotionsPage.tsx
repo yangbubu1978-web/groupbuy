@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useConfirm } from '../components/ConfirmDialog'
 
 type Promo = {
   id: string
@@ -42,6 +43,7 @@ function toLocalInputValue(iso: string): string {
 export default function AdminPromotionsPage() {
   const { isAdmin, loading: authLoading } = useAuth()
   const navigate = useNavigate()
+  const ask = useConfirm()
   const [promos, setPromos] = useState<Promo[]>([])
   const [products, setProducts] = useState<{ id: string; name: string; sku: string }[]>([])
   const [showForm, setShowForm] = useState(false)
@@ -144,7 +146,7 @@ export default function AdminPromotionsPage() {
   }
 
   const remove = async (p: Promo) => {
-    if (!window.confirm(`確定刪除活動「${p.name}」嗎？`)) return
+    if (!(await ask({ title: '刪除活動', message: `確定刪除活動「${p.name}」嗎？`, danger: true }))) return
     setBusy(true)
     await supabase.from('promotions').delete().eq('id', p.id)
     await load()

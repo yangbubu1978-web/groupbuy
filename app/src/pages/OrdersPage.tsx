@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { Order } from '../lib/types'
 import { fmtMoney, fmtDateTime } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
+import { useConfirm } from '../components/ConfirmDialog'
 
 const STATUS_LABEL: Record<string, string> = {
   pending: '待確認',
@@ -45,6 +46,7 @@ type Tab = 'active' | 'done'
 
 export default function OrdersPage() {
   const { customer } = useAuth()
+  const ask = useConfirm()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('active')
@@ -87,8 +89,8 @@ export default function OrdersPage() {
 
   // 會員取消訂單（限待確認／已確認；Server 回補庫存）
   const cancelOrder = async (o: Order) => {
-    // 兩段式：先彈原生確認
-    if (!window.confirm(`確定要取消這筆訂單嗎？\n${o.order_no}｜${o.product_name_snapshot}`)) return
+    // 兩段式：先彈確認
+    if (!(await ask({ title: '取消訂單', message: `確定要取消這筆訂單嗎？\n${o.order_no}｜${o.product_name_snapshot}`, danger: true }))) return
     setCancellingId(o.id)
     setMsg(null)
     try {

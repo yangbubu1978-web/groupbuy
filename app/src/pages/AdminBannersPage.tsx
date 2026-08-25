@@ -4,11 +4,13 @@ import { supabase } from '../lib/supabase'
 import type { Banner } from '../lib/types'
 import { fmtDateTime } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
+import { useConfirm } from '../components/ConfirmDialog'
 
 /** 後台：首頁看板管理（上傳圖片、點擊連結、排序、啟用） */
 export default function AdminBannersPage() {
   const { isAdmin, loading: authLoading, userId } = useAuth()
   const navigate = useNavigate()
+  const ask = useConfirm()
   const [banners, setBanners] = useState<Banner[]>([])
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -94,7 +96,7 @@ export default function AdminBannersPage() {
   }
 
   const remove = async (b: Banner) => {
-    if (!window.confirm(`確定刪除看板「${b.title ?? '未命名'}」？`)) return
+    if (!(await ask({ title: '刪除看板', message: `確定刪除看板「${b.title ?? '未命名'}」？`, danger: true }))) return
     setBusy(true); setMsg(null)
     const { error } = await supabase.from('banners').delete().eq('id', b.id)
     if (error) setMsg(`❌ 刪除失敗：${error.message}`)

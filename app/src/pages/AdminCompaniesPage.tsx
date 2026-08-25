@@ -4,10 +4,12 @@ import { supabase } from '../lib/supabase'
 import type { Company } from '../lib/types'
 import { fmtDateTime } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
+import { useConfirm } from '../components/ConfirmDialog'
 
 export default function AdminCompaniesPage() {
   const { isAdmin, loading: authLoading } = useAuth()
   const navigate = useNavigate()
+  const ask = useConfirm()
   const [companies, setCompanies] = useState<Company[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null) // null=新增模式
@@ -80,8 +82,8 @@ export default function AdminCompaniesPage() {
 
   /** 刪除公司（兩段確認；有客戶或活動綁定時 DB 會擋） */
   const remove = async (c: Company & { status?: string }) => {
-    if (!window.confirm(`確定要刪除「${c.name}」嗎？`)) return
-    if (!window.confirm(`⚠️ 若此公司底下還有客戶或綁定中的活動，刪除會被系統拒絕。\n建議先將客戶轉移或改用「停用」。仍要刪除嗎？`)) return
+    if (!(await ask({ title: '刪除公司', message: `確定要刪除「${c.name}」嗎？`, danger: true }))) return
+    if (!(await ask({ title: '刪除公司', message: '⚠️ 若此公司底下還有客戶或綁定中的活動，刪除會被系統拒絕。\n建議先將客戶轉移或改用「停用」。仍要刪除嗎？', danger: true }))) return
 
     setBusy(true); setMsg(null)
     try {
