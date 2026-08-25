@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -161,19 +161,19 @@ export default function AdminPromotionsPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-ink-50 pb-16">
-      <header className="bg-white border-b border-ink-100 px-5 py-4 sticky top-0 z-10">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <Link to="/admin" className="w-9 h-9 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-600" aria-label="返回">←</Link>
-          <h1 className="text-base font-bold text-ink-900 font-display">促銷活動</h1>
-          <button onClick={() => { setShowForm((v) => !v); if (!showForm) { setEditId(null); setForm(emptyForm) } }}
-            className="text-xs font-semibold text-accent-600">
-            {showForm ? '收起' : '＋ 新增'}
+      <main className="space-y-4">
+        {/* 標題列＋新增 */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-ink-900">促銷活動</h1>
+            <p className="text-xs text-ink-400">限時促銷與草稿發布</p>
+          </div>
+          <button onClick={() => setShowForm(true)}
+            className="h-10 px-4 rounded-xl bg-ink-900 text-white text-sm font-semibold active:scale-[0.98] transition">
+            ＋ 新增活動
           </button>
         </div>
-      </header>
 
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
         {msg && (
           <div role="alert" className={`rounded-xl border px-4 py-2.5 text-xs anim-pop-in ${msg.startsWith('✅') ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-600'}`}>
             {msg}
@@ -303,6 +303,5 @@ export default function AdminPromotionsPage() {
           )
         })}
       </main>
-    </div>
   )
 }

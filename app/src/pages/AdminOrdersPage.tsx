@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Order } from '../lib/types'
 import { fmtMoney, fmtDateTime } from '../lib/types'
@@ -222,21 +222,19 @@ export default function AdminOrdersPage() {
   ]
 
   return (
-    <div className="min-h-dvh bg-ink-50 pb-16">
-      <header className="bg-white border-b border-ink-100 px-5 py-4 sticky top-0 z-10">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <Link to="/admin" className="w-9 h-9 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-600" aria-label="返回">
-            ←
-          </Link>
-          <h1 className="text-base font-bold text-ink-900 font-display">訂單管理</h1>
-          <button onClick={exportXls} disabled={busyId === '__export__' || filtered.length === 0}
-            className="text-xs font-semibold text-accent-600 disabled:opacity-40">
-            {busyId === '__export__' ? '匯出中…' : '⬇ 匯出'}
+    <main className="space-y-3">
+        {/* 標題列＋匯出 */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-ink-900">訂單管理</h1>
+            <p className="text-xs text-ink-400">查看與匯出成交紀錄</p>
+          </div>
+          <button onClick={exportXls}
+            className="h-10 px-4 rounded-xl bg-ink-900 text-white text-sm font-semibold active:scale-[0.98] transition">
+            ⬇ 匯出 Excel
           </button>
         </div>
-      </header>
 
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-3">
         {/* 統計卡 */}
         <section className="grid grid-cols-3 gap-2 anim-fade-up">
           <div className="bg-white rounded-xl border border-ink-100 p-3 text-center shadow-sm">
@@ -347,6 +345,5 @@ export default function AdminOrdersPage() {
           )
         })}
       </main>
-    </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Company, Customer, CustomerGroup } from '../lib/types'
 import { fmtDateTime } from '../lib/types'
@@ -264,32 +264,29 @@ export default function AdminCustomersPage() {
     (editForm.newPassword === '' || editForm.newPassword.length >= 6)
 
   return (
-    <div className="min-h-dvh bg-ink-50 pb-16">
-      <header className="bg-white border-b border-ink-100 px-5 py-4 sticky top-0 z-10">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <Link to="/admin" className="w-9 h-9 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-600" aria-label="返回">
-            ←
-          </Link>
-          <h1 className="text-base font-bold text-ink-900">客戶管理</h1>
-          <div className="flex items-center gap-3">
-            <input ref={fileRef} type="file" accept=".xls,.xlsx,.csv" className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) importFile(f) }} />
-            <button onClick={downloadTemplate} disabled={importing}
-              className="text-xs font-semibold text-ink-500 disabled:opacity-40">
-              ⬇ 範本
-            </button>
+    <main className="space-y-4">
+        {/* 標題列＋操作 */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-ink-900">客戶管理</h1>
+            <p className="text-xs text-ink-400">白名單、帳號與權限重設</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
+              onChange={(e) => { if (e.target.files?.[0]) importFile(e.target.files[0]); e.target.value = '' }} />
+            <button onClick={downloadTemplate}
+              className="h-10 px-3 rounded-xl border border-ink-200 bg-white text-sm font-medium text-ink-600">範本</button>
             <button onClick={() => fileRef.current?.click()} disabled={importing}
-              className="text-xs font-semibold text-accent-600 disabled:opacity-40">
-              {importing ? '匯入中…' : '⬆ 匯入'}
+              className="h-10 px-3 rounded-xl border border-ink-200 bg-white text-sm font-medium text-ink-600 disabled:opacity-50">
+              {importing ? '匯入中…' : '⇧ 匯入'}
             </button>
-            <button onClick={() => setShowForm((v) => !v)} className="text-xs font-semibold text-accent-600">
-              {showForm ? '收起' : '＋ 新增'}
-            </button>
+            {!showForm && (
+              <button onClick={() => setShowForm(true)}
+                className="h-10 px-3 rounded-xl bg-ink-900 text-white text-sm font-semibold">＋ 新增客戶</button>
+            )}
           </div>
         </div>
-      </header>
 
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
         {result && <ImportResultPanel result={result} onClose={() => setResult(null)} />}
         {showForm && (
           <section className="bg-white rounded-2xl border border-ink-100 p-5 space-y-3 shadow-sm">
@@ -461,6 +458,5 @@ export default function AdminCustomersPage() {
           )}
         </section>
       </main>
-    </div>
   )
 }

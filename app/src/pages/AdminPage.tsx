@@ -1,94 +1,41 @@
-import { useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { Link } from 'react-router-dom'
 
+const MODULES = [
+  { to: '/admin/products', icon: '📦', title: '商品管理', desc: '設定販售商品、開賣時間與草稿', tint: 'bg-accent-50', ring: 'hover:border-accent-200' },
+  { to: '/admin/promotions', icon: '🏷️', title: '促銷活動', desc: '限時促銷與草稿發布', tint: 'bg-orange-50', ring: 'hover:border-orange-200' },
+  { to: '/admin/customers', icon: '👥', title: '客戶管理', desc: '帳號、群組與權限', tint: 'bg-blue-50', ring: 'hover:border-blue-200' },
+  { to: '/admin/companies', icon: '🏢', title: '合作公司', desc: '合作企業名單', tint: 'bg-violet-50', ring: 'hover:border-violet-200' },
+  { to: '/admin/orders', icon: '🧾', title: '訂單管理', desc: '查看與匯出成交紀錄', tint: 'bg-green-50', ring: 'hover:border-green-200' },
+  { to: '/admin/banners', icon: '🖼️', title: '首頁看板', desc: '廣告輪播圖片', tint: 'bg-pink-50', ring: 'hover:border-pink-200' },
+]
+
+/** 後台總覽（實驗對照參考站「特價倒數平台」的 dashboard 卡片網格） */
 export default function AdminPage() {
-  const { isAdmin, loading: authLoading, customer, signOut } = useAuth()
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    if (!authLoading && !isAdmin) navigate('/login', { replace: true })
-  }, [authLoading, isAdmin, navigate])
-
   return (
-    <div className="min-h-dvh bg-ink-50 pb-16">
-      <header className="bg-white border-b border-ink-100 px-5 py-4 sticky top-0 z-10">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <Link to="/" className="w-9 h-9 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-600" aria-label="返回">
-            ←
-          </Link>
-          <h1 className="text-base font-bold text-ink-900 font-display">管理後台</h1>
-          <div className="w-9" />
-        </div>
-      </header>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-ink-900">後台總覽</h1>
+        <p className="text-sm text-ink-400 mt-1">快速前往各管理模組</p>
+      </div>
 
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-6">
-        {/* 快速入口 */}
-        <section className="grid grid-cols-2 gap-2.5">
-          <Link to="/admin/banners" className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm
-                                                 flex items-center gap-3 active:scale-[0.98] transition
-                                                 hover:border-pink-200">
-            <span className="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center text-lg">🖼️</span>
-            <div>
-              <div className="text-sm font-bold text-ink-900">首頁看板</div>
-              <div className="text-[11px] text-ink-400">廣告輪播</div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {MODULES.map((m) => (
+          <Link
+            key={m.to}
+            to={m.to}
+            className={`group bg-white rounded-2xl border border-ink-100 p-5 shadow-sm hover:shadow-md transition ${m.ring}`}
+          >
+            <span className={`inline-flex w-11 h-11 rounded-xl items-center justify-center text-xl ${m.tint}`}>
+              {m.icon}
+            </span>
+            <div className="mt-3 text-sm font-bold text-ink-900">{m.title}</div>
+            <div className="mt-0.5 text-xs text-ink-400">{m.desc}</div>
+            <div className="mt-3 text-xs font-semibold text-accent-600 group-hover:translate-x-1 transition">
+              前往設定 →
             </div>
           </Link>
-          <Link to="/admin/customers" className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm
-                                                 flex items-center gap-3 active:scale-[0.98] transition
-                                                 hover:border-blue-200">
-            <span className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-lg">👥</span>
-            <div>
-              <div className="text-sm font-bold text-ink-900">客戶</div>
-              <div className="text-[11px] text-ink-400">帳號與權限</div>
-            </div>
-          </Link>
-          <Link to="/admin/companies" className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm
-                                                 flex items-center gap-3 active:scale-[0.98] transition
-                                                 hover:border-violet-200">
-            <span className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center text-lg">🏢</span>
-            <div>
-              <div className="text-sm font-bold text-ink-900">公司</div>
-              <div className="text-[11px] text-ink-400">合作企業</div>
-            </div>
-          </Link>
-          <Link to="/admin/products" className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm
-                                                 flex items-center gap-3 active:scale-[0.98] transition
-                                                 hover:border-accent-200">
-            <span className="w-10 h-10 rounded-xl bg-accent-50 flex items-center justify-center text-lg">📦</span>
-            <div>
-              <div className="text-sm font-bold text-ink-900">商品</div>
-              <div className="text-[11px] text-ink-400">價格與庫存</div>
-            </div>
-          </Link>
-          <Link to="/admin/orders" className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm
-                                                 flex items-center gap-3 active:scale-[0.98] transition
-                                                 hover:border-green-200">
-            <span className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-lg">🧾</span>
-            <div>
-              <div className="text-sm font-bold text-ink-900">訂單</div>
-              <div className="text-[11px] text-ink-400">成交紀錄</div>
-            </div>
-          </Link>
-          <Link to="/admin/promotions" className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm
-                                                 flex items-center gap-3 active:scale-[0.98] transition
-                                                 hover:border-orange-200">
-            <span className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-lg">🏷️</span>
-            <div>
-              <div className="text-sm font-bold text-ink-900">促銷活動</div>
-              <div className="text-[11px] text-ink-400">限時上架</div>
-            </div>
-          </Link>
-        </section>
-
-        {/* 登出（管理員不經個人頁，後台直接提供） */}
-        <button
-          onClick={signOut}
-          className="w-full h-12 rounded-xl bg-white border border-ink-200 text-sm font-medium text-red-600 active:scale-[0.99] transition"
-        >
-          登出（{customer?.name ?? '管理員'}）
-        </button>
-      </main>
+        ))}
+      </div>
     </div>
   )
 }

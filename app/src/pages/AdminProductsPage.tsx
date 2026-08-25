@@ -313,27 +313,26 @@ export default function AdminProductsPage() {
     'w-full h-11 px-3 rounded-xl border border-ink-200 bg-white text-sm text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-400'
 
   return (
-    <div className="min-h-dvh bg-ink-50 pb-16">
-      <header className="bg-white border-b border-ink-100 px-5 py-4 sticky top-0 z-10">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <Link to="/admin" className="w-9 h-9 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-600" aria-label="返回">
-            ←
-          </Link>
-          <h1 className="text-base font-bold text-ink-900">{editId ? '編輯商品' : '商品管理'}</h1>
-          <button
-            onClick={() => {
-              if (showForm && !editId) { setShowForm(false); return }
-              if (editId) { navigate('/admin/products'); return }
-              setForm(emptyForm); setShowForm(true)
-            }}
-            className="text-xs font-semibold text-accent-600"
-          >
-            {editId ? '取消' : showForm ? '收起' : '＋ 新增'}
-          </button>
+    <main className="space-y-4">
+        {/* 標題列＋新增 */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-ink-900">商品管理</h1>
+            <p className="text-xs text-ink-400">設定販售商品、開賣時間與草稿</p>
+          </div>
+          {showForm ? (
+            <button onClick={() => setShowForm(false)}
+              className="h-10 px-4 rounded-xl border border-ink-200 bg-white text-sm font-medium text-ink-600">
+              取消
+            </button>
+          ) : (
+            <button onClick={() => setShowForm(true)}
+              className="h-10 px-4 rounded-xl bg-ink-900 text-white text-sm font-semibold transition">
+              ＋ 新增商品
+            </button>
+          )}
         </div>
-      </header>
 
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-4">
         {msg && <p className="text-xs text-center bg-white border border-ink-100 rounded-xl py-2.5 shadow-sm">{msg}</p>}
 
         {/* 新增／編輯表單 */}
@@ -619,6 +618,5 @@ export default function AdminProductsPage() {
           </section>
         )}
       </main>
-    </div>
   )
 }

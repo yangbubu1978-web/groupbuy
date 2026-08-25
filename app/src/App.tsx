@@ -13,6 +13,7 @@ import AdminCompaniesPage from './pages/AdminCompaniesPage'
 import ProfilePage from './pages/ProfilePage'
 import AdminBannersPage from './pages/AdminBannersPage'
 import AdminPromotionsPage from './pages/AdminPromotionsPage'
+import AdminLayout from './components/AdminLayout'
 
 /** 需要登入的頁面守衛（含首次登入強制改密碼） */
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -40,13 +41,15 @@ export default function App() {
         <Route path="/product/:productId" element={<RequireAuth><ProductPage /></RequireAuth>} />
         <Route path="/orders" element={<RequireAuth><OrdersPage /></RequireAuth>} />
         <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
-        <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
-        <Route path="/admin/products" element={<RequireAuth><AdminProductsPage /></RequireAuth>} />
-        <Route path="/admin/companies" element={<RequireAuth><AdminCompaniesPage /></RequireAuth>} />
-        <Route path="/admin/customers" element={<RequireAuth><AdminCustomersPage /></RequireAuth>} />
-        <Route path="/admin/orders" element={<RequireAuth><AdminOrdersPage /></RequireAuth>} />
-        <Route path="/admin/banners" element={<RequireAuth><AdminBannersPage /></RequireAuth>} />
-        <Route path="/admin/promotions" element={<RequireAuth><AdminPromotionsPage /></RequireAuth>} />
+        <Route path="/admin" element={<RequireAuth><AdminLayout /></RequireAuth>}>
+          <Route index element={<AdminPage />} />
+          <Route path="products" element={<AdminProductsPage />} />
+          <Route path="companies" element={<AdminCompaniesPage />} />
+          <Route path="customers" element={<AdminCustomersPage />} />
+          <Route path="orders" element={<AdminOrdersPage />} />
+          <Route path="banners" element={<AdminBannersPage />} />
+          <Route path="promotions" element={<AdminPromotionsPage />} />
+        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
