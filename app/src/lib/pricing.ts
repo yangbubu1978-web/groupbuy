@@ -7,13 +7,14 @@
 //   1. 每 priceIntervalSeconds 秒降價一次
 //   2. 每次降幅 = priceDecrease ～ priceDecreaseMax 之間的整數亂數
 //      （priceDecreaseMax 未設定時＝固定降幅）
-//   3. 到底價後該輪結束，下一個週期從原價重新開始降價
+//   3. 單程到底：只在第一輪降價；到底後維持最低價（價格永不回彈），
+//      停留一個降價週期未售罄即由 Server 自動下架
 //   4. 「隨機」採確定性偽隨機（與 Server 同公式），所有人看到同一個價
 //
 // 時間軸語義：
 //   第 k 個週期（k = floor(elapsed/interval)，k>=1）顯示「已套用 k 次降幅」的價格。
-//   第 r 輪包含 k = r*S+1 … (r+1)*S，S = 一輪保證到底價的最大步數。
-//   第 (r, m) 步的降幅 = randStep(productId|r|m)。
+//   每一輪包含 k = 1…S，S = 保證到底價的最大步數；k>S 後一律停在最低價。
+//   第 m 步的降幅 = randStep(productId|0|m)。
 //
 // ⚠️ Server 端 SQL 為唯一真相（migrations/20260822_b_random_pricing.sql），
 //    本檔公式必須與其完全一致；改任何一邊都要同步另一邊＋跑測試。
@@ -80,23 +81,34 @@ export function computeCurrentPrice(
     1,
     Math.ceil(range / Math.max(1, lo > 0 ? lo : hi)),
   )
-  const round = Math.floor((k - 1) / s)
-  const m = k - round * s
+  // 單程到底：只在第一輪降價（round 固定 0）；到底後維持最低價，價格永不回彈
+  const m = Math.max(1, Math.min(k, s))
 
   let dropped = 0
   for (let i = 0; i < m && dropped < range; i++) {
-    dropped += randStep(`${productId}|${round}|${i}`, lo, hi)
+    dropped += randStep(`${productId}|0|${i}`, lo, hi)
   }
   return Math.max(min, original - dropped)
 }
 
-/** 距下一次降價的剩餘秒數 */
+/** 距下一次降價的剩餘秒數（已到底價＝不再降，回傳 0） */
 export function secondsToNextDrop(
   cfg: PricingConfig,
   elapsedSeconds: number,
 ): number {
-  const into = Math.max(0, elapsedSeconds) % Math.max(1, cfg.priceIntervalSeconds)
-  return Math.max(1, cfg.priceIntervalSeconds - into)
+  const original = cfg.originalPrice
+  const min = Math.min(cfg.minimumPrice, original)
+  const range = original - min
+  const lo = Math.max(0, Math.round(cfg.priceDecrease))
+  const hi = cfg.priceDecreaseMax != null
+    ? Math.max(lo, Math.round(cfg.priceDecreaseMax))
+    : lo
+  const interval = Math.max(1, cfg.priceIntervalSeconds)
+  const k = Math.floor(Math.max(0, elapsedSeconds) / interval)
+  const s = Math.max(1, Math.ceil(range / Math.max(1, lo > 0 ? lo : hi)))
+  if (hi <= 0 || range <= 0 || k >= s) return 0
+  const into = Math.max(0, elapsedSeconds) % interval
+  return Math.max(1, interval - into)
 }
 
 /** 秒數 → 倒數字串（<1小時顯示 mm:ss；以上顯示 h:mm:ss） */

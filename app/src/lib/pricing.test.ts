@@ -35,13 +35,12 @@ describe('computeCurrentPrice：固定降幅（相容模式）', () => {
     expect(computeCurrentPrice(fixed, 50 * 60 + 59, 'p1')).toBe(1000) // 觸底維持一個週期
   })
 
-  it('到底價後重新開始：下一個週期回到接近原價', () => {
-    // S=50 → k=51 起為新一輪第 1 步
-    const p = computeCurrentPrice(fixed, 51 * 60, 'p1')
-    expect(p).toBe(1490) // 固定降幅：新輪第一步 = 原-10
-    // 再跑 50 步又會觸底一次
+  it('單程到底：到底後維持最低價，價格永不回彈', () => {
+    // S=50 → 第 51 個週期起（過去曾是新一輪）仍停在最低價
+    expect(computeCurrentPrice(fixed, 51 * 60, 'p1')).toBe(1000)
     expect(computeCurrentPrice(fixed, 100 * 60, 'p1')).toBe(1000)
-    expect(computeCurrentPrice(fixed, 101 * 60, 'p1')).toBe(1490)
+    expect(computeCurrentPrice(fixed, 101 * 60, 'p1')).toBe(1000)
+    expect(computeCurrentPrice(fixed, 5000 * 60, 'p1')).toBe(1000)
   })
 
   it('無限跑下去也不會低於最低價', () => {
@@ -99,6 +98,12 @@ describe('computeCurrentPrice：隨機區間（1~20 元）', () => {
 describe('工具函式', () => {
   it('secondsToNextDrop：12 小時週期', () => {
     expect(secondsToNextDrop({ ...fixed, priceIntervalSeconds: 43200 }, 3600)).toBe(39600)
+  })
+
+  it('secondsToNextDrop：已到底價 → 0（不再降）', () => {
+    // fixed：S=50，k>=50 即到底
+    expect(secondsToNextDrop(fixed, 50 * 60)).toBe(0)
+    expect(secondsToNextDrop(fixed, 5000 * 60)).toBe(0)
   })
 
   it('formatCountdown 支援小時', () => {
