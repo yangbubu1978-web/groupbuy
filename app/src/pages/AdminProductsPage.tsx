@@ -70,7 +70,7 @@ export default function AdminProductsPage() {
     campaign_id: '', name: '', description: '', image_url: '', sku: '',
     item_no: '',
     original_price: '1500', minimum_price: '900',
-    price_interval_seconds: '43200', price_decrease: '1', price_decrease_max: '20',
+    price_interval_seconds: '7200', price_decrease: '1', price_decrease_max: '20',
     initial_stock: '20', max_per_customer: '2',
     unit: '件', items_per_unit: '1',
     sale_start_at: '',
@@ -386,7 +386,7 @@ export default function AdminProductsPage() {
                   className={`${inputCls} mt-1`} />
               </label>
               <label className="text-sm text-ink-600">
-                降價間隔（秒，12 小時＝43200）
+                降價間隔（秒，2 小時＝7200）
                 <input type="number" min="1" value={form.price_interval_seconds}
                   onChange={(e) => setForm({ ...form, price_interval_seconds: e.target.value })}
                   className={`${inputCls} mt-1`} />

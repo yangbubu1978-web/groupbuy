@@ -247,7 +247,7 @@ export default function ProductPage() {
   const hotLabel = soldPct >= 50 && live.stock > 0
   const almostGone = stockPct <= 20 && live.stock > 0
 
-  // 新規則：到底價後自動從原價重新開始，優惠不會結束（Server 端同公式）
+  // 規則：單程到底、只降不漲；到底價後停留一輪、無下單即由 Server 自動下架（歸零計時）
   // 降價說明文字（隨機區間或固定）
   const decLo = Number(product.price_decrease)
   const decHi = product.price_decrease_max != null ? Number(product.price_decrease_max) : decLo

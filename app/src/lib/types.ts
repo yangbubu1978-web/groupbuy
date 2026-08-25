@@ -69,6 +69,7 @@ export interface Product {
   max_per_customer: number
   status: ProductStatus
   sale_start_at: string | null
+  last_order_at?: string | null
   created_at?: string | null
   unit?: string
   items_per_unit?: number

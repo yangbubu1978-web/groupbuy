@@ -136,6 +136,7 @@ create table public.products (
   status                public.product_status not null default 'active',
   sale_start_at         timestamptz,
   sale_end_at           timestamptz,
+  last_order_at         timestamptz,
   created_at            timestamptz not null default now(),
   constraint chk_price_range check (minimum_price <= original_price)
 );
