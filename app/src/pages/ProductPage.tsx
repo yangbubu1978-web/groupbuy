@@ -220,7 +220,7 @@ export default function ProductPage() {
   if (loading) {
     return (
       <div className="min-h-dvh bg-ink-50 flex items-center justify-center">
-        <p className="text-sm text-ink-400">載入中…</p>
+        <p className="text-base text-ink-400">載入中…</p>
       </div>
     )
   }
@@ -228,8 +228,8 @@ export default function ProductPage() {
   if (!product || !campaign) {
     return (
       <div className="min-h-dvh bg-ink-50 flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-sm text-ink-500">找不到此商品</p>
-        <Link to="/" className="text-sm font-medium text-accent-600">回到活動列表</Link>
+        <p className="text-base text-ink-500">找不到此商品</p>
+        <Link to="/" className="text-base font-medium text-accent-600">回到活動列表</Link>
       </div>
     )
   }
@@ -267,7 +267,7 @@ export default function ProductPage() {
           >
             ←
           </button>
-          <div className="text-sm tracking-widest text-ink-600">⚡ 先買先贏</div>
+          <div className="text-base tracking-widest text-ink-600">⚡ 先買先贏</div>
           <div className="w-11" />
         </div>
       </header>
@@ -286,13 +286,13 @@ export default function ProductPage() {
           {/* 名稱與描述 */}
           <div>
             <div className="flex items-start justify-between gap-3">
-              <h1 className="text-xl font-bold text-ink-900 font-display">{product.name}</h1>
+              <h1 className="text-2xl font-bold text-ink-900 font-display">{product.name}</h1>
               {/* 關注按鈕 */}
               <button
                 onClick={toggleFollow}
                 disabled={followBusy}
                 aria-pressed={following}
-                className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-bold
+                className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-full text-base font-bold
                             border transition active:scale-95 disabled:opacity-60 ${
                   following
                     ? 'bg-accent-50 border-accent-300 text-accent-700'
@@ -304,12 +304,12 @@ export default function ProductPage() {
               </button>
             </div>
             {product.description && (
-              <p className="mt-1.5 text-sm text-ink-600 leading-relaxed">{product.description}</p>
+              <p className="mt-1.5 text-base text-ink-600 leading-relaxed">{product.description}</p>
             )}
-            <p className="mt-1 text-sm text-ink-500">SKU：{product.sku}</p>
+            <p className="mt-1 text-base text-ink-500">SKU：{product.sku}</p>
             {/* 關注人數（社會證明） */}
             {followerCount > 0 && (
-              <p className={`mt-2 text-sm ${followerCount >= 5 ? 'text-red-600 font-bold' : 'text-ink-600'}`}>
+              <p className={`mt-2 text-base ${followerCount >= 5 ? 'text-red-600 font-bold' : 'text-ink-600'}`}>
                 🔥 {followerCount} 人正在關注這項商品
               </p>
             )}
@@ -319,11 +319,11 @@ export default function ProductPage() {
           <section className="bg-white rounded-2xl border border-ink-100 p-5 shadow-sm" aria-live="polite">
             {/* 核心張力：價格自己會降、好貨不等人 */}
             <div className="flex items-center justify-between rounded-xl bg-accent-50 border border-accent-100 px-4 py-3 mb-4">
-              <span className="text-sm font-bold text-accent-700">
+              <span className="text-base font-bold text-accent-700">
                 🕐 價格自己會降
               </span>
               {!atFloor && (
-                <span className="text-sm font-bold tabular-nums text-ink-700">
+                <span className="text-base font-bold tabular-nums text-ink-700">
                   ⏰ 下次降價 {formatCountdown(live.nextDropIn)}
                 </span>
               )}
@@ -331,13 +331,13 @@ export default function ProductPage() {
 
             <div className="flex items-end justify-between">
               <div>
-                <div className="text-sm text-ink-500 mb-0.5">原價</div>
+                <div className="text-base text-ink-500 mb-0.5">原價</div>
                 <div className="text-base text-ink-500 line-through">
                   {fmtMoney(Number(product.original_price))}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-sm text-ink-500 mb-0.5">目前價格</div>
+                <div className="text-base text-ink-500 mb-0.5">目前價格</div>
                 <div
                   className={`text-4xl font-extrabold tracking-tight transition-colors duration-500 ${
                     priceFlash ? 'text-green-600' : 'text-ink-900'
@@ -350,7 +350,7 @@ export default function ProductPage() {
 
             {/* 優惠說明：還有多少空間（但不保證有貨） */}
             {!atFloor && (
-              <p className="mt-2 text-sm text-ink-600">
+              <p className="mt-2 text-base text-ink-600">
                 再等等還會更便宜，但庫存有限、不保證買得到。
               </p>
             )}
@@ -359,20 +359,20 @@ export default function ProductPage() {
             <div className="mt-3 flex flex-wrap gap-2">
               {dropped > 0 && (
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-red-50 border border-red-100
-                                px-3.5 py-1.5 text-sm font-bold text-red-600 anim-pop-in">
+                                px-3.5 py-1.5 text-base font-bold text-red-600 anim-pop-in">
                   <span>📉</span>
                   <span>已降價 {fmtMoney(dropped)}（{Math.round(dropPct)}% off）</span>
                 </div>
               )}
               {hotLabel && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200
-                                px-3.5 py-1.5 text-sm font-bold text-orange-600 anim-pop-in">
+                                px-3.5 py-1.5 text-base font-bold text-orange-600 anim-pop-in">
                   🔥 熱銷中
                 </span>
               )}
               {almostGone && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3.5 py-1.5
-                                text-sm font-bold text-white anim-pop-in">
+                                text-base font-bold text-white anim-pop-in">
                   ⚡ 即將完售
                 </span>
               )}
@@ -380,11 +380,11 @@ export default function ProductPage() {
 
             {/* 降價規則 + 倒數 */}
             <div className="mt-4 flex items-center justify-between rounded-xl bg-ink-50 px-4 py-3 gap-3">
-              <span className="text-sm text-ink-700">
+              <span className="text-base text-ink-700">
                 每 {formatInterval(product.price_interval_seconds)} 隨機降 {dropLabel}
               </span>
               {!atFloor && (
-                <span className="text-sm font-bold tabular-nums text-ink-700">
+                <span className="text-base font-bold tabular-nums text-ink-700">
                   下一次降價 {formatCountdown(live.nextDropIn)}
                 </span>
               )}
@@ -392,7 +392,7 @@ export default function ProductPage() {
 
             {/* 降價進度條：原價 ── 目前 ── 優惠價 */}
             <div className="mt-3">
-              <div className="flex items-center justify-between text-xs text-ink-600 mb-1">
+              <div className="flex items-center justify-between text-sm text-ink-600 mb-1">
                 <span>原價 {fmtMoney(original)}</span>
                 <span className="font-bold text-ink-900">{dropped > 0 ? `已降 ${fmtMoney(dropped)}` : '原價即售價'}</span>
               </div>
@@ -407,14 +407,14 @@ export default function ProductPage() {
             </div>
 
             {/* 活動剩餘時間 */}
-            <div className="mt-2 text-sm text-ink-600 text-right tabular-nums">
+            <div className="mt-2 text-base text-ink-600 text-right tabular-nums">
               活動至 {new Date(campaign.end_at).toLocaleString('zh-TW')}
             </div>
           </section>
 
           {/* 庫存 */}
           <section aria-label="剩餘庫存">
-            <div className="flex items-center justify-between text-sm mb-2">
+            <div className="flex items-center justify-between text-base mb-2">
               <span className="text-ink-600">剩餘庫存</span>
               <span className={`font-bold tabular-nums ${live.stock <= 3 ? 'text-red-600' : 'text-ink-900'}`}>
                 {live.stock} 件
@@ -429,13 +429,13 @@ export default function ProductPage() {
               />
             </div>
             {live.stock <= 3 && live.stock > 0 && (
-              <p className="mt-2 text-sm font-bold text-red-600">僅剩最後 {live.stock} 件，錯過就沒有了</p>
+              <p className="mt-2 text-base font-bold text-red-600">僅剩最後 {live.stock} 件，錯過就沒有了</p>
             )}
           </section>
 
           {/* 底部 CTA 前的單位說明 */}
           {Number(product.items_per_unit) > 1 && (
-            <p className="text-sm text-ink-600">
+            <p className="text-base text-ink-600">
               📦 銷售單位：{product.unit}（1 {product.unit} = {product.items_per_unit} 件）
             </p>
           )}
@@ -443,7 +443,7 @@ export default function ProductPage() {
           {/* 數量選擇 */}
           <section>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-semibold text-ink-700">
+              <span className="text-base font-semibold text-ink-700">
                 購買數量（每人限購 {product.max_per_customer} {product.unit ?? '件'}）
               </span>
               <div className="flex items-center gap-3">
@@ -480,7 +480,7 @@ export default function ProductPage() {
           <button
             onClick={buy}
             disabled={!canBuy}
-            className={`w-full h-13 py-3.5 rounded-2xl text-base font-bold transition
+            className={`w-full h-14 py-3.5 rounded-2xl text-base font-bold transition
               ${saleOpen && live.stock > 0
                 ? 'bg-accent-500 text-white active:scale-[0.98] shadow-lg shadow-accent-500/25'
                 : 'bg-ink-200 text-ink-400 cursor-not-allowed'}`}
@@ -498,7 +498,7 @@ export default function ProductPage() {
                         : `立即搶購｜${fmtMoney(live.price)} × ${quantity}`}
           </button>
           {saleOpen && live.stock > 0 && !atFloor && (
-            <p className="mt-1.5 text-center text-sm text-ink-600">
+            <p className="mt-1.5 text-center text-base text-ink-600">
               再等等還會降，但庫存有限、不保證有貨
             </p>
           )}
@@ -513,27 +513,27 @@ export default function ProductPage() {
               <>
                 <div className="text-4xl mb-3">🎉</div>
                 <h2 className="text-lg font-bold text-ink-900 font-display">搶購成功！</h2>
-                <div className="mt-4 space-y-1.5 text-sm">
+                <div className="mt-4 space-y-1.5 text-base">
                   <p className="text-ink-600">{product.name}</p>
                   <p className="text-ink-900">
                     成交價格 <span className="font-bold">{fmtMoney(buyState.unitPrice)}</span>
                     × {buyState.quantity}
                   </p>
-                  <p className="text-sm text-ink-500">訂單編號：{buyState.orderNo}</p>
+                  <p className="text-base text-ink-500">訂單編號：{buyState.orderNo}</p>
                 </div>
-                <p className="mt-3 text-sm font-semibold text-green-700 bg-green-50 rounded-lg py-2">
+                <p className="mt-3 text-base font-semibold text-green-700 bg-green-50 rounded-lg py-2">
                   商品已為您保留。
                 </p>
                 <div className="mt-5 grid grid-cols-2 gap-2">
                   <button
                     onClick={() => { setBuyState({ kind: 'idle' }); navigate('/orders') }}
-                    className="h-11 rounded-xl bg-ink-900 text-white text-sm font-semibold"
+                    className="h-12 rounded-xl bg-ink-900 text-white text-base font-semibold"
                   >
                     查看訂單
                   </button>
                   <button
                     onClick={() => setBuyState({ kind: 'idle' })}
-                    className="h-11 rounded-xl border border-ink-200 text-sm font-medium text-ink-700"
+                    className="h-12 rounded-xl border border-ink-200 text-base font-medium text-ink-700"
                   >
                     繼續逛逛
                   </button>
@@ -544,10 +544,10 @@ export default function ProductPage() {
               <>
                 <div className="text-4xl mb-3">😢</div>
                 <h2 className="text-lg font-bold text-ink-900">慢了一步</h2>
-                <p className="mt-2 text-sm text-ink-500">商品已被其他客戶搶購完畢。</p>
+                <p className="mt-2 text-base text-ink-500">商品已被其他客戶搶購完畢。</p>
                 <button
                   onClick={() => setBuyState({ kind: 'idle' })}
-                  className="mt-6 w-full h-11 rounded-xl bg-ink-900 text-white text-sm font-semibold"
+                  className="mt-6 w-full h-12 rounded-xl bg-ink-900 text-white text-base font-semibold"
                 >
                   我知道了
                 </button>
@@ -557,10 +557,10 @@ export default function ProductPage() {
               <>
                 <div className="text-4xl mb-3">⚠️</div>
                 <h2 className="text-base font-bold text-ink-900">無法完成購買</h2>
-                <p className="mt-2 text-sm text-ink-500">{buyState.message}</p>
+                <p className="mt-2 text-base text-ink-500">{buyState.message}</p>
                 <button
                   onClick={() => setBuyState({ kind: 'idle' })}
-                  className="mt-6 w-full h-11 rounded-xl bg-ink-900 text-white text-sm font-semibold"
+                  className="mt-6 w-full h-12 rounded-xl bg-ink-900 text-white text-base font-semibold"
                 >
                   我知道了
                 </button>

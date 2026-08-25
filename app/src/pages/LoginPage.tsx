@@ -45,9 +45,9 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-extrabold text-ink-900 leading-tight">吸引力生活好物</h1>
           <p className="mt-1.5 text-base font-bold text-accent-500 tracking-wide">先買先贏</p>
-          <p className="mt-2 text-sm text-ink-500">僅限受邀客戶登入使用</p>
+          <p className="mt-2 text-base text-ink-500">僅限受邀客戶登入使用</p>
           <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-accent-50 border border-accent-200
-                          px-3 py-1 text-xs font-semibold text-accent-600" aria-hidden="true">
+                          px-3 py-1 text-sm font-semibold text-accent-600" aria-hidden="true">
             ⚡ 限時降價 × 庫存有限
           </div>
         </div>
@@ -58,7 +58,7 @@ export default function LoginPage() {
           style={{ animationDelay: '80ms' }}
         >
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-ink-700 mb-1.5">
+            <label htmlFor="phone" className="block text-base font-medium text-ink-700 mb-1.5">
               姓名 / 手機 / 帳號
             </label>
             <input
@@ -76,7 +76,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-ink-700 mb-1.5">
+            <label htmlFor="password" className="block text-base font-medium text-ink-700 mb-1.5">
               密碼
             </label>
             <input
@@ -94,7 +94,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div role="alert" className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600 anim-pop-in">
+            <div role="alert" className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-base text-red-600 anim-pop-in">
               {error}
             </div>
           )}
@@ -110,7 +110,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-ink-500 leading-relaxed anim-fade-up" style={{ animationDelay: '160ms' }}>
+        <p className="mt-8 text-center text-base text-ink-500 leading-relaxed anim-fade-up" style={{ animationDelay: '160ms' }}>
           本平台為封閉式系統，不提供註冊。<br />
           帳號由管理員統一建立。
         </p>

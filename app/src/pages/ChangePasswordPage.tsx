@@ -54,7 +54,7 @@ export default function ChangePasswordPage() {
             🔐
           </div>
           <h1 className="text-xl font-bold text-ink-900">請設定您的新密碼</h1>
-          <p className="mt-2 text-sm text-ink-500">
+          <p className="mt-2 text-base text-ink-500">
             {customer?.name}，您好！<br />基於安全考量，首次登入需先更換預設密碼。
           </p>
         </div>
@@ -64,14 +64,14 @@ export default function ChangePasswordPage() {
           style={{ animationDelay: '80ms' }}
         >
           <div>
-            <label htmlFor="newpwd" className="block text-sm font-medium text-ink-700 mb-1.5">新密碼</label>
+            <label htmlFor="newpwd" className="block text-base font-medium text-ink-700 mb-1.5">新密碼</label>
             <input id="newpwd" type="password" autoComplete="new-password" placeholder="至少 6 碼"
               value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required
               className="w-full h-12 px-4 rounded-xl border border-ink-200 bg-white text-lg text-ink-900
                         placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400" />
           </div>
           <div>
-            <label htmlFor="confirm" className="block text-sm font-medium text-ink-700 mb-1.5">確認新密碼</label>
+            <label htmlFor="confirm" className="block text-base font-medium text-ink-700 mb-1.5">確認新密碼</label>
             <input id="confirm" type="password" autoComplete="new-password" placeholder="再輸入一次"
               value={confirm} onChange={(e) => setConfirm(e.target.value)} required
               className="w-full h-12 px-4 rounded-xl border border-ink-200 bg-white text-lg text-ink-900
@@ -79,7 +79,7 @@ export default function ChangePasswordPage() {
           </div>
 
           {error && (
-            <div role="alert" className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600 anim-pop-in">
+            <div role="alert" className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-base text-red-600 anim-pop-in">
               {error}
             </div>
           )}

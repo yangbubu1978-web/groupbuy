@@ -11,7 +11,7 @@ function DropTimer({ seconds }: { seconds: number }) {
   const urgent = seconds < 3600
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-sm font-bold tabular-nums ${
+      className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-base font-bold tabular-nums ${
         urgent ? 'bg-red-600 text-white' : 'bg-accent-50 text-accent-700 border border-accent-200'
       }`}
     >
@@ -56,11 +56,11 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
           ) : (
             <span className="text-6xl opacity-20">🎁</span>
           )}
-          <span className="absolute top-3 left-3 rounded-lg bg-ink-800 text-white px-3 py-1.5 text-sm font-bold shadow-md">
+          <span className="absolute top-3 left-3 rounded-lg bg-ink-800 text-white px-3 py-1.5 text-base font-bold shadow-md">
             🔒 即將開賣
           </span>
           {followCount > 0 && (
-            <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-pink-600 shadow-sm">
+            <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-sm font-bold text-pink-600 shadow-sm">
               ♥ {followCount}
             </span>
           )}
@@ -72,11 +72,11 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
             <span className="text-2xl font-extrabold text-ink-700 tracking-tight tabular-nums leading-none">{fmtMoney(original)}</span>
           </div>
           <div className="mt-2">
-            <span className="inline-flex items-center gap-1 rounded-lg bg-ink-100 text-ink-700 px-3 py-1 text-xs font-bold tabular-nums">
+            <span className="inline-flex items-center gap-1 rounded-lg bg-ink-100 text-ink-700 px-3 py-1 text-sm font-bold tabular-nums">
               ⏳ {formatCountdown(saleRemain)} 後開賣
             </span>
           </div>
-          <p className="mt-2 text-sm text-ink-500">尚未開賣，敬請期待</p>
+          <p className="mt-2 text-base text-ink-500">尚未開賣，敬請期待</p>
         </div>
       </div>
     )
@@ -101,9 +101,9 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
       {promo && (
         <div className="bg-gradient-to-r from-accent-500 to-accent-600 text-white px-4 py-2.5
                         flex items-center justify-between gap-3">
-          <span className="text-sm font-bold truncate">🏷️ 限時促銷 · {promo.name}</span>
+          <span className="text-base font-bold truncate">🏷️ 限時促銷 · {promo.name}</span>
           {promoRemaining > 0 && (
-            <span className="shrink-0 text-sm font-bold tabular-nums">⏰ 剩 {formatCountdown(promoRemaining)}</span>
+            <span className="shrink-0 text-base font-bold tabular-nums">⏰ 剩 {formatCountdown(promoRemaining)}</span>
           )}
         </div>
       )}
@@ -122,7 +122,7 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
         )}
         {dropped > 0 && (
           <span className="absolute top-3 left-3 rounded-lg bg-accent-500 text-white
-                           px-3 py-1.5 text-sm font-bold shadow-md anim-pop-in">
+                           px-3 py-1.5 text-base font-bold shadow-md anim-pop-in">
             已降 {dropPct}%
           </span>
         )}
@@ -131,7 +131,7 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
                                   text-white text-xl font-extrabold tracking-widest">已完售</span>
                 )}
                 {followCount > 0 && !soldOut && (
-                  <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-pink-600 shadow-sm">
+                  <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-sm font-bold text-pink-600 shadow-sm">
                     ♥ {followCount}
                   </span>
                 )}
@@ -152,11 +152,11 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
             <span className="text-2xl font-extrabold text-accent-600 tracking-tight tabular-nums leading-none">
               {fmtMoney(live.price)}
             </span>
-            <span className="text-sm text-ink-500 line-through">{fmtMoney(original)}</span>
+            <span className="text-base text-ink-500 line-through">{fmtMoney(original)}</span>
           </div>
         </div>
         {dropped > 0 && (
-          <p className="mt-1 text-sm font-bold text-red-600">
+          <p className="mt-1 text-base font-bold text-red-600">
             🔥 已省 {fmtMoney(dropped)}，再不搶就沒了
           </p>
         )}
@@ -170,7 +170,7 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
             style={{ width: `${soldOut ? 100 : stockPct}%` }}
           />
         </div>
-        <p className="mt-1.5 text-sm text-ink-600">
+        <p className="mt-1.5 text-base text-ink-600">
           {soldOut ? '已售完' : live.stock <= 3 ? `僅剩 ${live.stock} 件，手刀搶購！` : `剩 ${live.stock} 件`}
         </p>
 

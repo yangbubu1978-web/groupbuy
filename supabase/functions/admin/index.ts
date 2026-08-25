@@ -85,13 +85,15 @@ Deno.serve(async (req) => {
           email = `${rawPhone}@phone.groupbuy.local`
           phoneMeta = rawPhone
         } else {
-          // 中文名轉 base64url 當 local-part（避免中文直接當 email）
-          let b64 = ''
+          // 中文名轉 hex 當 local-part（避免中文直接當 email，Deno 無 unescape）
+          let hex = ''
           try {
-            b64 = btoa(unescape(encodeURIComponent(String(name).trim()))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
-          } catch { b64 = 'user' }
+            const bytes = new TextEncoder().encode(String(name).trim())
+            hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12)
+            if (!hex) hex = 'user'
+          } catch { hex = 'user' }
           const suffix = crypto.randomUUID().slice(0, 8)
-          email = `n_${b64.slice(0, 12)}_${suffix}@name.groupbuy.local`
+          email = `n_${hex}_${suffix}@name.groupbuy.local`
         }
         const { data, error } = await admin.auth.admin.createUser({
           email,

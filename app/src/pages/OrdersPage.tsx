@@ -144,15 +144,15 @@ export default function OrdersPage() {
           <section className="grid grid-cols-3 gap-2 anim-fade-up">
             <div className="bg-white rounded-xl border border-ink-100 p-3 text-center shadow-sm">
               <div className="text-lg font-bold text-ink-900 tabular-nums">{totalCount}</div>
-              <div className="text-xs text-ink-500 mt-0.5">累積訂單</div>
+              <div className="text-sm text-ink-500 mt-0.5">累積訂單</div>
             </div>
             <div className="bg-white rounded-xl border border-ink-100 p-3 text-center shadow-sm">
               <div className="text-lg font-bold text-ink-900 tabular-nums">{fmtMoney(totalAmount)}</div>
-              <div className="text-xs text-ink-500 mt-0.5">消費金額</div>
+              <div className="text-sm text-ink-500 mt-0.5">消費金額</div>
             </div>
             <div className="bg-white rounded-xl border border-ink-100 p-3 text-center shadow-sm">
               <div className="text-lg font-bold text-ink-900 tabular-nums">{totalItems}</div>
-              <div className="text-xs text-ink-500 mt-0.5">購買件數</div>
+              <div className="text-sm text-ink-500 mt-0.5">購買件數</div>
             </div>
           </section>
         )}
@@ -162,7 +162,7 @@ export default function OrdersPage() {
           <section className="grid grid-cols-2 gap-2 anim-fade-up">
             <button
               onClick={() => setTab('active')}
-              className={`h-10 rounded-xl border text-sm font-semibold transition ${
+              className={`h-12 rounded-xl border text-base font-semibold transition ${
                 tab === 'active'
                   ? 'bg-ink-900 border-ink-900 text-white shadow-sm'
                   : 'bg-white border-ink-200 text-ink-500'
@@ -172,7 +172,7 @@ export default function OrdersPage() {
             </button>
             <button
               onClick={() => setTab('done')}
-              className={`h-10 rounded-xl border text-sm font-semibold transition ${
+              className={`h-12 rounded-xl border text-base font-semibold transition ${
                 tab === 'done'
                   ? 'bg-ink-900 border-ink-900 text-white shadow-sm'
                   : 'bg-white border-ink-200 text-ink-500'
@@ -187,7 +187,7 @@ export default function OrdersPage() {
         {msg && (
           <div
             role="alert"
-            className={`rounded-xl border px-4 py-3 text-sm anim-pop-in ${
+            className={`rounded-xl border px-4 py-3 text-base anim-pop-in ${
               msg.ok ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-600'
             }`}
           >
@@ -204,8 +204,8 @@ export default function OrdersPage() {
         {!loading && orders.length === 0 && (
           <div className="text-center py-16 anim-fade-up">
             <div className="text-4xl mb-3">🧾</div>
-            <p className="text-sm text-ink-400">目前沒有訂單</p>
-            <Link to="/" className="mt-3 inline-block text-sm font-medium text-accent-600">
+            <p className="text-base text-ink-400">目前沒有訂單</p>
+            <Link to="/" className="mt-3 inline-block text-base font-medium text-accent-600">
               去逛團購 →
             </Link>
           </div>
@@ -213,7 +213,7 @@ export default function OrdersPage() {
         {!loading && orders.length > 0 && visible.length === 0 && (
           <div className="text-center py-12 anim-fade-up">
             <div className="text-3xl mb-2">{tab === 'done' ? '📦' : '🛒'}</div>
-            <p className="text-sm text-ink-400">
+            <p className="text-base text-ink-400">
               {tab === 'done' ? '還沒有完成或取消的訂單' : '沒有進行中的訂單'}
             </p>
           </div>
@@ -231,17 +231,17 @@ export default function OrdersPage() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h3 className="font-semibold text-ink-900 truncate">{o.product_name_snapshot}</h3>
-                  <p className="mt-0.5 text-xs text-ink-500">
+                  <p className="mt-0.5 text-sm text-ink-500">
                     {o.order_no} · {fmtDateTime(o.purchased_at)}
                   </p>
                 </div>
-                <span className={`shrink-0 text-xs font-medium px-3 py-1 rounded-full ${STATUS_STYLE[o.status] ?? ''}`}>
+                <span className={`shrink-0 text-sm font-medium px-3 py-1 rounded-full ${STATUS_STYLE[o.status] ?? ''}`}>
                   {STATUS_ICON[o.status] ?? ''} {STATUS_LABEL[o.status] ?? o.status}
                 </span>
               </div>
 
               {/* 金額 */}
-              <div className="mt-2 flex items-center justify-between text-sm">
+              <div className="mt-2 flex items-center justify-between text-base">
                 <span className="text-ink-500 tabular-nums">
                   {fmtMoney(Number(o.unit_price))} × {o.quantity}
                 </span>
@@ -255,7 +255,7 @@ export default function OrdersPage() {
                     {PROGRESS_STEPS.map((s, idx) => (
                       <div key={s} className="flex-1 flex items-center last:flex-none">
                         <div
-                          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0 transition-colors ${
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 transition-colors ${
                             idx <= pIdx ? 'bg-accent-500 text-white' : 'bg-ink-100 text-ink-400'
                           }`}
                         >
@@ -275,7 +275,7 @@ export default function OrdersPage() {
 
               {/* 取消原因（被取消／退款時顯示） */}
               {(o.status === 'cancelled' || o.status === 'refunded') && (
-                <p className="mt-2 text-xs text-ink-500">
+                <p className="mt-2 text-sm text-ink-500">
                   {o.cancelled_by === 'member' ? '由您自行取消' : o.status === 'refunded' ? '退款已完成' : '此訂單已取消'}
                   {o.cancel_reason ? `・${o.cancel_reason}` : ''}
                 </p>
@@ -287,8 +287,8 @@ export default function OrdersPage() {
                   <button
                     onClick={() => confirmOrder(o)}
                     disabled={busyId === o.id}
-                    className="flex-1 h-10 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 text-white
-                               text-sm font-bold shadow-md shadow-accent-500/25
+                    className="flex-1 h-12 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 text-white
+                               text-base font-bold shadow-md shadow-accent-500/25
                                active:scale-[0.98] transition disabled:opacity-50"
                   >
                     {busyId === o.id ? '確認中…' : '✔ 確認訂單'}
@@ -298,8 +298,8 @@ export default function OrdersPage() {
                   <button
                     onClick={() => cancelOrder(o)}
                     disabled={cancellingId === o.id}
-                    className="h-10 px-4 rounded-xl border border-red-200 text-red-500
-                               text-sm font-bold active:scale-[0.98] transition disabled:opacity-50"
+                    className="h-12 px-4 rounded-xl border border-red-200 text-red-500
+                               text-base font-bold active:scale-[0.98] transition disabled:opacity-50"
                   >
                     {cancellingId === o.id ? '取消中…' : '取消訂單'}
                   </button>
@@ -308,8 +308,8 @@ export default function OrdersPage() {
                 {(o.status === 'completed' || o.status === 'cancelled') && o.product_id && (
                   <Link
                     to={`/product/${o.product_id}`}
-                    className="flex-1 h-10 rounded-xl border border-ink-200 text-ink-700
-                               text-sm font-bold flex items-center justify-center active:scale-[0.98] transition"
+                    className="flex-1 h-12 rounded-xl border border-ink-200 text-ink-700
+                               text-base font-bold flex items-center justify-center active:scale-[0.98] transition"
                   >
                     🛒 再買一次
                   </Link>
@@ -324,7 +324,7 @@ export default function OrdersPage() {
       <div className="max-w-md md:max-w-3xl mx-auto px-4 mt-10">
         <button
           onClick={() => supabase.auth.signOut()}
-          className="w-full h-11 rounded-xl border border-ink-200 text-sm text-ink-500"
+          className="w-full h-11 rounded-xl border border-ink-200 text-base text-ink-500"
         >
           登出（{customer?.name}）
         </button>

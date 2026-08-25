@@ -96,13 +96,13 @@ export default function CampaignListPage() {
       <header className="bg-gradient-to-r from-accent-500 to-accent-600 px-5 py-4 sticky top-0 z-10 shadow-md">
         <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between">
           <div>
-            <div className="text-sm tracking-widest text-accent-100 font-bold">⚡ 先買先贏</div>
+            <div className="text-base tracking-widest text-accent-100 font-bold">⚡ 先買先贏</div>
             <h1 className="text-lg font-extrabold text-white tracking-wide">吸引力生活好物</h1>
           </div>
           <div className="flex items-center gap-3">
             <Link
               to={isAdmin ? '/admin/orders' : '/orders'}
-              className="text-sm font-bold px-4 py-2 rounded-full border border-white/60 text-white hover:bg-white/15 transition"
+              className="text-base font-bold px-4 py-2 rounded-full border border-white/60 text-white hover:bg-white/15 transition"
             >
               {isAdmin ? '訂單管理' : '我的訂單'}
             </Link>
@@ -123,7 +123,7 @@ export default function CampaignListPage() {
           <h2 className="text-[24px] leading-snug font-extrabold text-ink-900">
             {greeting}，{customer?.name} 👋
           </h2>
-          <p className="mt-1 text-sm text-ink-500">
+          <p className="mt-1 text-base text-ink-500">
             好物正在降價中，手刀搶起來！🔥
           </p>
         </section>
@@ -137,11 +137,11 @@ export default function CampaignListPage() {
             <span className="text-base" aria-hidden="true">🛒</span>
             <h3 className="text-base font-bold text-ink-900">怎麼買最划算？</h3>
           </div>
-          <ul className="space-y-2 text-sm text-ink-700 leading-relaxed">
+          <ul className="space-y-2 text-base text-ink-700 leading-relaxed">
             <li>・價格會隨時間 <b className="text-ink-900">自動往下調</b>，每件商品依自己的節奏隨機降價，越晚下手越便宜。</li>
             <li>・<b className="text-ink-900">價格只會越來越低</b>：但庫存有限、先買先贏，錯過就不再回來，猶豫太久會後悔。</li>
           </ul>
-          <p className="mt-2 text-sm font-bold text-accent-600">❤️ 心動就下手，別等到最後一秒！</p>
+          <p className="mt-2 text-base font-bold text-accent-600">❤️ 心動就下手，別等到最後一秒！</p>
         </section>
 
         {loading && (
@@ -152,7 +152,7 @@ export default function CampaignListPage() {
         {!loading && promoProducts.length === 0 && regularProducts.length === 0 && upcomingProducts.length === 0 && (
           <div className="text-center py-16 anim-fade-up">
             <div className="text-4xl mb-3">🛍️</div>
-            <p className="text-sm text-ink-400">目前沒有進行中的團購商品</p>
+            <p className="text-base text-ink-400">目前沒有進行中的團購商品</p>
           </div>
         )}
         {!loading && (promoProducts.length + regularProducts.length + upcomingProducts.length) > 0 && (
@@ -162,13 +162,13 @@ export default function CampaignListPage() {
               <section className="space-y-4">
                 <div className="pt-1 flex items-center gap-2 anim-fade-up">
                   <span className="w-1 h-5 rounded-full bg-accent-500" aria-hidden="true" />
-                  <h3 className="text-lg font-extrabold text-ink-900">限時促銷</h3>
+                  <h3 className="text-xl font-extrabold text-ink-900">限時促銷</h3>
                 {promoProducts[0] && (() => {
                   const k = (promoInfo[promoProducts[0].id] as { kind?: string } | undefined)?.kind ?? 'flash'
                   const L: Record<string, string> = { flash: '⚡ 限時場', accel: '🚀 加速場', bundle: '📦 組合場', clearance: '🏷️ 清倉場', focus: '⭐ 焦點新品' }
-                  return <span className="ml-1 text-xs font-bold text-accent-600 bg-accent-50 px-2.5 py-1 rounded-full whitespace-nowrap">{L[k] ?? '⚡ 限時場'}</span>
+                  return <span className="ml-1 text-sm font-bold text-accent-600 bg-accent-50 px-2.5 py-1 rounded-full whitespace-nowrap">{L[k] ?? '⚡ 限時場'}</span>
                 })()}
-                  <span className="ml-auto text-xs font-bold text-accent-700 whitespace-nowrap">限量優惠，先搶先贏 →</span>
+                  <span className="ml-auto text-sm font-bold text-accent-700 whitespace-nowrap">限量優惠，先搶先贏 →</span>
                 </div>
                 <div className="space-y-5">
                   {promoProducts.map((p, i) => (
@@ -182,8 +182,8 @@ export default function CampaignListPage() {
               <>
                 <div className={`${promoProducts.length > 0 ? 'pt-2' : 'pt-1'} flex items-center gap-2 anim-fade-up`}>
                   <span className="w-1 h-5 rounded-full bg-accent-500" aria-hidden="true" />
-                  <h3 className="text-lg font-extrabold text-ink-900">{promoProducts.length > 0 ? '其他好物' : '限時好物'}</h3>
-                  <span className="ml-auto text-xs font-bold text-accent-700 whitespace-nowrap">價格越晚越便宜？先搶先贏 →</span>
+                  <h3 className="text-xl font-extrabold text-ink-900">{promoProducts.length > 0 ? '其他好物' : '限時好物'}</h3>
+                  <span className="ml-auto text-sm font-bold text-accent-700 whitespace-nowrap">價格越晚越便宜？先搶先贏 →</span>
                 </div>
                 <div className="space-y-5">
                   {regularProducts.map((p, i) => <ProductShowcaseCard key={p.id} product={p} index={i} followCount={followMap[p.id] ?? 0} />)}
@@ -195,8 +195,8 @@ export default function CampaignListPage() {
               <>
                 <div className="pt-2 flex items-center gap-2 anim-fade-up">
                   <span className="w-1 h-5 rounded-full bg-ink-300" aria-hidden="true" />
-                  <h3 className="text-lg font-extrabold text-ink-900">即將開賣</h3>
-                  <span className="ml-auto text-xs font-bold text-ink-500 whitespace-nowrap">Coming Soon</span>
+                  <h3 className="text-xl font-extrabold text-ink-900">即將開賣</h3>
+                  <span className="ml-auto text-sm font-bold text-ink-500 whitespace-nowrap">Coming Soon</span>
                 </div>
                 <div className="space-y-5">
                   {upcomingProducts.map((p, i) => (

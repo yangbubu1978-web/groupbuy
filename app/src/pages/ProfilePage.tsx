@@ -28,8 +28,8 @@ function FollowItem({ product }: { product: Product }) {
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-ink-900 truncate">{product.name}</p>
-        <p className="text-xs text-ink-600">剩餘 {live.stock} 件</p>
+        <p className="text-base font-semibold text-ink-900 truncate">{product.name}</p>
+        <p className="text-sm text-ink-600">剩餘 {live.stock} 件</p>
       </div>
       <span className="text-base font-extrabold text-ink-900 tabular-nums shrink-0">
         {fmtMoney(live.price)}
@@ -136,12 +136,12 @@ export default function ProfilePage() {
               {customer.name.slice(0, 1)}
             </div>
             <div>
-              <h2 className="text-lg font-bold text-ink-900 font-display">{customer.name}</h2>
-              <p className="text-sm text-ink-500 tabular-nums">{customer.phone ?? '尚未填寫手機'}</p>
+              <h2 className="text-xl font-bold text-ink-900 font-display">{customer.name}</h2>
+              <p className="text-base text-ink-500 tabular-nums">{customer.phone ?? '尚未填寫手機'}</p>
             </div>
           </div>
 
-          <dl className="mt-5 space-y-3 text-sm">
+          <dl className="mt-5 space-y-3 text-base">
             <div className="flex justify-between">
               <dt className="text-ink-500">公司</dt>
               <dd className="text-ink-800 font-medium">{company?.name ?? '—'}</dd>
@@ -153,7 +153,7 @@ export default function ProfilePage() {
             <div className="flex justify-between">
               <dt className="text-ink-500">帳號狀態</dt>
               <dd>
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                <span className={`text-sm font-medium px-2.5 py-1 rounded-full ${
                   customer.status === 'active'
                     ? 'bg-green-50 text-green-700'
                     : 'bg-red-50 text-red-600'
@@ -175,8 +175,8 @@ export default function ProfilePage() {
           {/* 方案 A：手機後補 — 未填手機時顯示提醒與補填表單 */}
           {!customer.phone && (
             <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 space-y-3">
-              <p className="text-sm font-bold text-amber-800">📱 請補填手機號碼</p>
-              <p className="text-xs text-amber-700 leading-relaxed">
+              <p className="text-base font-bold text-amber-800">📱 請補填手機號碼</p>
+              <p className="text-sm text-amber-700 leading-relaxed">
                 初次用姓名登入後，請在此補填手機號碼。<br />完成後，下次就能用「姓名」或「手機」兩種方式登入囉！
               </p>
               <div className="flex gap-2">
@@ -186,7 +186,7 @@ export default function ProfilePage() {
                   placeholder="09XXXXXXXX"
                   value={phoneInput}
                   onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  className="flex-1 h-11 px-4 rounded-xl border border-amber-200 bg-white text-base text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400"
+                  className="flex-1 h-12 px-4 rounded-xl border border-amber-200 bg-white text-base text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400"
                 />
                 <button
                   onClick={async () => {
@@ -214,12 +214,12 @@ export default function ProfilePage() {
                     } finally { setPhoneBusy(false) }
                   }}
                   disabled={phoneBusy || !/^09\d{8}$/.test(phoneInput.replace(/\D/g, ''))}
-                  className="h-11 px-5 rounded-xl bg-ink-900 text-white text-sm font-bold disabled:opacity-40 shrink-0"
+                  className="h-12 px-5 rounded-xl bg-ink-900 text-white text-base font-bold disabled:opacity-40 shrink-0"
                 >
                   {phoneBusy ? '儲存中…' : '儲存'}
                 </button>
               </div>
-              {phoneMsg && <p className="text-xs text-center">{phoneMsg}</p>}
+              {phoneMsg && <p className="text-sm text-center">{phoneMsg}</p>}
             </div>
           )}
         </section>
@@ -228,9 +228,9 @@ export default function ProfilePage() {
         <section className="bg-white rounded-2xl border border-ink-100 shadow-sm anim-fade-up" style={{ animationDelay: '30ms' }}>
           <div className="flex items-center gap-3 px-5 py-4 border-b border-ink-100">
             <span className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">❤️</span>
-            <span className="flex-1 font-medium text-sm text-ink-700">我的關注</span>
+            <span className="flex-1 font-medium text-base text-ink-700">我的關注</span>
             {followedProducts.length > 0 && (
-              <span className="text-xs font-semibold text-accent-600">{followedProducts.length} 項</span>
+              <span className="text-sm font-semibold text-accent-600">{followedProducts.length} 項</span>
             )}
           </div>
           {followedProducts.length > 0 ? (
@@ -238,7 +238,7 @@ export default function ProfilePage() {
               {followedProducts.map((p) => <FollowItem key={p.id} product={p} />)}
             </div>
           ) : (
-            <p className="px-5 py-6 text-sm text-ink-500 text-center">
+            <p className="px-5 py-6 text-base text-ink-500 text-center">
               還沒有關注的商品～去商品頁按「🤍 關注」追蹤降價吧
             </p>
           )}
@@ -249,19 +249,19 @@ export default function ProfilePage() {
           {isAdmin ? (
             /* 管理員：直接進管理後台（不需要會員的我的訂單） */
             <>
-              <Link to="/admin" className="flex items-center gap-3 px-5 py-4 text-sm text-ink-700">
+              <Link to="/admin" className="flex items-center gap-3 px-5 py-4 text-base text-ink-700">
                 <span className="w-8 h-8 rounded-lg bg-accent-50 flex items-center justify-center">🛠️</span>
                 <span className="flex-1 font-medium">管理後台</span>
                 <span className="text-ink-300">→</span>
               </Link>
-              <Link to="/admin/orders" className="flex items-center gap-3 px-5 py-4 text-sm text-ink-700">
+              <Link to="/admin/orders" className="flex items-center gap-3 px-5 py-4 text-base text-ink-700">
                 <span className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">🧾</span>
                 <span className="flex-1 font-medium">訂單管理</span>
                 <span className="text-ink-300">→</span>
               </Link>
             </>
           ) : (
-            <Link to="/orders" className="flex items-center gap-3 px-5 py-4 text-sm text-ink-700">
+            <Link to="/orders" className="flex items-center gap-3 px-5 py-4 text-base text-ink-700">
               <span className="w-8 h-8 rounded-lg bg-ink-50 flex items-center justify-center">🧾</span>
               <span className="flex-1 font-medium">我的訂單</span>
               <span className="text-ink-300">→</span>
@@ -277,7 +277,7 @@ export default function ProfilePage() {
           登出
         </button>
 
-        <p className="text-center text-xs text-ink-500 pt-2">
+        <p className="text-center text-sm text-ink-500 pt-2">
           🔒 封閉式私人團購平台 · 僅限受邀客戶
         </p>
       </main>
