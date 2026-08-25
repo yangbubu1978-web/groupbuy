@@ -90,7 +90,7 @@ export default function CampaignListPage() {
     <div className="min-h-dvh bg-ink-50 pb-24">
       {/* 頂部：台灣電商風橘色漸層橫幅 */}
       <header className="bg-gradient-to-r from-accent-500 to-accent-600 px-5 py-4 sticky top-0 z-10 shadow-md">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between">
           <div>
             <div className="text-[11px] tracking-widest text-accent-100 font-semibold">⚡ 先買先贏</div>
             <h1 className="text-lg font-extrabold text-white tracking-wide">吸引力生活好物</h1>
@@ -113,7 +113,7 @@ export default function CampaignListPage() {
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 pt-5 space-y-5">
+      <main className="max-w-md md:max-w-3xl mx-auto px-4 pt-5 space-y-5">
         {/* 問候區（活潑電商風） */}
         <section className="pt-1 pb-1 anim-fade-up">
           <h2 className="text-[24px] leading-snug font-extrabold text-ink-900">

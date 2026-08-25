@@ -178,7 +178,7 @@ export default function CampaignDetailPage() {
   return (
     <div className="min-h-dvh bg-ink-50 pb-16">
       <header className="bg-white border-b border-ink-100 px-4 py-3 sticky top-0 z-10">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
             className="w-9 h-9 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-600"
@@ -191,7 +191,7 @@ export default function CampaignDetailPage() {
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 pt-5 space-y-4">
+      <main className="max-w-md md:max-w-3xl mx-auto px-4 pt-5 space-y-4">
         {/* 活動資訊 */}
         <section className="bg-white rounded-2xl border border-ink-100 p-5 shadow-sm anim-fade-up">
           <div className="flex items-start justify-between gap-2">

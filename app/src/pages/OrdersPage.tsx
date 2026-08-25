@@ -127,7 +127,7 @@ export default function OrdersPage() {
   return (
     <div className="min-h-dvh bg-ink-50 pb-16">
       <header className="bg-white/90 backdrop-blur border-b border-ink-100 px-5 py-4 sticky top-0 z-10">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between">
           <Link to="/" className="w-9 h-9 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-600" aria-label="返回">
             ←
           </Link>
@@ -136,7 +136,7 @@ export default function OrdersPage() {
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 pt-4 space-y-3">
+      <main className="max-w-md md:max-w-3xl mx-auto px-4 pt-4 space-y-3">
         {/* 統計摘要 */}
         {!loading && orders.length > 0 && (
           <section className="grid grid-cols-3 gap-2 anim-fade-up">
@@ -319,7 +319,7 @@ export default function OrdersPage() {
       </main>
 
       {/* 登出 */}
-      <div className="max-w-md mx-auto px-4 mt-10">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 mt-10">
         <button
           onClick={() => supabase.auth.signOut()}
           className="w-full h-11 rounded-xl border border-ink-200 text-sm text-ink-500"

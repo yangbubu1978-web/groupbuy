@@ -113,7 +113,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-dvh bg-ink-50 pb-16">
       <header className="bg-white border-b border-ink-100 px-5 py-4 sticky top-0 z-10">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between">
           <Link to="/" className="w-9 h-9 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-600" aria-label="返回">
             ←
           </Link>
@@ -122,7 +122,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-4 pt-5 space-y-4">
+      <main className="max-w-md md:max-w-3xl mx-auto px-4 pt-5 space-y-4">
         {/* 基本資料卡 */}
         <section className="bg-white rounded-2xl border border-ink-100 p-5 shadow-sm anim-fade-up">
           <div className="flex items-center gap-4">

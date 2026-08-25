@@ -257,7 +257,7 @@ export default function ProductPage() {
     <div className="min-h-dvh bg-ink-50 pb-28">
       {/* 頂部 */}
       <header className="bg-white/90 backdrop-blur border-b border-ink-100 px-4 py-3 sticky top-0 z-10">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
             className="w-9 h-9 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-600"
@@ -270,7 +270,7 @@ export default function ProductPage() {
         </div>
       </header>
 
-      <main className="max-w-md mx-auto">
+      <main className="max-w-md md:max-w-3xl mx-auto">
         {/* 商品圖 */}
         <div className="aspect-square bg-white border-b border-ink-100 flex items-center justify-center overflow-hidden">
           {product.image_url ? (
@@ -451,7 +451,7 @@ export default function ProductPage() {
 
       {/* 底部 Sticky CTA */}
       <div className="fixed bottom-0 inset-x-0 z-20">
-        <div className="max-w-md mx-auto bg-white/95 backdrop-blur border-t border-ink-100 px-4 pt-3 pb-safe">
+        <div className="max-w-md md:max-w-3xl mx-auto bg-white/95 backdrop-blur border-t border-ink-100 px-4 pt-3 pb-safe">
           <button
             onClick={buy}
             disabled={!canBuy}

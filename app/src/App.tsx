@@ -1,19 +1,35 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import LoginPage from './pages/LoginPage'
 import ChangePasswordPage from './pages/ChangePasswordPage'
 import CampaignListPage from './pages/CampaignListPage'
-import ProductPage from './pages/ProductPage'
-import OrdersPage from './pages/OrdersPage'
-import AdminPage from './pages/AdminPage'
-import AdminProductsPage from './pages/AdminProductsPage'
-import AdminCustomersPage from './pages/AdminCustomersPage'
-import AdminOrdersPage from './pages/AdminOrdersPage'
-import AdminCompaniesPage from './pages/AdminCompaniesPage'
-import ProfilePage from './pages/ProfilePage'
-import AdminBannersPage from './pages/AdminBannersPage'
-import AdminPromotionsPage from './pages/AdminPromotionsPage'
 import AdminLayout from './components/AdminLayout'
+
+// 非首屏頁面採按需載入（route-based code-splitting：管理後台、明細、訂單等）
+const ProductPage = lazy(() => import('./pages/ProductPage'))
+const OrdersPage = lazy(() => import('./pages/OrdersPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const AdminPage = lazy(() => import('./pages/AdminPage'))
+const AdminProductsPage = lazy(() => import('./pages/AdminProductsPage'))
+const AdminCustomersPage = lazy(() => import('./pages/AdminCustomersPage'))
+const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage'))
+const AdminCompaniesPage = lazy(() => import('./pages/AdminCompaniesPage'))
+const AdminBannersPage = lazy(() => import('./pages/AdminBannersPage'))
+const AdminPromotionsPage = lazy(() => import('./pages/AdminPromotionsPage'))
+
+function PageFallback() {
+  return (
+    <div className="min-h-dvh bg-ink-50 flex items-center justify-center">
+      <p className="text-sm text-ink-400">載入中…</p>
+    </div>
+  )
+}
+
+/** 給 lazy 頁面的 Suspense 載入邊界 */
+function LazyRoute({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<PageFallback />}>{children}</Suspense>
+}
 
 /** 需要登入的頁面守衛（含首次登入強制改密碼） */
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -38,17 +54,17 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<RequireAuth><CampaignListPage /></RequireAuth>} />
         <Route path="/change-password" element={<ChangePasswordGate />} />
-        <Route path="/product/:productId" element={<RequireAuth><ProductPage /></RequireAuth>} />
-        <Route path="/orders" element={<RequireAuth><OrdersPage /></RequireAuth>} />
-        <Route path="/profile" element={<RequireAuth><ProfilePage /></RequireAuth>} />
+        <Route path="/product/:productId" element={<RequireAuth><LazyRoute><ProductPage /></LazyRoute></RequireAuth>} />
+        <Route path="/orders" element={<RequireAuth><LazyRoute><OrdersPage /></LazyRoute></RequireAuth>} />
+        <Route path="/profile" element={<RequireAuth><LazyRoute><ProfilePage /></LazyRoute></RequireAuth>} />
         <Route path="/admin" element={<RequireAuth><AdminLayout /></RequireAuth>}>
-          <Route index element={<AdminPage />} />
-          <Route path="products" element={<AdminProductsPage />} />
-          <Route path="companies" element={<AdminCompaniesPage />} />
-          <Route path="customers" element={<AdminCustomersPage />} />
-          <Route path="orders" element={<AdminOrdersPage />} />
-          <Route path="banners" element={<AdminBannersPage />} />
-          <Route path="promotions" element={<AdminPromotionsPage />} />
+          <Route index element={<LazyRoute><AdminPage /></LazyRoute>} />
+          <Route path="products" element={<LazyRoute><AdminProductsPage /></LazyRoute>} />
+          <Route path="companies" element={<LazyRoute><AdminCompaniesPage /></LazyRoute>} />
+          <Route path="customers" element={<LazyRoute><AdminCustomersPage /></LazyRoute>} />
+          <Route path="orders" element={<LazyRoute><AdminOrdersPage /></LazyRoute>} />
+          <Route path="banners" element={<LazyRoute><AdminBannersPage /></LazyRoute>} />
+          <Route path="promotions" element={<LazyRoute><AdminPromotionsPage /></LazyRoute>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
