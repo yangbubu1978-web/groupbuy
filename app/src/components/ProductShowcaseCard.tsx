@@ -146,6 +146,11 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
             <DropTimer seconds={live.nextDropIn} />
           </div>
         )}
+        {!soldOut && live.nextDropIn === 0 && dropped > 0 && (
+          <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-green-50 text-green-700 px-2 py-0.5 text-[10px] font-bold">
+            ✅ 已達最低價
+          </div>
+        )}
 
         <div className="mt-2 flex items-end justify-between gap-2">
           <div className="min-w-0 flex items-baseline gap-1.5 flex-wrap">

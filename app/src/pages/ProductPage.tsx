@@ -236,6 +236,8 @@ export default function ProductPage() {
 
   // 已降價幅度（原價 − 現價）
   const original = Number(product.original_price)
+  const minimum = Math.min(Number(product.minimum_price), original)
+  const atFloor = live.price <= minimum
   const dropped = original - live.price
   const dropPct = original > 0 ? Math.max(0, Math.min(100, (dropped / original) * 100)) : 0
 
@@ -315,6 +317,16 @@ export default function ProductPage() {
 
           {/* 價格主角區 */}
           <section className="bg-white rounded-2xl border border-ink-100 p-5 shadow-sm" aria-live="polite">
+            {/* 核心張力：價格自己會降、好貨不等人 */}
+            <div className="flex items-center justify-between rounded-xl bg-accent-50 border border-accent-100 px-3.5 py-2.5 mb-4">
+              <span className="text-xs font-semibold text-accent-700">
+                🕐 價格自己會降
+              </span>
+              <span className={`text-xs font-bold tabular-nums ${atFloor ? 'text-green-700' : 'text-ink-700'}`}>
+                {atFloor ? '✅ 已達最低價' : `⏰ 下次降價 ${formatCountdown(live.nextDropIn)}`}
+              </span>
+            </div>
+
             <div className="flex items-end justify-between">
               <div>
                 <div className="text-xs text-ink-400">原價</div>
@@ -333,6 +345,15 @@ export default function ProductPage() {
                 </div>
               </div>
             </div>
+
+            {/* 底價語言化：還有多少空間（但不保證有貨） */}
+            {!atFloor && (
+              <p className="mt-2 text-xs text-ink-400">
+                再等還會更便宜，最低可到{' '}
+                <span className="font-bold text-ink-700">{fmtMoney(minimum)}</span>
+                ，但庫存有限、不保證買得到。
+              </p>
+            )}
 
             {/* 已降價 badge + 熱銷/完售標籤 */}
             <div className="mt-3 flex flex-wrap gap-2">
@@ -362,23 +383,30 @@ export default function ProductPage() {
               <span className="text-xs text-ink-500">
                 每 {formatInterval(product.price_interval_seconds)} 隨機降 {dropLabel}
               </span>
-              <span className="text-xs font-semibold text-ink-700 tabular-nums">
-                下一次降價 {formatCountdown(live.nextDropIn)}
+              <span className={`text-xs font-semibold tabular-nums ${atFloor ? 'text-green-700' : 'text-ink-700'}`}>
+                {atFloor ? '✅ 已達最低價，不會再降' : `下一次降價 ${formatCountdown(live.nextDropIn)}`}
               </span>
             </div>
 
-            {/* 降價進度條（不顯示底價，只顯示已降幅度） */}
+            {/* 降價進度條：原價 ── 目前 ── 最低價 */}
             <div className="mt-3">
               <div className="flex items-center justify-between text-[11px] text-ink-400 mb-1">
                 <span>原價 {fmtMoney(original)}</span>
-                <span>已降 {Math.round(dropPct)}%</span>
+                <span className="font-medium text-ink-500">最低 {fmtMoney(minimum)}</span>
               </div>
               <div className="h-1.5 rounded-full bg-ink-100 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-accent-400 to-accent-600 transition-[width] duration-700 ease-out"
+                  className={`h-full rounded-full transition-[width] duration-700 ease-out ${
+                    atFloor ? 'bg-green-500' : 'bg-gradient-to-r from-accent-400 to-accent-600'
+                  }`}
                   style={{ width: `${dropPct}%` }}
                 />
               </div>
+              {atFloor && (
+                <p className="mt-1.5 text-[11px] font-semibold text-green-700">
+                  ✅ 已是這檔最低價，錯過就沒有了
+                </p>
+              )}
             </div>
 
             {/* 活動剩餘時間 */}
@@ -468,8 +496,15 @@ export default function ProductPage() {
                   ? '活動未開放'
                   : live.stock <= 0
                       ? '已完售'
-                      : `立即搶購｜${fmtMoney(live.price)} × ${quantity}`}
+                      : atFloor
+                        ? `已是最低價｜${fmtMoney(live.price)} × ${quantity}`
+                        : `立即搶購｜${fmtMoney(live.price)} × ${quantity}`}
           </button>
+          {saleOpen && live.stock > 0 && !atFloor && (
+            <p className="mt-1.5 text-center text-[11px] text-ink-400">
+              再等等還會降，但庫存有限、不保證有貨
+            </p>
+          )}
         </div>
       </div>
 
