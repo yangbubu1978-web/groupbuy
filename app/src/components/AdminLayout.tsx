@@ -4,12 +4,12 @@ import { useAuth } from '../context/AuthContext'
 
 export const ADMIN_NAV = [
   { to: '/admin', label: '後台總覽', icon: '📊', end: true },
+  { to: '/admin/banners', label: '首頁看板', icon: '🖼️' },
   { to: '/admin/products', label: '商品管理', icon: '📦' },
   { to: '/admin/promotions', label: '促銷活動', icon: '🏷️' },
+  { to: '/admin/orders', label: '訂單管理', icon: '🧾' },
   { to: '/admin/customers', label: '客戶管理', icon: '👥' },
   { to: '/admin/companies', label: '合作公司', icon: '🏢' },
-  { to: '/admin/orders', label: '訂單管理', icon: '🧾' },
-  { to: '/admin/banners', label: '首頁看板', icon: '🖼️' },
 ]
 
 /** PC 導向的後台共用版面：深色側欄（md 以上）＋內容區；手機改頂部＋橫向導覽 */
