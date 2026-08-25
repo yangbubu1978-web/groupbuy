@@ -317,8 +317,8 @@ export default function AdminProductsPage() {
         {/* 標題列＋新增 */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-ink-900">商品管理</h1>
-            <p className="text-xs text-ink-400">設定販售商品、開賣時間與草稿</p>
+            <h1 className="text-xl md:text-2xl font-bold text-ink-900">商品管理</h1>
+            <p className="text-xs md:text-sm text-ink-400">設定販售商品、開賣時間與草稿</p>
           </div>
           {showForm ? (
             <button onClick={() => setShowForm(false)}

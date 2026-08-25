@@ -25,12 +25,12 @@ export default function AdminPage() {
             to={m.to}
             className={`group bg-white rounded-2xl border border-ink-100 p-5 shadow-sm hover:shadow-md transition ${m.ring}`}
           >
-            <span className={`inline-flex w-11 h-11 rounded-xl items-center justify-center text-xl ${m.tint}`}>
+            <span className={`inline-flex w-11 h-11 rounded-xl items-center justify-center text-xl md:text-2xl ${m.tint}`}>
               {m.icon}
             </span>
-            <div className="mt-3 text-sm font-bold text-ink-900">{m.title}</div>
-            <div className="mt-0.5 text-xs text-ink-400">{m.desc}</div>
-            <div className="mt-3 text-xs font-semibold text-accent-600 group-hover:translate-x-1 transition">
+            <div className="mt-3 text-sm md:text-base font-bold text-ink-900">{m.title}</div>
+            <div className="mt-0.5 text-xs md:text-sm text-ink-400">{m.desc}</div>
+            <div className="mt-3 text-xs md:text-sm font-semibold text-accent-600 group-hover:translate-x-1 transition">
               前往設定 →
             </div>
           </Link>

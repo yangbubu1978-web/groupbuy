@@ -268,8 +268,8 @@ export default function AdminCustomersPage() {
         {/* 標題列＋操作 */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-ink-900">客戶管理</h1>
-            <p className="text-xs text-ink-400">白名單、帳號與權限重設</p>
+            <h1 className="text-xl md:text-2xl font-bold text-ink-900">客戶管理</h1>
+            <p className="text-xs md:text-sm text-ink-400">白名單、帳號與權限重設</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"

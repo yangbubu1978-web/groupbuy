@@ -165,8 +165,8 @@ export default function AdminPromotionsPage() {
         {/* 標題列＋新增 */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-ink-900">促銷活動</h1>
-            <p className="text-xs text-ink-400">限時促銷與草稿發布</p>
+            <h1 className="text-xl md:text-2xl font-bold text-ink-900">促銷活動</h1>
+            <p className="text-xs md:text-sm text-ink-400">限時促銷與草稿發布</p>
           </div>
           <button onClick={() => setShowForm(true)}
             className="h-10 px-4 rounded-xl bg-ink-900 text-white text-sm font-semibold active:scale-[0.98] transition">

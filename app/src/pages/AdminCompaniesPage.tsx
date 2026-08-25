@@ -118,8 +118,8 @@ export default function AdminCompaniesPage() {
         {/* 標題列＋新增 */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-ink-900">合作公司</h1>
-            <p className="text-xs text-ink-400">合作企業名單</p>
+            <h1 className="text-xl md:text-2xl font-bold text-ink-900">合作公司</h1>
+            <p className="text-xs md:text-sm text-ink-400">合作企業名單</p>
           </div>
           <button onClick={openCreate}
             className="h-10 px-4 rounded-xl bg-ink-900 text-white text-sm font-semibold active:scale-[0.98] transition">
