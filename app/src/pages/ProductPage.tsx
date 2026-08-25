@@ -322,9 +322,11 @@ export default function ProductPage() {
               <span className="text-sm font-bold text-accent-700">
                 🕐 價格自己會降
               </span>
-              <span className={`text-sm font-bold tabular-nums ${atFloor ? 'text-green-700' : 'text-ink-700'}`}>
-                {atFloor ? '✅ 已是最優惠' : `⏰ 下次降價 ${formatCountdown(live.nextDropIn)}`}
-              </span>
+              {!atFloor && (
+                <span className="text-sm font-bold tabular-nums text-ink-700">
+                  ⏰ 下次降價 {formatCountdown(live.nextDropIn)}
+                </span>
+              )}
             </div>
 
             <div className="flex items-end justify-between">
@@ -381,9 +383,11 @@ export default function ProductPage() {
               <span className="text-sm text-ink-700">
                 每 {formatInterval(product.price_interval_seconds)} 隨機降 {dropLabel}
               </span>
-              <span className={`text-sm font-bold tabular-nums ${atFloor ? 'text-green-700' : 'text-ink-700'}`}>
-                {atFloor ? '✅ 已是最優惠，不會再降' : `下一次降價 ${formatCountdown(live.nextDropIn)}`}
-              </span>
+              {!atFloor && (
+                <span className="text-sm font-bold tabular-nums text-ink-700">
+                  下一次降價 {formatCountdown(live.nextDropIn)}
+                </span>
+              )}
             </div>
 
             {/* 降價進度條：原價 ── 目前 ── 優惠價 */}
@@ -400,11 +404,6 @@ export default function ProductPage() {
                   style={{ width: `${dropPct}%` }}
                 />
               </div>
-              {atFloor && (
-                <p className="mt-1.5 text-sm font-bold text-green-700">
-                  ✅ 已是最優惠價，錯過就沒有了
-                </p>
-              )}
             </div>
 
             {/* 活動剩餘時間 */}
