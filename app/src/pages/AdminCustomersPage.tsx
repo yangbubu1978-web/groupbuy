@@ -4,8 +4,6 @@ import { supabase } from '../lib/supabase'
 import type { Company, Customer, CustomerGroup } from '../lib/types'
 import { fmtDateTime } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
-import { useCustomerImport } from '../lib/customerImport'
-import { ImportResultPanel } from '../lib/customerImportPanel'
 import { useConfirm } from '../components/ConfirmDialog'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -84,7 +82,6 @@ export default function AdminCustomersPage() {
     }
   }
   useEffect(() => { load() }, [])
-  const { fileRef, importing, result, downloadTemplate, importFile, setResult } = useCustomerImport(load)
 
   // ---------- 新增 ----------
   const submit = async () => {
@@ -275,14 +272,6 @@ export default function AdminCustomersPage() {
             <p className="text-xs md:text-sm text-ink-400">白名單、帳號與權限重設</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
-              onChange={(e) => { if (e.target.files?.[0]) importFile(e.target.files[0]); e.target.value = '' }} />
-            <button onClick={downloadTemplate}
-              className="h-10 px-3 rounded-xl border border-ink-200 bg-white text-sm font-medium text-ink-600">範本</button>
-            <button onClick={() => fileRef.current?.click()} disabled={importing}
-              className="h-10 px-3 rounded-xl border border-ink-200 bg-white text-sm font-medium text-ink-600 disabled:opacity-50">
-              {importing ? '匯入中…' : '⇧ 匯入'}
-            </button>
             {!showForm && (
               <button onClick={() => setShowForm(true)}
                 className="h-10 px-3 rounded-xl bg-ink-900 text-white text-sm font-semibold">＋ 新增客戶</button>
@@ -290,7 +279,6 @@ export default function AdminCustomersPage() {
           </div>
         </div>
 
-        {result && <ImportResultPanel result={result} onClose={() => setResult(null)} />}
         {showForm && (
           <section className="bg-white rounded-2xl border border-ink-100 p-5 space-y-3 shadow-sm">
             <h2 className="text-sm font-bold text-ink-900">新增客戶（白名單）</h2>
