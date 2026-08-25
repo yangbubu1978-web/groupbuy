@@ -32,7 +32,7 @@ export default function AdminLayout() {
   return (
     <div className="min-h-dvh bg-ink-50 md:flex">
       {/* 深色側欄（桌機） */}
-      <aside className="hidden md:flex w-64 shrink-0 flex-col min-h-[100dvh] bg-ink-900 text-white sticky top-0 h-[100dvh]">
+      <aside className="hidden md:flex w-64 shrink-0 flex-col min-h-[100dvh] bg-accent-500 text-white sticky top-0 h-[100dvh]">
         <div className="px-6 py-5 border-b border-white/10">
           <div className="text-sm font-bold tracking-wide">特價倒數平台</div>
           <div className="text-[11px] text-white/45 mt-0.5">管理後台</div>
@@ -45,7 +45,7 @@ export default function AdminLayout() {
               end={n.end}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                  isActive ? 'bg-white/15 text-white' : 'text-white/65 hover:bg-white/5 hover:text-white'
+                  isActive ? 'bg-white/25 text-white' : 'text-white/65 hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -75,14 +75,14 @@ export default function AdminLayout() {
       {/* 主內容 */}
       <div className="flex-1 min-w-0">
         {/* 手機頂部列 */}
-        <header className="md:hidden sticky top-0 z-20 bg-ink-900 text-white px-4 py-3 flex items-center justify-between">
+        <header className="md:hidden sticky top-0 z-20 bg-accent-500 text-white px-4 py-3 flex items-center justify-between">
           <span className="text-sm font-bold">特價倒數平台</span>
           <button onClick={signOut} className="text-xs font-medium text-red-300">
             登出（{customer?.name ?? '管理員'}）
           </button>
         </header>
         {/* 手機橫向導覽 */}
-        <nav className="md:hidden sticky top-[48px] z-20 bg-ink-900 text-white px-3 py-2 flex gap-1.5 overflow-x-auto">
+        <nav className="md:hidden sticky top-[48px] z-20 bg-accent-500 text-white px-3 py-2 flex gap-1.5 overflow-x-auto">
           {ADMIN_NAV.map((n) => (
             <NavLink
               key={n.to}
