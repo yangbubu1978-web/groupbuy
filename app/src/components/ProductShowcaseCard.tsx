@@ -148,7 +148,7 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
         )}
         {!soldOut && live.nextDropIn === 0 && dropped > 0 && (
           <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-green-50 text-green-700 px-3 py-1 text-xs font-bold">
-            ✅ 已達最低價
+            ✅ 已是最優惠價
           </div>
         )}
 
@@ -177,7 +177,7 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
           />
         </div>
         <p className="mt-1.5 text-sm text-ink-600">
-          {soldOut ? '售完補貨中' : live.stock <= 3 ? `僅剩 ${live.stock} 件，手刀搶購！` : `剩 ${live.stock} 件`}
+          {soldOut ? '已售完' : live.stock <= 3 ? `僅剩 ${live.stock} 件，手刀搶購！` : `剩 ${live.stock} 件`}
         </p>
 
         {/* 明確購買入口（整卡可點，但提供看得出的 CTA） */}

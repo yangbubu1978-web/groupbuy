@@ -22,7 +22,7 @@ const REASON_TEXT: Record<string, string> = {
   not_authorized: '您沒有參加此團購的權限。',
   account_inactive: '帳號已停用，請聯絡管理員。',
   account_blocked: '帳號已被封鎖，請聯絡管理員。',
-  offer_ended: '😅 太猶豫囉！此優惠已結束（到底價後無人購買，自動收檔）。',
+  offer_ended: '😅 太猶豫囉！此優惠已結束，錯過就沒有了。',
   not_open_yet: '⏳ 尚未開賣，敬請期待，時間一到即可下單。',
 }
 
@@ -323,7 +323,7 @@ export default function ProductPage() {
                 🕐 價格自己會降
               </span>
               <span className={`text-sm font-bold tabular-nums ${atFloor ? 'text-green-700' : 'text-ink-700'}`}>
-                {atFloor ? '✅ 已達最低價' : `⏰ 下次降價 ${formatCountdown(live.nextDropIn)}`}
+                {atFloor ? '✅ 已是最優惠' : `⏰ 下次降價 ${formatCountdown(live.nextDropIn)}`}
               </span>
             </div>
 
@@ -346,12 +346,10 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* 底價語言化：還有多少空間（但不保證有貨） */}
+            {/* 優惠說明：還有多少空間（但不保證有貨） */}
             {!atFloor && (
               <p className="mt-2 text-sm text-ink-600">
-                再等還會更便宜，最低可到{' '}
-                <span className="font-bold text-ink-900">{fmtMoney(minimum)}</span>
-                ，但庫存有限、不保證買得到。
+                再等等還會更便宜，但庫存有限、不保證買得到。
               </p>
             )}
 
@@ -384,15 +382,15 @@ export default function ProductPage() {
                 每 {formatInterval(product.price_interval_seconds)} 隨機降 {dropLabel}
               </span>
               <span className={`text-sm font-bold tabular-nums ${atFloor ? 'text-green-700' : 'text-ink-700'}`}>
-                {atFloor ? '✅ 已達最低價，不會再降' : `下一次降價 ${formatCountdown(live.nextDropIn)}`}
+                {atFloor ? '✅ 已是最優惠，不會再降' : `下一次降價 ${formatCountdown(live.nextDropIn)}`}
               </span>
             </div>
 
-            {/* 降價進度條：原價 ── 目前 ── 最低價 */}
+            {/* 降價進度條：原價 ── 目前 ── 優惠價 */}
             <div className="mt-3">
               <div className="flex items-center justify-between text-xs text-ink-600 mb-1">
                 <span>原價 {fmtMoney(original)}</span>
-                <span className="font-bold text-ink-700">最低 {fmtMoney(minimum)}</span>
+                <span className="font-bold text-ink-900">{dropped > 0 ? `已降 ${fmtMoney(dropped)}` : '原價即售價'}</span>
               </div>
               <div className="h-2 rounded-full bg-ink-100 overflow-hidden">
                 <div
@@ -404,7 +402,7 @@ export default function ProductPage() {
               </div>
               {atFloor && (
                 <p className="mt-1.5 text-sm font-bold text-green-700">
-                  ✅ 已是這檔最低價，錯過就沒有了
+                  ✅ 已是最優惠價，錯過就沒有了
                 </p>
               )}
             </div>
@@ -497,7 +495,7 @@ export default function ProductPage() {
                   : live.stock <= 0
                       ? '已完售'
                       : atFloor
-                        ? `已是最低價｜${fmtMoney(live.price)} × ${quantity}`
+                        ? `已是最優惠｜${fmtMoney(live.price)} × ${quantity}`
                         : `立即搶購｜${fmtMoney(live.price)} × ${quantity}`}
           </button>
           {saleOpen && live.stock > 0 && !atFloor && (
