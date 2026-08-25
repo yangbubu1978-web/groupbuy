@@ -95,6 +95,35 @@ describe('computeCurrentPrice：隨機區間（1~20 元）', () => {
   })
 })
 
+describe('回歸測試：前台顯示價必須與 Server SQL rand_step（SHA-256）一致', () => {
+  // 2026-08-25 真實案例：紐西蘭 8+Minute 魚子醬洗髮精
+  // 前台 FNV-1a 曾算出 $116，但 Server SHA-256 成交 $122 → 顯示價≠成交價 bug
+  // 此測試鎖定與 SQL encode(sha256(convert_to(key,'UTF8')),'hex') 前 8 hex 相同的值
+  const pid = '22676faa-71ac-4dbc-b2dd-1ae14e3d8f45'
+  const cfg = {
+    originalPrice: 150,
+    minimumPrice: 50,
+    priceIntervalSeconds: 600,
+    priceDecrease: 10,
+    priceDecreaseMax: 20,
+  }
+
+  it('randStep 各步降幅與 Server SQL 完全一致', () => {
+    // 由 Server compute_current_price 實測回推（k=2 → $122）
+    expect(randStep(`${pid}|0|0`, 10, 20)).toBe(18)
+    expect(randStep(`${pid}|0|1`, 10, 20)).toBe(10)
+  })
+
+  it('k=2 顯示價 = 成交價 $122（不再跑出 $116）', () => {
+    expect(computeCurrentPrice(cfg, 2 * 600, pid)).toBe(122)
+  })
+
+  it('k=1、k=3 也與 Server 一致', () => {
+    expect(computeCurrentPrice(cfg, 1 * 600, pid)).toBe(132)
+    expect(computeCurrentPrice(cfg, 3 * 600, pid)).toBe(108)
+  })
+})
+
 describe('工具函式', () => {
   it('secondsToNextDrop：12 小時週期', () => {
     expect(secondsToNextDrop({ ...fixed, priceIntervalSeconds: 43200 }, 3600)).toBe(39600)
