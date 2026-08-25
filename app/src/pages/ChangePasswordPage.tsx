@@ -67,15 +67,15 @@ export default function ChangePasswordPage() {
             <label htmlFor="newpwd" className="block text-sm font-medium text-ink-700 mb-1.5">新密碼</label>
             <input id="newpwd" type="password" autoComplete="new-password" placeholder="至少 6 碼"
               value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required
-              className="w-full h-12 px-4 rounded-xl border border-ink-200 bg-white text-base text-ink-900
-                         placeholder:text-ink-300 focus:outline-none focus:ring-2 focus:ring-accent-400" />
+              className="w-full h-12 px-4 rounded-xl border border-ink-200 bg-white text-lg text-ink-900
+                        placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400" />
           </div>
           <div>
             <label htmlFor="confirm" className="block text-sm font-medium text-ink-700 mb-1.5">確認新密碼</label>
             <input id="confirm" type="password" autoComplete="new-password" placeholder="再輸入一次"
               value={confirm} onChange={(e) => setConfirm(e.target.value)} required
-              className="w-full h-12 px-4 rounded-xl border border-ink-200 bg-white text-base text-ink-900
-                         placeholder:text-ink-300 focus:outline-none focus:ring-2 focus:ring-accent-400" />
+              className="w-full h-12 px-4 rounded-xl border border-ink-200 bg-white text-lg text-ink-900
+                        placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400" />
           </div>
 
           {error && (
@@ -86,7 +86,7 @@ export default function ChangePasswordPage() {
 
           <button type="submit" disabled={busy}
             className="w-full h-12 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 text-white
-                       text-base font-semibold shadow-lg shadow-accent-500/25
+                       text-base font-bold shadow-lg shadow-accent-500/25
                        active:scale-[0.98] transition disabled:opacity-50">
             {busy ? '設定中…' : '完成設定'}
           </button>

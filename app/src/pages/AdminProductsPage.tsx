@@ -312,7 +312,7 @@ export default function AdminProductsPage() {
   }
 
   const inputCls =
-    'w-full h-11 px-3 rounded-xl border border-ink-200 bg-white text-sm text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-400'
+    'w-full h-12 px-3 rounded-xl border border-ink-200 bg-white text-base text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-400'
 
   return (
     <main className="space-y-4">
@@ -320,7 +320,7 @@ export default function AdminProductsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-ink-900">商品管理</h1>
-            <p className="text-xs md:text-sm text-ink-400">設定販售商品、開賣時間與草稿</p>
+            <p className="text-sm md:text-base text-ink-500">設定販售商品、開賣時間與草稿</p>
           </div>
           {showForm ? (
             <button onClick={() => setShowForm(false)}
@@ -335,7 +335,7 @@ export default function AdminProductsPage() {
           )}
         </div>
 
-        {msg && <p className="text-xs text-center bg-white border border-ink-100 rounded-xl py-2.5 shadow-sm">{msg}</p>}
+        {msg && <p className="text-sm text-center bg-white border border-ink-100 rounded-xl py-2.5 shadow-sm">{msg}</p>}
 
         {/* 新增／編輯表單 */}
         {showForm && loaded && (
@@ -354,7 +354,7 @@ export default function AdminProductsPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-                  className="flex-1 text-xs font-semibold bg-accent-50 text-accent-700 border border-accent-200 rounded-xl py-2.5 active:scale-[0.98] disabled:opacity-50">
+                  className="flex-1 text-sm font-semibold bg-accent-50 text-accent-700 border border-accent-200 rounded-xl py-2.5 active:scale-[0.98] disabled:opacity-50">
                   {uploading ? '⏳ 上傳中…' : '📷 上傳商品照片'}
                 </button>
                 {form.image_url && (
@@ -373,57 +373,57 @@ export default function AdminProductsPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <label className="text-xs text-ink-500">
+              <label className="text-sm text-ink-600">
                 原價
                 <input type="number" min="0" value={form.original_price}
                   onChange={(e) => setForm({ ...form, original_price: e.target.value })}
                   className={`${inputCls} mt-1`} />
               </label>
-              <label className="text-xs text-ink-500">
+              <label className="text-sm text-ink-600">
                 最低價格
                 <input type="number" min="0" value={form.minimum_price}
                   onChange={(e) => setForm({ ...form, minimum_price: e.target.value })}
                   className={`${inputCls} mt-1`} />
               </label>
-              <label className="text-xs text-ink-500">
+              <label className="text-sm text-ink-600">
                 降價間隔（秒，12 小時＝43200）
                 <input type="number" min="1" value={form.price_interval_seconds}
                   onChange={(e) => setForm({ ...form, price_interval_seconds: e.target.value })}
                   className={`${inputCls} mt-1`} />
               </label>
               <div className="grid grid-cols-2 gap-2">
-                <label className="text-xs text-ink-500">
+                <label className="text-sm text-ink-600">
                   每次降價－最低（元）
                   <input type="number" min="0" value={form.price_decrease}
                     onChange={(e) => setForm({ ...form, price_decrease: e.target.value })}
                     className={`${inputCls} mt-1`} />
                 </label>
-                <label className="text-xs text-ink-500">
+                <label className="text-sm text-ink-600">
                   每次降價－最高（元）
                   <input type="number" min="0" placeholder="留空＝固定" value={form.price_decrease_max}
                     onChange={(e) => setForm({ ...form, price_decrease_max: e.target.value })}
                     className={`${inputCls} mt-1`} />
                 </label>
               </div>
-              <label className="text-xs text-ink-500">
+              <label className="text-sm text-ink-600">
                 初始庫存
                 <input type="number" min="0" value={form.initial_stock}
                   onChange={(e) => setForm({ ...form, initial_stock: e.target.value })}
                   className={`${inputCls} mt-1`} />
               </label>
-              <label className="text-xs text-ink-500">
+              <label className="text-sm text-ink-600">
                 每人限購
                 <input type="number" min="1" value={form.max_per_customer}
                   onChange={(e) => setForm({ ...form, max_per_customer: e.target.value })}
                   className={`${inputCls} mt-1`} />
               </label>
-              <label className="text-xs text-ink-500">
+              <label className="text-sm text-ink-600">
                 銷售單位（例：箱、件）
                 <input value={form.unit} placeholder="件"
                   onChange={(e) => setForm({ ...form, unit: e.target.value })}
                   className={`${inputCls} mt-1`} />
               </label>
-              <label className="text-xs text-ink-500">
+              <label className="text-sm text-ink-600">
                 單位入數（1 單位 = ? 件）
                 <input type="number" min="1" value={form.items_per_unit}
                   onChange={(e) => setForm({ ...form, items_per_unit: e.target.value })}
@@ -437,7 +437,7 @@ export default function AdminProductsPage() {
               <input type="datetime-local" value={form.sale_start_at}
                 onChange={(e) => setForm({ ...form, sale_start_at: e.target.value })}
                 className={`${inputCls} mt-1`} />
-              <span className="mt-1 block text-[11px] text-ink-400">
+              <span className="mt-1 block text-xs text-ink-500">
                 ※ 設為未來的時間，前台會顯示「⏳ 距開賣倒數」並鎖定不可下單，時間一到自動開賣；留空＝現在即可購買。
               </span>
             </label>
@@ -448,7 +448,7 @@ export default function AdminProductsPage() {
               <div className="flex gap-2">
                 {(['active', 'paused', 'draft'] as const).map((s) => (
                   <button key={s} onClick={() => setForm({ ...form, status: s })}
-                    className={`flex-1 h-10 rounded-xl text-xs font-medium ${
+                    className={`flex-1 h-10 rounded-xl text-sm font-semibold ${
                       form.status === s
                         ? s === 'draft'
                           ? 'bg-amber-50 text-amber-700 border border-amber-300'
@@ -469,13 +469,13 @@ export default function AdminProductsPage() {
 
             {/* 參與促銷活動（商品 ↔ 促銷多選） */}
             <div className="rounded-xl bg-ink-50 p-3 space-y-2">
-              <p className="text-xs font-medium text-ink-600">加入促銷活動（可多選）</p>
+              <p className="text-sm font-semibold text-ink-600">加入促銷活動（可多選）</p>
               {promotions.length === 0 ? (
                 <p className="text-xs text-ink-400">尚無促銷活動，可先到「🏷️ 促銷活動」建立。</p>
               ) : (
                 <div className="space-y-1 max-h-44 overflow-y-auto">
                   {promotions.map((pro) => (
-                    <label key={pro.id} className="flex items-center gap-2 text-xs text-ink-700">
+                    <label key={pro.id} className="flex items-center gap-2 text-sm text-ink-700">
                       <input type="checkbox" checked={promoIds.includes(pro.id)}
                         onChange={(e) =>
                           setPromoIds(e.target.checked
@@ -483,7 +483,7 @@ export default function AdminProductsPage() {
                             : promoIds.filter((x) => x !== pro.id))
                         } />
                       <span>{pro.name}</span>
-                      <span className="ml-auto text-[10px] text-ink-400">
+                      <span className="ml-auto text-xs text-ink-500">
                         {pro.status === 'draft' ? '📝 草稿' : pro.is_active ? '啟用中' : '已停用'}
                       </span>
                     </label>
@@ -495,7 +495,7 @@ export default function AdminProductsPage() {
             {/* 授權範圍（僅新增模式） */}
             {!editId && (
               <div className="rounded-xl bg-ink-50 p-3 space-y-2">
-                <p className="text-xs font-medium text-ink-600">活動授權範圍</p>
+                <p className="text-sm font-semibold text-ink-600">活動授權範圍</p>
                 <div className="flex gap-3 text-xs">
                   {(['all', 'companies', 'groups'] as const).map((s) => (
                     <label key={s} className="flex items-center gap-1.5">
@@ -508,7 +508,7 @@ export default function AdminProductsPage() {
                 {form.scope === 'companies' && (
                   <div className="space-y-1">
                     {companies.map((co) => (
-                      <label key={co.id} className="flex items-center gap-2 text-xs text-ink-700">
+                      <label key={co.id} className="flex items-center gap-2 text-sm text-ink-700">
                         <input type="checkbox" checked={form.company_ids.includes(co.id)}
                           onChange={(e) =>
                             setForm({
@@ -526,7 +526,7 @@ export default function AdminProductsPage() {
                 {form.scope === 'groups' && (
                   <div className="space-y-1">
                     {groups.map((g) => (
-                      <label key={g.id} className="flex items-center gap-2 text-xs text-ink-700">
+                      <label key={g.id} className="flex items-center gap-2 text-sm text-ink-700">
                         <input type="checkbox" checked={form.group_ids.includes(g.id)}
                           onChange={(e) =>
                             setForm({
@@ -545,7 +545,7 @@ export default function AdminProductsPage() {
             )}
 
             {/* 預覽 */}
-            <div className="rounded-xl bg-accent-50 border border-accent-100 p-3 text-xs text-ink-600 leading-relaxed">
+            <div className="rounded-xl bg-accent-50 border border-accent-100 p-3 text-sm text-ink-600 leading-relaxed">
               系統將自動降價：{fmtMoney(Number(form.original_price))} 起，
               每 {formatInterval(Number(form.price_interval_seconds))} 隨機降 {fmtMoney(Number(form.price_decrease))} ~ {form.price_decrease_max ? fmtMoney(Number(form.price_decrease_max)) : fmtMoney(Number(form.price_decrease))}，
               最低 {fmtMoney(Number(form.minimum_price))}。
@@ -557,7 +557,7 @@ export default function AdminProductsPage() {
             </div>
 
             <button onClick={submit} disabled={busy || !form.name || !form.sku}
-              className="w-full h-11 rounded-xl bg-ink-900 text-white text-sm font-semibold disabled:opacity-40">
+              className="w-full h-11 rounded-xl bg-ink-900 text-white text-base font-bold disabled:opacity-40">
               {busy ? '儲存中…' : editId ? '儲存變更' : '建立商品'}
             </button>
           </section>
@@ -570,8 +570,8 @@ export default function AdminProductsPage() {
               <div key={p.id} className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-ink-900">{p.name}</h3>
-                    <p className="mt-0.5 text-xs text-ink-400">
+                    <h3 className="font-bold text-ink-900">{p.name}</h3>
+                    <p className="mt-0.5 text-xs text-ink-500">
                       {p.sku} · 每人限購 {p.max_per_customer} {p.unit ?? '件'}
                       {Number(p.items_per_unit) > 1 ? `（1 ${p.unit}＝${p.items_per_unit} 件）` : ''}
                     </p>
@@ -588,27 +588,27 @@ export default function AdminProductsPage() {
                     {p.status === 'active' ? '銷售中' : p.status === 'draft' ? '📝 草稿' : p.status === 'ended' ? '超時未售出' : '已暫停'}
                   </span>
                 </div>
-                <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-ink-500">
+                <div className="mt-2 grid grid-cols-3 gap-2 text-sm text-ink-600">
                   <span>原價 {fmtMoney(Number(p.original_price))}</span>
                   <span>最低 {fmtMoney(Number(p.minimum_price))}</span>
                   <span>每 {formatInterval(p.price_interval_seconds)} −{p.price_decrease_max != null && Number(p.price_decrease_max) !== Number(p.price_decrease) ? `${fmtMoney(Number(p.price_decrease))}~${fmtMoney(Number(p.price_decrease_max))}` : fmtMoney(Number(p.price_decrease))}</span>
                 </div>
-                <div className="mt-1.5 text-xs">
+                <div className="mt-1.5 text-sm">
                   庫存：<span className="font-bold text-ink-900">{p.stock}</span> / {p.initial_stock}
                 </div>
 
                 {/* 操作列 */}
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   <button onClick={() => toggleStatus(p)} disabled={busy}
-                    className="px-3 py-1.5 rounded-lg bg-ink-100 text-ink-700 text-xs font-medium disabled:opacity-50">
+                    className="px-3.5 py-2 rounded-lg bg-ink-100 text-ink-700 text-sm font-semibold disabled:opacity-50">
                     {p.status === 'active' ? '⏸ 暫停販售' : p.status === 'draft' ? '▶ 發布' : '▶ 恢復販售'}
                   </button>
                   <Link to={`/admin/products?id=${p.id}`}
-                    className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium">
+                    className="px-3.5 py-2 rounded-lg bg-blue-50 text-blue-700 text-sm font-semibold">
                     ✏️ 編輯
                   </Link>
                   <button onClick={() => remove(p)} disabled={busy}
-                    className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-medium disabled:opacity-50">
+                    className="px-3.5 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-semibold disabled:opacity-50">
                     🗑 刪除
                   </button>
                 </div>

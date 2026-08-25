@@ -29,7 +29,7 @@ function FollowItem({ product }: { product: Product }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-ink-900 truncate">{product.name}</p>
-        <p className="text-xs text-ink-400">剩餘 {live.stock} 件</p>
+        <p className="text-xs text-ink-600">剩餘 {live.stock} 件</p>
       </div>
       <span className="text-base font-extrabold text-ink-900 tabular-nums shrink-0">
         {fmtMoney(live.price)}
@@ -114,7 +114,7 @@ export default function ProfilePage() {
     <div className="min-h-dvh bg-ink-50 pb-16">
       <header className="bg-white border-b border-ink-100 px-5 py-4 sticky top-0 z-10">
         <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between">
-          <Link to="/" className="w-9 h-9 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-600" aria-label="返回">
+          <Link to="/" className="w-11 h-11 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-700 flex items-center justify-center" aria-label="返回">
             ←
           </Link>
           <h1 className="text-base font-bold text-ink-900 font-display">我的帳號</h1>
@@ -139,15 +139,15 @@ export default function ProfilePage() {
 
           <dl className="mt-5 space-y-3 text-sm">
             <div className="flex justify-between">
-              <dt className="text-ink-400">公司</dt>
+              <dt className="text-ink-500">公司</dt>
               <dd className="text-ink-800 font-medium">{company?.name ?? '—'}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-ink-400">客戶群組</dt>
+              <dt className="text-ink-500">客戶群組</dt>
               <dd className="text-ink-800 font-medium">{group?.name ?? '—'}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-ink-400">帳號狀態</dt>
+              <dt className="text-ink-500">帳號狀態</dt>
               <dd>
                 <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
                   customer.status === 'active'
@@ -159,7 +159,7 @@ export default function ProfilePage() {
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-ink-400">最後登入</dt>
+              <dt className="text-ink-500">最後登入</dt>
               <dd className="text-ink-800 tabular-nums">
                 {customer.last_login_at
                   ? new Date(customer.last_login_at).toLocaleString('zh-TW')
@@ -183,7 +183,7 @@ export default function ProfilePage() {
               {followedProducts.map((p) => <FollowItem key={p.id} product={p} />)}
             </div>
           ) : (
-            <p className="px-5 py-6 text-xs text-ink-400 text-center">
+            <p className="px-5 py-6 text-sm text-ink-500 text-center">
               還沒有關注的商品～去商品頁按「🤍 關注」追蹤降價吧
             </p>
           )}
@@ -217,12 +217,12 @@ export default function ProfilePage() {
         {/* 登出 */}
         <button
           onClick={signOut}
-          className="w-full h-12 rounded-xl bg-white border border-ink-200 text-sm font-medium text-red-600 active:scale-[0.99] transition"
+          className="w-full h-12 rounded-xl bg-white border border-ink-200 text-base font-bold text-red-600 active:scale-[0.99] transition"
         >
           登出
         </button>
 
-        <p className="text-center text-xs text-ink-300 pt-2">
+        <p className="text-center text-xs text-ink-500 pt-2">
           🔒 封閉式私人團購平台 · 僅限受邀客戶
         </p>
       </main>

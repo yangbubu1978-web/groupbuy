@@ -46,7 +46,7 @@ export default function LoginPage() {
           <p className="mt-1.5 text-base font-bold text-accent-500 tracking-wide">先買先贏</p>
           <p className="mt-2 text-sm text-ink-500">僅限受邀客戶登入使用</p>
           <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-accent-50 border border-accent-200
-                          px-3 py-1 text-[11px] font-semibold text-accent-600" aria-hidden="true">
+                          px-3 py-1 text-xs font-semibold text-accent-600" aria-hidden="true">
             ⚡ 限時降價 × 庫存有限
           </div>
         </div>
@@ -69,7 +69,7 @@ export default function LoginPage() {
               onChange={(e) => setPhone(e.target.value)}
               required
               className="w-full h-12 px-4 rounded-xl border border-ink-200 bg-white
-                         text-base text-ink-900 placeholder:text-ink-300
+                         text-lg text-ink-900 placeholder:text-ink-400
                          focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-accent-400"
             />
           </div>
@@ -87,7 +87,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full h-12 px-4 rounded-xl border border-ink-200 bg-white
-                         text-base text-ink-900 placeholder:text-ink-300
+                         text-lg text-ink-900 placeholder:text-ink-400
                          focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-accent-400"
             />
           </div>
@@ -102,14 +102,14 @@ export default function LoginPage() {
             type="submit"
             disabled={busy}
             className="w-full h-12 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 text-white
-                       text-base font-semibold shadow-lg shadow-accent-500/25
+                       text-base font-bold shadow-lg shadow-accent-500/25
                        active:scale-[0.98] transition disabled:opacity-50"
           >
             {busy ? '登入中…' : '登入'}
           </button>
         </form>
 
-        <p className="mt-8 text-center text-xs text-ink-400 leading-relaxed anim-fade-up" style={{ animationDelay: '160ms' }}>
+        <p className="mt-8 text-center text-sm text-ink-500 leading-relaxed anim-fade-up" style={{ animationDelay: '160ms' }}>
           本平台為封閉式系統，不提供註冊。<br />
           帳號由管理員統一建立。
         </p>

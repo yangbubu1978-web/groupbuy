@@ -227,7 +227,7 @@ export default function AdminOrdersPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-ink-900">訂單管理</h1>
-            <p className="text-xs md:text-sm text-ink-400">查看與匯出成交紀錄</p>
+            <p className="text-sm md:text-base text-ink-500">查看與匯出成交紀錄</p>
           </div>
           <button onClick={exportXls}
             className="h-10 px-4 rounded-xl bg-ink-900 text-white text-sm font-semibold active:scale-[0.98] transition">
@@ -239,17 +239,17 @@ export default function AdminOrdersPage() {
         <section className="grid grid-cols-3 gap-2 anim-fade-up">
           <div className="bg-white rounded-xl border border-ink-100 p-3 text-center shadow-sm">
             <div className="text-lg font-bold text-ink-900 tabular-nums">{stats.total}</div>
-            <div className="text-[11px] text-ink-400 mt-0.5">總訂單</div>
+            <div className="text-xs text-ink-500 mt-0.5">總訂單</div>
           </div>
           <div className="bg-white rounded-xl border border-accent-200 bg-gradient-to-br from-accent-50 to-white p-3 text-center shadow-sm">
             <div className="text-lg font-bold text-accent-600 tabular-nums">{fmtMoney(stats.revenue)}</div>
-            <div className="text-[11px] text-ink-400 mt-0.5">有效營收</div>
+            <div className="text-xs text-ink-500 mt-0.5">有效營收</div>
           </div>
           <div className={`rounded-xl border p-3 text-center shadow-sm ${stats.needAction > 0 ? 'bg-amber-50 border-amber-200' : 'bg-white border-ink-100'}`}>
             <div className={`text-lg font-bold tabular-nums ${stats.needAction > 0 ? 'text-amber-700' : 'text-ink-900'}`}>
               {stats.needAction}
             </div>
-            <div className="text-[11px] text-ink-400 mt-0.5">待處理</div>
+            <div className="text-xs text-ink-500 mt-0.5">待處理</div>
           </div>
         </section>
 
@@ -265,7 +265,7 @@ export default function AdminOrdersPage() {
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
           placeholder="搜尋：訂單編號／商品／SKU／客戶／手機"
-          className="w-full h-10 px-4 rounded-xl border border-ink-200 bg-white text-sm placeholder:text-ink-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus:border-accent-400"
+          className="w-full h-11 px-4 rounded-xl border border-ink-200 bg-white text-base placeholder:text-ink-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus:border-accent-400"
         />
 
         {/* 狀態篩選 chips */}
@@ -274,10 +274,10 @@ export default function AdminOrdersPage() {
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`shrink-0 h-8 px-3 rounded-full text-xs font-medium transition ${
+              className={`shrink-0 h-10 px-3.5 rounded-full text-sm font-semibold transition ${
                 filter === f.key
                   ? 'bg-ink-900 text-white'
-                  : 'bg-white border border-ink-200 text-ink-500'
+                  : 'bg-white border border-ink-200 text-ink-600'
               }`}
             >
               {f.label}
@@ -296,11 +296,11 @@ export default function AdminOrdersPage() {
             <div key={o.id} className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <h3 className="font-semibold text-ink-900">{o.product_name_snapshot}</h3>
-                  <p className="mt-0.5 text-xs text-ink-400">
+                  <h3 className="font-bold text-ink-900">{o.product_name_snapshot}</h3>
+                  <p className="mt-0.5 text-xs text-ink-500">
                     {o.order_no} · {fmtDateTime(o.purchased_at)}
                   </p>
-                  <p className="mt-0.5 text-xs text-ink-500">
+                  <p className="mt-0.5 text-xs text-ink-600">
                     👤 {c?.name ?? '—'}　📞 {c?.phone ?? '—'}
                   </p>
                 </div>
@@ -316,7 +316,7 @@ export default function AdminOrdersPage() {
               </div>
 
               {(o.cancel_reason || (o as unknown as { note?: string }).note) && (
-                <p className="mt-1.5 text-[11px] text-orange-600">
+                <p className="mt-1.5 text-xs text-orange-600">
                   {(o as unknown as { note?: string }).note ? `📝 ${(o as unknown as { note?: string }).note}` : ''}
                   {o.cancel_reason ? ` ${o.cancel_reason}` : ''}
                 </p>
@@ -330,7 +330,7 @@ export default function AdminOrdersPage() {
                       key={a.to}
                       onClick={() => transition(o, a.to)}
                       disabled={busyId === o.id}
-                      className={`h-9 px-3 rounded-xl text-xs font-semibold active:scale-[0.98] transition disabled:opacity-50 ${
+                      className={`h-10 px-3.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition disabled:opacity-50 ${
                         a.to === 'cancelled' || a.to === 'refunding' || a.to === 'refunded'
                           ? 'border border-red-200 text-red-500'
                           : 'bg-ink-900 text-white'
