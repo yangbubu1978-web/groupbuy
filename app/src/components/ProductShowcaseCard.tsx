@@ -11,8 +11,8 @@ function DropTimer({ seconds }: { seconds: number }) {
   const urgent = seconds < 3600
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold tabular-nums ${
-        urgent ? 'bg-red-500 text-white' : 'bg-accent-50 text-accent-600 border border-accent-200'
+      className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-sm font-bold tabular-nums ${
+        urgent ? 'bg-red-600 text-white' : 'bg-accent-50 text-accent-700 border border-accent-200'
       }`}
     >
       ⏰ {formatCountdown(seconds)} 後再降
@@ -56,27 +56,27 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
           ) : (
             <span className="text-6xl opacity-20">🎁</span>
           )}
-          <span className="absolute top-3 left-3 rounded-md bg-ink-700 text-white px-2.5 py-1 text-[11px] font-bold shadow-md">
+          <span className="absolute top-3 left-3 rounded-lg bg-ink-800 text-white px-3 py-1.5 text-sm font-bold shadow-md">
             🔒 即將開賣
           </span>
           {followCount > 0 && (
-            <span className="absolute bottom-3 right-3 inline-flex items-center gap-0.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-pink-500 shadow-sm">
+            <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-pink-600 shadow-sm">
               ♥ {followCount}
             </span>
           )}
         </div>
         <div className="p-4">
-          <h3 className="font-semibold text-ink-900 leading-snug line-clamp-2">{product.name}</h3>
+          <h3 className="font-bold text-ink-900 leading-snug line-clamp-2">{product.name}</h3>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-sm font-extrabold text-ink-400">$</span>
-            <span className="text-2xl font-extrabold text-ink-600 tracking-tight tabular-nums leading-none">{fmtMoney(original)}</span>
+            <span className="text-base font-extrabold text-ink-500">$</span>
+            <span className="text-2xl font-extrabold text-ink-700 tracking-tight tabular-nums leading-none">{fmtMoney(original)}</span>
           </div>
           <div className="mt-2">
-            <span className="inline-flex items-center gap-1 rounded-md bg-ink-100 text-ink-500 px-2 py-0.5 text-[10px] font-bold tabular-nums">
+            <span className="inline-flex items-center gap-1 rounded-lg bg-ink-100 text-ink-700 px-3 py-1 text-xs font-bold tabular-nums">
               ⏳ {formatCountdown(saleRemain)} 後開賣
             </span>
           </div>
-          <p className="mt-2 text-[11px] text-ink-400">尚未開賣，敬請期待</p>
+          <p className="mt-2 text-sm text-ink-500">尚未開賣，敬請期待</p>
         </div>
       </div>
     )
@@ -99,11 +99,11 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
     >
       {/* 限時促銷帶（促銷商品專屬） */}
       {promo && (
-        <div className="bg-gradient-to-r from-accent-500 to-accent-600 text-white px-3 py-2
-                        flex items-center justify-between gap-2">
-          <span className="text-[11px] font-bold truncate">🏷️ 限時促銷 · {promo.name}</span>
+        <div className="bg-gradient-to-r from-accent-500 to-accent-600 text-white px-4 py-2.5
+                        flex items-center justify-between gap-3">
+          <span className="text-sm font-bold truncate">🏷️ 限時促銷 · {promo.name}</span>
           {promoRemaining > 0 && (
-            <span className="shrink-0 text-[11px] font-bold tabular-nums">⏰ 剩 {formatCountdown(promoRemaining)}</span>
+            <span className="shrink-0 text-sm font-bold tabular-nums">⏰ 剩 {formatCountdown(promoRemaining)}</span>
           )}
         </div>
       )}
@@ -121,54 +121,54 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
           <span className="text-6xl opacity-20">🎁</span>
         )}
         {dropped > 0 && (
-          <span className="absolute top-3 left-3 rounded-md bg-accent-500 text-white
-                           px-2.5 py-1 text-[11px] font-bold shadow-md anim-pop-in">
+          <span className="absolute top-3 left-3 rounded-lg bg-accent-500 text-white
+                           px-3 py-1.5 text-sm font-bold shadow-md anim-pop-in">
             已降 {dropPct}%
           </span>
         )}
         {soldOut && (
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/40
-                                  text-white font-bold tracking-widest">已完售</span>
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/45
+                                  text-white text-xl font-extrabold tracking-widest">已完售</span>
                 )}
                 {followCount > 0 && !soldOut && (
-                  <span className="absolute bottom-3 right-3 inline-flex items-center gap-0.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-pink-500 shadow-sm">
+                  <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-pink-600 shadow-sm">
                     ♥ {followCount}
                   </span>
                 )}
               </div>
 
       <div className="p-4">
-        <h3 className="font-semibold text-ink-900 leading-snug line-clamp-2">{product.name}</h3>
+        <h3 className="font-bold text-ink-900 leading-snug line-clamp-2">{product.name}</h3>
 
         {/* 降價倒數（活潑重點） */}
         {!soldOut && live.nextDropIn > 0 && (
-          <div className="mt-1.5">
+          <div className="mt-2">
             <DropTimer seconds={live.nextDropIn} />
           </div>
         )}
         {!soldOut && live.nextDropIn === 0 && dropped > 0 && (
-          <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-green-50 text-green-700 px-2 py-0.5 text-[10px] font-bold">
+          <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-green-50 text-green-700 px-3 py-1 text-xs font-bold">
             ✅ 已達最低價
           </div>
         )}
 
         <div className="mt-2 flex items-end justify-between gap-2">
           <div className="min-w-0 flex items-baseline gap-1.5 flex-wrap">
-            <span className="text-sm font-extrabold text-accent-500">$</span>
-            <span className="text-2xl font-extrabold text-accent-500 tracking-tight tabular-nums leading-none">
+            <span className="text-base font-extrabold text-accent-600">$</span>
+            <span className="text-2xl font-extrabold text-accent-600 tracking-tight tabular-nums leading-none">
               {fmtMoney(live.price)}
             </span>
-            <span className="text-xs text-ink-400 line-through">{fmtMoney(original)}</span>
+            <span className="text-sm text-ink-500 line-through">{fmtMoney(original)}</span>
           </div>
         </div>
         {dropped > 0 && (
-          <p className="mt-1 text-[11px] font-bold text-red-500">
+          <p className="mt-1 text-sm font-bold text-red-600">
             🔥 已省 {fmtMoney(dropped)}，再不搶就沒了
           </p>
         )}
 
         {/* 庫存進度條＋文案 */}
-        <div className="mt-3 h-1.5 rounded-full bg-ink-100 overflow-hidden">
+        <div className="mt-3 h-2 rounded-full bg-ink-100 overflow-hidden">
           <div
             className={`h-full rounded-full transition-[width] duration-700 ease-out ${
               soldOut ? 'bg-ink-300' : live.stock <= 3 ? 'bg-red-500' : 'bg-gradient-to-r from-accent-400 to-accent-600'
@@ -176,9 +176,15 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
             style={{ width: `${soldOut ? 100 : stockPct}%` }}
           />
         </div>
-        <p className="mt-1 text-[11px] text-ink-400">
+        <p className="mt-1.5 text-sm text-ink-600">
           {soldOut ? '售完補貨中' : live.stock <= 3 ? `僅剩 ${live.stock} 件，手刀搶購！` : `剩 ${live.stock} 件`}
         </p>
+
+        {/* 明確購買入口（整卡可點，但提供看得出的 CTA） */}
+        <div className="mt-4 h-12 rounded-xl bg-ink-900 text-white text-base font-bold
+                        flex items-center justify-center gap-1.5 active:scale-[0.98] transition">
+          {soldOut ? '查看商品' : '查看商品 →'}
+        </div>
       </div>
     </Link>
   )

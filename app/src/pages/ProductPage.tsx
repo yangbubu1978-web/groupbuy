@@ -262,13 +262,13 @@ export default function ProductPage() {
         <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-600"
+            className="w-11 h-11 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-700 flex items-center justify-center"
             aria-label="返回"
           >
             ←
           </button>
-          <div className="text-[11px] tracking-widest text-ink-400">⚡ 先買先贏</div>
-          <div className="w-9" />
+          <div className="text-sm tracking-widest text-ink-600">⚡ 先買先贏</div>
+          <div className="w-11" />
         </div>
       </header>
 
@@ -292,11 +292,11 @@ export default function ProductPage() {
                 onClick={toggleFollow}
                 disabled={followBusy}
                 aria-pressed={following}
-                className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold
+                className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-bold
                             border transition active:scale-95 disabled:opacity-60 ${
                   following
                     ? 'bg-accent-50 border-accent-300 text-accent-700'
-                    : 'bg-white border-ink-200 text-ink-600'
+                    : 'bg-white border-ink-200 text-ink-700'
                 }`}
               >
                 <span className={following ? 'anim-pop-in' : ''}>{following ? '❤️' : '🤍'}</span>
@@ -304,12 +304,12 @@ export default function ProductPage() {
               </button>
             </div>
             {product.description && (
-              <p className="mt-1.5 text-sm text-ink-500 leading-relaxed">{product.description}</p>
+              <p className="mt-1.5 text-sm text-ink-600 leading-relaxed">{product.description}</p>
             )}
-            <p className="mt-1 text-xs text-ink-400">SKU：{product.sku}</p>
+            <p className="mt-1 text-sm text-ink-500">SKU：{product.sku}</p>
             {/* 關注人數（社會證明） */}
             {followerCount > 0 && (
-              <p className={`mt-2 text-xs ${followerCount >= 5 ? 'text-red-600 font-semibold' : 'text-ink-500'}`}>
+              <p className={`mt-2 text-sm ${followerCount >= 5 ? 'text-red-600 font-bold' : 'text-ink-600'}`}>
                 🔥 {followerCount} 人正在關注這項商品
               </p>
             )}
@@ -318,24 +318,24 @@ export default function ProductPage() {
           {/* 價格主角區 */}
           <section className="bg-white rounded-2xl border border-ink-100 p-5 shadow-sm" aria-live="polite">
             {/* 核心張力：價格自己會降、好貨不等人 */}
-            <div className="flex items-center justify-between rounded-xl bg-accent-50 border border-accent-100 px-3.5 py-2.5 mb-4">
-              <span className="text-xs font-semibold text-accent-700">
+            <div className="flex items-center justify-between rounded-xl bg-accent-50 border border-accent-100 px-4 py-3 mb-4">
+              <span className="text-sm font-bold text-accent-700">
                 🕐 價格自己會降
               </span>
-              <span className={`text-xs font-bold tabular-nums ${atFloor ? 'text-green-700' : 'text-ink-700'}`}>
+              <span className={`text-sm font-bold tabular-nums ${atFloor ? 'text-green-700' : 'text-ink-700'}`}>
                 {atFloor ? '✅ 已達最低價' : `⏰ 下次降價 ${formatCountdown(live.nextDropIn)}`}
               </span>
             </div>
 
             <div className="flex items-end justify-between">
               <div>
-                <div className="text-xs text-ink-400">原價</div>
-                <div className="text-sm text-ink-400 line-through">
+                <div className="text-sm text-ink-500 mb-0.5">原價</div>
+                <div className="text-base text-ink-500 line-through">
                   {fmtMoney(Number(product.original_price))}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-ink-400 mb-0.5">目前價格</div>
+                <div className="text-sm text-ink-500 mb-0.5">目前價格</div>
                 <div
                   className={`text-4xl font-extrabold tracking-tight transition-colors duration-500 ${
                     priceFlash ? 'text-green-600' : 'text-ink-900'
@@ -348,9 +348,9 @@ export default function ProductPage() {
 
             {/* 底價語言化：還有多少空間（但不保證有貨） */}
             {!atFloor && (
-              <p className="mt-2 text-xs text-ink-400">
+              <p className="mt-2 text-sm text-ink-600">
                 再等還會更便宜，最低可到{' '}
-                <span className="font-bold text-ink-700">{fmtMoney(minimum)}</span>
+                <span className="font-bold text-ink-900">{fmtMoney(minimum)}</span>
                 ，但庫存有限、不保證買得到。
               </p>
             )}
@@ -359,42 +359,42 @@ export default function ProductPage() {
             <div className="mt-3 flex flex-wrap gap-2">
               {dropped > 0 && (
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-red-50 border border-red-100
-                                px-3 py-1 text-xs font-semibold text-red-600 anim-pop-in">
+                                px-3.5 py-1.5 text-sm font-bold text-red-600 anim-pop-in">
                   <span>📉</span>
                   <span>已降價 {fmtMoney(dropped)}（{Math.round(dropPct)}% off）</span>
                 </div>
               )}
               {hotLabel && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200
-                                px-3 py-1 text-xs font-bold text-orange-600 anim-pop-in">
+                                px-3.5 py-1.5 text-sm font-bold text-orange-600 anim-pop-in">
                   🔥 熱銷中
                 </span>
               )}
               {almostGone && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1
-                                text-xs font-bold text-white anim-pop-in">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3.5 py-1.5
+                                text-sm font-bold text-white anim-pop-in">
                   ⚡ 即將完售
                 </span>
               )}
             </div>
 
             {/* 降價規則 + 倒數 */}
-            <div className="mt-4 flex items-center justify-between rounded-xl bg-ink-50 px-4 py-3">
-              <span className="text-xs text-ink-500">
+            <div className="mt-4 flex items-center justify-between rounded-xl bg-ink-50 px-4 py-3 gap-3">
+              <span className="text-sm text-ink-700">
                 每 {formatInterval(product.price_interval_seconds)} 隨機降 {dropLabel}
               </span>
-              <span className={`text-xs font-semibold tabular-nums ${atFloor ? 'text-green-700' : 'text-ink-700'}`}>
+              <span className={`text-sm font-bold tabular-nums ${atFloor ? 'text-green-700' : 'text-ink-700'}`}>
                 {atFloor ? '✅ 已達最低價，不會再降' : `下一次降價 ${formatCountdown(live.nextDropIn)}`}
               </span>
             </div>
 
             {/* 降價進度條：原價 ── 目前 ── 最低價 */}
             <div className="mt-3">
-              <div className="flex items-center justify-between text-[11px] text-ink-400 mb-1">
+              <div className="flex items-center justify-between text-xs text-ink-600 mb-1">
                 <span>原價 {fmtMoney(original)}</span>
-                <span className="font-medium text-ink-500">最低 {fmtMoney(minimum)}</span>
+                <span className="font-bold text-ink-700">最低 {fmtMoney(minimum)}</span>
               </div>
-              <div className="h-1.5 rounded-full bg-ink-100 overflow-hidden">
+              <div className="h-2 rounded-full bg-ink-100 overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-[width] duration-700 ease-out ${
                     atFloor ? 'bg-green-500' : 'bg-gradient-to-r from-accent-400 to-accent-600'
@@ -403,14 +403,14 @@ export default function ProductPage() {
                 />
               </div>
               {atFloor && (
-                <p className="mt-1.5 text-[11px] font-semibold text-green-700">
+                <p className="mt-1.5 text-sm font-bold text-green-700">
                   ✅ 已是這檔最低價，錯過就沒有了
                 </p>
               )}
             </div>
 
             {/* 活動剩餘時間 */}
-            <div className="mt-2 text-[11px] text-ink-400 text-right tabular-nums">
+            <div className="mt-2 text-sm text-ink-600 text-right tabular-nums">
               活動至 {new Date(campaign.end_at).toLocaleString('zh-TW')}
             </div>
           </section>
@@ -423,7 +423,7 @@ export default function ProductPage() {
                 {live.stock} 件
               </span>
             </div>
-            <div className="h-1.5 rounded-full bg-ink-200 overflow-hidden">
+            <div className="h-2 rounded-full bg-ink-200 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-[width] duration-700 ease-out ${
                   live.stock <= 3 ? 'bg-red-500' : 'bg-accent-500'
@@ -432,33 +432,33 @@ export default function ProductPage() {
               />
             </div>
             {live.stock <= 3 && live.stock > 0 && (
-              <p className="mt-2 text-xs text-red-600">僅剩最後 {live.stock} 件，錯過就沒有了</p>
+              <p className="mt-2 text-sm font-bold text-red-600">僅剩最後 {live.stock} 件，錯過就沒有了</p>
             )}
           </section>
 
           {/* 底部 CTA 前的單位說明 */}
           {Number(product.items_per_unit) > 1 && (
-            <p className="text-xs text-ink-500">
+            <p className="text-sm text-ink-600">
               📦 銷售單位：{product.unit}（1 {product.unit} = {product.items_per_unit} 件）
             </p>
           )}
 
           {/* 數量選擇 */}
           <section>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-ink-600">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-semibold text-ink-700">
                 購買數量（每人限購 {product.max_per_customer} {product.unit ?? '件'}）
               </span>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   disabled={quantity <= 1}
-                  className="w-9 h-9 rounded-full border border-ink-200 text-ink-700 disabled:opacity-30"
+                  className="w-11 h-11 rounded-full border-2 border-ink-200 text-ink-700 text-xl disabled:opacity-30"
                   aria-label="減少數量"
                 >
                   −
                 </button>
-                <span className="w-6 text-center font-bold tabular-nums">{quantity}</span>
+                <span className="w-10 text-center text-lg font-bold tabular-nums">{quantity}</span>
                 <button
                   onClick={() =>
                     setQuantity((q) =>
@@ -466,7 +466,7 @@ export default function ProductPage() {
                     )
                   }
                   disabled={quantity >= Math.min(product.max_per_customer, live.stock)}
-                  className="w-9 h-9 rounded-full border border-ink-200 text-ink-700 disabled:opacity-30"
+                  className="w-11 h-11 rounded-full border-2 border-ink-200 text-ink-700 text-xl disabled:opacity-30"
                   aria-label="增加數量"
                 >
                   +
@@ -501,7 +501,7 @@ export default function ProductPage() {
                         : `立即搶購｜${fmtMoney(live.price)} × ${quantity}`}
           </button>
           {saleOpen && live.stock > 0 && !atFloor && (
-            <p className="mt-1.5 text-center text-[11px] text-ink-400">
+            <p className="mt-1.5 text-center text-sm text-ink-600">
               再等等還會降，但庫存有限、不保證有貨
             </p>
           )}
@@ -522,9 +522,9 @@ export default function ProductPage() {
                     成交價格 <span className="font-bold">{fmtMoney(buyState.unitPrice)}</span>
                     × {buyState.quantity}
                   </p>
-                  <p className="text-xs text-ink-400">訂單編號：{buyState.orderNo}</p>
+                  <p className="text-sm text-ink-500">訂單編號：{buyState.orderNo}</p>
                 </div>
-                <p className="mt-3 text-xs text-green-700 bg-green-50 rounded-lg py-1.5">
+                <p className="mt-3 text-sm font-semibold text-green-700 bg-green-50 rounded-lg py-2">
                   商品已為您保留。
                 </p>
                 <div className="mt-5 grid grid-cols-2 gap-2">

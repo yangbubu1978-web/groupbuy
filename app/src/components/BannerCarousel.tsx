@@ -39,17 +39,17 @@ export default function BannerCarousel() {
     <div className="relative overflow-hidden rounded-2xl border border-ink-100 shadow-sm anim-fade-up">
       <img src={b.image_url} alt={b.title ?? 'banner'} className="w-full aspect-square object-cover" />
       {b.title && (
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent
-                        px-4 pt-6 pb-2.5">
-          <p className="text-sm font-bold text-white truncate">{b.title}</p>
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent
+                        px-4 pt-6 pb-3">
+          <p className="text-base font-bold text-white truncate">{b.title}</p>
         </div>
       )}
       {/* 輪播圓點 */}
       {banners.length > 1 && (
         <div className="absolute top-2.5 right-3 flex gap-1.5">
           {banners.map((_, i) => (
-            <span key={i} className={`h-1.5 rounded-full transition-colors duration-300 ${
-              i === idx ? 'w-4 bg-white' : 'w-1.5 bg-white/50'
+            <span key={i} className={`h-2 rounded-full transition-colors duration-300 ${
+              i === idx ? 'w-5 bg-white' : 'w-2 bg-white/60'
             }`} />
           ))}
         </div>
