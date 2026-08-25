@@ -91,23 +91,24 @@ export default function AdminCustomersPage() {
     setBusy(true); setMsg(null)
     try {
       let authUserId: string | null = null
+      const normalizedPhone = form.phone.trim() ? form.phone.replace(/\D/g, '') : ''
 
-      // 1. 建立 auth 帳號（透過 admin Edge Function）
+      // 1. 建立 auth 帳號（透過 admin Edge Function）— 手機可空白（方案 A）
       if (form.createAuth) {
         const data = await callAdminFn({
           action: 'createAuthUser',
-          phone: form.phone,
+          phone: normalizedPhone || undefined,
           password: form.password || '888888', // 企劃書：預設密碼 888888
-          name: form.name,
+          name: form.name.trim(),
         })
-        if (!data?.ok) throw new Error(data?.reason === 'exists' ? '此手機號碼已有帳號' : '建立帳號失敗')
+        if (!data?.ok) throw new Error(data?.reason === 'exists' ? '此手機號碼已有帳號' : data?.reason === 'bad_request' ? '手機格式不正確' : '建立帳號失敗')
         authUserId = data.userId
       }
 
       // 2. 寫入白名單（有建帳號 → 標記首次登入強制改密碼）
       const { error } = await supabase.from('customers').insert({
-        name: form.name,
-        phone: form.phone,
+        name: form.name.trim(),
+        phone: normalizedPhone || null,
         company_id: form.company_id,
         group_id: form.group_id || null,
         status: form.status,
@@ -116,7 +117,7 @@ export default function AdminCustomersPage() {
       })
       if (error) throw new Error(error.message)
 
-      setMsg(authUserId ? '✅ 客戶已新增（預設密碼 888888，首登強制改密）' : '✅ 客戶已新增')
+      setMsg(authUserId ? (normalizedPhone ? '✅ 客戶已新增（預設密碼 888888，首登強制改密）' : '✅ 客戶已新增（僅姓名，手機待會員自助補填，預設密碼 888888）') : '✅ 客戶已新增')
       setForm(emptyForm)
       setShowForm(false)
       await load()
@@ -132,8 +133,8 @@ export default function AdminCustomersPage() {
     setEditId(c.id)
     setEditForm({
       name: c.name,
-      phone: c.phone,
-      originalPhone: c.phone,
+      phone: c.phone ?? '',
+      originalPhone: c.phone ?? '',
       originalName: c.name,
       company_id: c.company_id,
       group_id: c.group_id ?? '',
@@ -261,7 +262,7 @@ export default function AdminCustomersPage() {
 
   const editValid =
     editForm.name.trim() !== '' &&
-    /^09\d{8}$/.test(editForm.phone) &&
+    (editForm.phone === '' || /^09\d{8}$/.test(editForm.phone)) &&
     editForm.company_id !== '' &&
     (editForm.newPassword === '' || editForm.newPassword.length >= 6)
 
@@ -293,11 +294,14 @@ export default function AdminCustomersPage() {
         {showForm && (
           <section className="bg-white rounded-2xl border border-ink-100 p-5 space-y-3 shadow-sm">
             <h2 className="text-sm font-bold text-ink-900">新增客戶（白名單）</h2>
-            <input placeholder="姓名" value={form.name}
+            <input placeholder="姓名（必填）" value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
-            <input placeholder="手機號碼（09XXXXXXXX）" inputMode="numeric" value={form.phone}
+            <input placeholder="手機號碼（選填，09XXXXXXXX，空白可後補）" inputMode="numeric" value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })}
               className={inputCls} />
+            {form.phone && !/^09\d{8}$/.test(form.phone) && (
+              <p className="text-[11px] text-amber-600">⚠ 手機格式應為 09 開頭 10 碼，或留空由會員登入後補填</p>
+            )}
             <label className="flex items-center gap-2 text-xs text-ink-600">
               <input type="checkbox" checked={form.createAuth}
                 onChange={(e) => setForm({ ...form, createAuth: e.target.checked })} />
@@ -326,8 +330,9 @@ export default function AdminCustomersPage() {
             </select>
 
             <button onClick={submit}
-              disabled={busy || !form.name || !/^09\d{8}$/.test(form.phone) ||
-                (form.createAuth && form.password.length < 6) || !form.company_id}
+              disabled={busy || !form.name.trim() ||
+                (form.phone !== '' && !/^09\d{8}$/.test(form.phone)) ||
+                (form.createAuth && form.password.length > 0 && form.password.length < 6) || !form.company_id}
               className="w-full h-11 rounded-xl bg-ink-900 text-white text-sm font-semibold disabled:opacity-40">
               {busy ? '儲存中…' : '建立客戶'}
             </button>
@@ -344,7 +349,7 @@ export default function AdminCustomersPage() {
                 <div>
                   <h3 className="font-semibold text-ink-900">{c.name}</h3>
                   <p className="mt-0.5 text-xs text-ink-400">
-                    {c.phone} · 最後登入 {c.last_login_at ? fmtDateTime(c.last_login_at) : '從未'}
+                    {c.phone ? c.phone : <span className="text-amber-600">⚠ 尚未填寫手機</span>} · 最後登入 {c.last_login_at ? fmtDateTime(c.last_login_at) : '從未'}
                   </p>
                   <p className="mt-0.5 text-xs text-ink-400">
                     {companyName(c.company_id)}

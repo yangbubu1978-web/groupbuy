@@ -72,8 +72,8 @@ create table public.customers (
   id            uuid primary key default gen_random_uuid(),
   auth_user_id  uuid unique references auth.users(id) on delete set null,
   name          text not null,
-  phone         text not null unique
-                check (phone ~ '^09\d{8}$'),
+  phone         text unique
+                check (phone is null or phone ~ '^09\d{8}$'),
   company_id    uuid not null references public.companies(id),
   group_id      uuid references public.customer_groups(id),
   role          text not null default 'customer',

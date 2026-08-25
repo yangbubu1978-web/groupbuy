@@ -76,11 +76,13 @@ export function useCustomerImport(load: () => Promise<void>) {
         if (phone.startsWith('+886')) phone = '0' + phone.slice(4)
         else if (phone.startsWith('886') && phone.length >= 11) phone = '0' + phone.slice(3)
 
-        if (!name || !phone) { fail++; errors.push(`${line}：姓名或手機空白`); continue }
-        if (!/^09\d{8}$/.test(phone)) { fail++; errors.push(`${line}：${name} 手機格式錯誤（${phone}）`); continue }
-        if (seen.has(phone)) { skipped++; errors.push(`${line}：${name} 手機重複出現於本檔`); continue }
-        if (existingPhones.has(phone)) { skipped++; errors.push(`${line}：${name} 已存在（手機 ${phone}）`); continue }
-        seen.add(phone)
+        if (!name) { fail++; errors.push(`${line}：姓名空白`); continue }
+        if (phone && !/^09\d{8}$/.test(phone)) { fail++; errors.push(`${line}：${name} 手機格式錯誤（${phone}）`); continue }
+        if (phone) {
+          if (seen.has(phone)) { skipped++; errors.push(`${line}：${name} 手機重複出現於本檔`); continue }
+          if (existingPhones.has(phone)) { skipped++; errors.push(`${line}：${name} 已存在（手機 ${phone}）`); continue }
+          seen.add(phone)
+        }
 
         const password = String(row['密碼'] ?? '').trim() || '888888'
         if (password.length < 6) { fail++; errors.push(`${line}：${name} 密碼需 ≥6 碼`); continue }
@@ -103,7 +105,7 @@ export function useCustomerImport(load: () => Promise<void>) {
               apikey: anonKey,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ action: 'createAuthUser', name, phone, password }),
+            body: JSON.stringify({ action: 'createAuthUser', name, phone: phone || undefined, password }),
           })
           const res = await resp.json().catch(() => null)
           if (!resp.ok || !res?.ok) throw new Error(res?.reason ?? `HTTP ${resp.status}`)
@@ -118,7 +120,7 @@ export function useCustomerImport(load: () => Promise<void>) {
           if (!finalCompanyId) throw new Error('系統內沒有任何公司，請先到「公司管理」新增')
 
           const { error } = await supabase.from('customers').insert({
-            name, phone, company_id: finalCompanyId,
+            name, phone: phone || null, company_id: finalCompanyId,
             status: 'active', role: 'member', auth_user_id: authUserId,
             must_change_password: !!authUserId,
           })

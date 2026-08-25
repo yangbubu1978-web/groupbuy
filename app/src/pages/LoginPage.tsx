@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 const REASON_TEXT: Record<string, string> = {
   invalid_phone: '格式不正確（姓名／09 開頭手機／管理帳號）',
   name_not_found: '找不到這個姓名，請確認白名單或改用手機登入',
+  phone_not_found: '找不到這個手機號碼，請確認是否已補填手機或改用姓名登入',
   bad_credentials: '帳號或密碼不正確',
   not_whitelisted: '此帳號尚未開通，請聯絡管理員',
   account_inactive: '帳號已停用，請聯絡管理員',

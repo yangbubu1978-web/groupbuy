@@ -66,19 +66,38 @@ Deno.serve(async (req) => {
     }
 
     switch (action) {
-      // ---------- 建立 auth 帳號 ----------
+      // ---------- 建立 auth 帳號（方案 A：手機可空白，僅用名字建帳號） ----------
       case 'createAuthUser': {
-        const phone = normalizePhone(body.phone)
+        const rawPhone = body.phone ? normalizePhone(body.phone) : ''
+        const hasPhone = /^09\d{8}$/.test(rawPhone)
         const { password, name } = body
-        if (!/^09\d{8}$/.test(phone) || !password || String(password).length < 6) {
+        const pwd = String(password ?? '')
+        if (!name || String(name).trim().length < 1 || !pwd || pwd.length < 6) {
           return json({ ok: false, reason: 'bad_request' }, 400)
         }
-        const email = `${phone}@phone.groupbuy.local`
+        if (body.phone && String(body.phone).trim() !== '' && !hasPhone) {
+          return json({ ok: false, reason: 'bad_request' }, 400)
+        }
+        // email 策略：有手機 → phone@phone.groupbuy.local；無手機 → 名字轉 base64url@name.groupbuy.local
+        let email: string
+        let phoneMeta: string | null = null
+        if (hasPhone) {
+          email = `${rawPhone}@phone.groupbuy.local`
+          phoneMeta = rawPhone
+        } else {
+          // 中文名轉 base64url 當 local-part（避免中文直接當 email）
+          let b64 = ''
+          try {
+            b64 = btoa(unescape(encodeURIComponent(String(name).trim()))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+          } catch { b64 = 'user' }
+          const suffix = crypto.randomUUID().slice(0, 8)
+          email = `n_${b64.slice(0, 12)}_${suffix}@name.groupbuy.local`
+        }
         const { data, error } = await admin.auth.admin.createUser({
           email,
-          password,
+          password: pwd,
           email_confirm: true,
-          user_metadata: { phone, name },
+          user_metadata: { phone: phoneMeta ?? '', name: String(name).trim() },
         })
         if (error) {
           return json(
@@ -86,7 +105,7 @@ Deno.serve(async (req) => {
             409,
           )
         }
-        return json({ ok: true, userId: data.user.id })
+        return json({ ok: true, userId: data.user.id, email })
       }
 
       // ---------- 設定／移除管理員（by auth user_id，保留給腳本用） ----------

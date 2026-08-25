@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
-import { phoneToEmail } from '../lib/supabase'
 import type { Customer } from '../lib/types'
 
 interface AuthState {
@@ -71,13 +70,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       normalized = '0' + normalized.slice(3)
     }
 
-    // 三軌登入：
-    //   1) 中文姓名（會員白名單）→ 伺服端查對應 auth email
-    //   2) 手機會員：09XXXXXXXX → phone@phone.groupbuy.local
+    // 三軌登入（方案 A 雙軌共用 RPC）：
+    //   1) 中文姓名 → lookup_login_by_name → 回傳 auth email
+    //   2) 手機會員：09XXXXXXXX → lookup_login_by_phone → 回傳 auth email（支援手機後補的 name-based 帳號）
     //   3) 管理帳號（admin 等）：非手機格式的英數帳號 → {account}@admin.groupbuy.local
     let loginEmail: string
     if (/^09\d{8}$/.test(normalized)) {
-      loginEmail = phoneToEmail(normalized)
+      const { data: lookup, error: lookupErr } = await supabase
+        .rpc('lookup_login_by_phone', { p_phone: normalized })
+      const res = (lookup ?? {}) as { ok?: boolean; email?: string; reason?: string }
+      if (lookupErr || !res.ok || !res.email) {
+        // 兼容舊資料：若 RPC 找不到，嘗試直接用 phone email（舊帳號可能還沒建 phone 索引）
+        // 但新制下應回 phone_not_found
+        if (res.reason === 'phone_not_found') return { ok: false, reason: 'phone_not_found' }
+        return { ok: false, reason: 'phone_not_found' }
+      }
+      loginEmail = res.email
     } else if (/^[a-zA-Z][a-zA-Z0-9_]{2,31}$/.test(normalized)) {
       loginEmail = `${normalized.toLowerCase()}@admin.groupbuy.local`
     } else if (/^[\u4e00-\u9fff·‧]{2,12}$/.test(normalized)) {

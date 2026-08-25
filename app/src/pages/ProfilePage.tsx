@@ -39,7 +39,7 @@ function FollowItem({ product }: { product: Product }) {
 }
 
 export default function ProfilePage() {
-  const { customer, userId, isAdmin, signOut } = useAuth()
+  const { customer, userId, isAdmin, signOut, refresh } = useAuth()
   const navigate = useNavigate()
 
   // 管理員不需要會員個人頁：直接轉到管理後台
@@ -49,6 +49,10 @@ export default function ProfilePage() {
   const [company, setCompany] = useState<Company | null>(null)
   const [group, setGroup] = useState<CustomerGroup | null>(null)
   const [followedProducts, setFollowedProducts] = useState<Product[]>([])
+  // 補填手機狀態（方案 A）
+  const [phoneInput, setPhoneInput] = useState('')
+  const [phoneBusy, setPhoneBusy] = useState(false)
+  const [phoneMsg, setPhoneMsg] = useState<string | null>(null)
 
   useEffect(() => {
     if (!customer) return
@@ -133,7 +137,7 @@ export default function ProfilePage() {
             </div>
             <div>
               <h2 className="text-lg font-bold text-ink-900 font-display">{customer.name}</h2>
-              <p className="text-sm text-ink-500 tabular-nums">{customer.phone}</p>
+              <p className="text-sm text-ink-500 tabular-nums">{customer.phone ?? '尚未填寫手機'}</p>
             </div>
           </div>
 
@@ -167,6 +171,57 @@ export default function ProfilePage() {
               </dd>
             </div>
           </dl>
+
+          {/* 方案 A：手機後補 — 未填手機時顯示提醒與補填表單 */}
+          {!customer.phone && (
+            <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+              <p className="text-sm font-bold text-amber-800">📱 請補填手機號碼</p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                初次用姓名登入後，請在此補填手機號碼。<br />完成後，下次就能用「姓名」或「手機」兩種方式登入囉！
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="09XXXXXXXX"
+                  value={phoneInput}
+                  onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  className="flex-1 h-11 px-4 rounded-xl border border-amber-200 bg-white text-base text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400"
+                />
+                <button
+                  onClick={async () => {
+                    setPhoneMsg(null)
+                    const p = phoneInput.replace(/\D/g, '')
+                    if (!/^09\d{8}$/.test(p)) { setPhoneMsg('❌ 手機格式應為 09 開頭 10 碼'); return }
+                    setPhoneBusy(true)
+                    try {
+                      const { data, error } = await supabase.rpc('set_my_phone', { p_phone: p })
+                      const res = (data ?? {}) as { ok?: boolean; reason?: string }
+                      if (error || !res.ok) {
+                        const reasonMap: Record<string, string> = {
+                          invalid_phone: '手機格式不正確',
+                          phone_exists: '此手機號碼已被其他帳號使用',
+                          unauthenticated: '請重新登入',
+                          not_found: '找不到帳號',
+                        }
+                        throw new Error(reasonMap[res.reason ?? ''] ?? '儲存失敗，請稍後再試')
+                      }
+                      setPhoneMsg('✅ 手機已儲存！下次可用姓名或手機登入')
+                      setPhoneInput('')
+                      await refresh()
+                    } catch (e) {
+                      setPhoneMsg(`❌ ${e instanceof Error ? e.message : '儲存失敗'}`)
+                    } finally { setPhoneBusy(false) }
+                  }}
+                  disabled={phoneBusy || !/^09\d{8}$/.test(phoneInput.replace(/\D/g, ''))}
+                  className="h-11 px-5 rounded-xl bg-ink-900 text-white text-sm font-bold disabled:opacity-40 shrink-0"
+                >
+                  {phoneBusy ? '儲存中…' : '儲存'}
+                </button>
+              </div>
+              {phoneMsg && <p className="text-xs text-center">{phoneMsg}</p>}
+            </div>
+          )}
         </section>
 
         {/* 我的關注 */}

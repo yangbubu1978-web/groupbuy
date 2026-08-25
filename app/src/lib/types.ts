@@ -23,7 +23,7 @@ export interface Customer {
   id: string
   auth_user_id: string | null
   name: string
-  phone: string
+  phone: string | null
   company_id: string
   group_id: string | null
   status: UserStatus
