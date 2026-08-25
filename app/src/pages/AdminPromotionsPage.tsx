@@ -11,6 +11,7 @@ type Promo = {
   starts_at: string
   ends_at: string
   is_active: boolean
+  kind: string
   status?: 'draft' | 'active'
   items?: { product_id: string; products?: { name: string; sku: string } | null }[]
 }
@@ -51,7 +52,7 @@ export default function AdminPromotionsPage() {
   const [msg, setMsg] = useState<string | null>(null)
 
   const emptyForm = {
-    name: '', description: '',
+    name: '', description: '', kind: 'flash',
     starts_at: toLocalInputValue(new Date().toISOString()),
     ends_at: toLocalInputValue(new Date(Date.now() + 7 * 86400_000).toISOString()),
     product_ids: [] as string[],
@@ -90,6 +91,7 @@ export default function AdminPromotionsPage() {
         starts_at: new Date(form.starts_at).toISOString(),
         ends_at: new Date(form.ends_at).toISOString(),
         status: draft ? ('draft' as const) : ('active' as const),
+        kind: form.kind ?? 'flash',
       }
 
       let promoId = editId
@@ -128,6 +130,7 @@ export default function AdminPromotionsPage() {
       starts_at: toLocalInputValue(p.starts_at),
       ends_at: toLocalInputValue(p.ends_at),
       product_ids: (p.items ?? []).map((i) => i.product_id),
+      kind: (p as { kind?: string }).kind ?? 'flash',
       asDraft: p.status === 'draft',
     })
     setShowForm(true)
@@ -207,6 +210,18 @@ export default function AdminPromotionsPage() {
             <textarea placeholder="活動說明（選填）" rows={2} value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               className="w-full px-3 py-2.5 rounded-xl border border-ink-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-400" />
+            {/* 活動類型 */}
+            <label className="block text-xs text-ink-500">
+              活動類型
+              <select value={form.kind ?? 'flash'} onChange={(e) => setForm({ ...form, kind: e.target.value })}
+                className="w-full px-3 py-2.5 rounded-xl border border-ink-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-400 mt-1">
+                <option value="flash">⚡ Flash 限時場</option>
+                <option value="accel">🚀 加速場（更快降到底）</option>
+                <option value="bundle">📦 組合場</option>
+                <option value="clearance">🏷️ 清倉場</option>
+                <option value="focus">⭐ 焦點新品</option>
+              </select>
+            </label>
             <div className="grid grid-cols-2 gap-2">
               <label className="block">
                 <span className="block text-[11px] text-ink-400 mb-1">開始日期與時間</span>

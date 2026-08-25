@@ -25,7 +25,7 @@ export default function CampaignListPage() {
   const [promoProducts, setPromoProducts] = useState<Product[]>([])
   const [regularProducts, setRegularProducts] = useState<Product[]>([])
   const [upcomingProducts, setUpcomingProducts] = useState<Product[]>([])
-  const [promoInfo, setPromoInfo] = useState<Record<string, { name: string; ends_at: string }>>({})
+  const [promoInfo, setPromoInfo] = useState<Record<string, { name: string; ends_at: string; kind?: string }>>({})
   const [followMap, setFollowMap] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
 
@@ -37,7 +37,7 @@ export default function CampaignListPage() {
       // 進行中的促銷活動（時間窗內＋已啟用）
       const { data: runningPromos } = await supabase
         .from('promotions')
-        .select('id, name, ends_at, promotion_items(product_id)')
+        .select('id, name, ends_at, kind, promotion_items(product_id)')
         .lte('starts_at', nowIso)
         .gte('ends_at', nowIso)
         .eq('is_active', true)
@@ -52,12 +52,16 @@ export default function CampaignListPage() {
       // 全部 active 商品都陳列；進行中促銷商品 →「限時促銷」專區，其餘 → 一般區
       const all = (data ?? []) as Product[]
       const promoIds = new Set<string>()
-      const promoInfoMap: Record<string, { name: string; ends_at: string }> = {}
+      const promoInfoMap: Record<string, { name: string; ends_at: string; kind?: string }> = {}
       for (const promo of runningPromos ?? []) {
         for (const item of (promo.promotion_items ?? []) as { product_id: string }[]) {
           promoIds.add(item.product_id)
           if (!promoInfoMap[item.product_id]) {
-            promoInfoMap[item.product_id] = { name: promo.name, ends_at: promo.ends_at }
+            promoInfoMap[item.product_id] = {
+              name: promo.name,
+              ends_at: promo.ends_at,
+              kind: (promo as { kind?: string }).kind ?? 'flash',
+            }
           }
         }
       }
@@ -159,6 +163,11 @@ export default function CampaignListPage() {
                 <div className="pt-1 flex items-center gap-2 anim-fade-up">
                   <span className="w-1 h-5 rounded-full bg-accent-500" aria-hidden="true" />
                   <h3 className="text-lg font-extrabold text-ink-900">限時促銷</h3>
+                {promoProducts[0] && (() => {
+                  const k = (promoInfo[promoProducts[0].id] as { kind?: string } | undefined)?.kind ?? 'flash'
+                  const L: Record<string, string> = { flash: '⚡ 限時場', accel: '🚀 加速場', bundle: '📦 組合場', clearance: '🏷️ 清倉場', focus: '⭐ 焦點新品' }
+                  return <span className="ml-1 text-[11px] font-bold text-accent-600 bg-accent-50 px-2 py-0.5 rounded-full whitespace-nowrap">{L[k] ?? '⚡ 限時場'}</span>
+                })()}
                   <span className="ml-auto text-[11px] font-semibold text-accent-600">限量優惠，先搶先贏 →</span>
                 </div>
                 <div className="space-y-5">
