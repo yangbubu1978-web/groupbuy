@@ -20,7 +20,7 @@ interface CartItem {
   } | null
 }
 
-const RESERVE_MS = 3 * 60 * 1000
+const RESERVE_MS = 1 * 60 * 1000
 
 /** 單一商品倒數（3:00 → 0；歸零觸發 onExpire） */
 function CountdownBar({ expiresAt, onExpire }: { expiresAt: string; onExpire: (id?: string) => void }) {
@@ -67,7 +67,7 @@ function CountdownBar({ expiresAt, onExpire }: { expiresAt: string; onExpire: (i
   )
 }
 
-/** 購物車頁：每件商品獨立 3 分鐘倒數，逾時自動取消釋回庫存 */
+/** 購物車頁：每件商品獨立 1 分鐘倒數，逾時自動取消釋回庫存 */
 export default function CartPage() {
   const { userId } = useAuth()
   const [items, setItems] = useState<CartItem[]>([])
@@ -96,7 +96,7 @@ export default function CartPage() {
     const id = rid ?? itemsRef.current.find((x) => new Date(x.expires_at).getTime() <= Date.now())?.id
     if (!id) return
     setItems((prev) => prev.filter((x) => x.id !== id))
-    setNotice('⌛ 有商品超過 3 分鐘未結帳，已自動取消並釋回庫存')
+    setNotice('⌛ 有商品超過 1 分鐘未結帳，已自動取消並釋回庫存')
     try {
       await supabase.rpc('release_reservation', { p_reservation_id: id })
     } catch {
@@ -146,7 +146,7 @@ export default function CartPage() {
           <div className="min-w-0">
             <h1 className="text-base md:text-lg font-extrabold text-white tracking-wide whitespace-nowrap">🛒 購物車</h1>
             <p className="text-xs text-accent-100 mt-0.5 truncate">
-              每件商品保留 3 分鐘，逾時自動取消釋回庫存
+              每件商品保留 1 分鐘，逾時自動取消釋回庫存
             </p>
           </div>
           <Link to="/" className="shrink-0 whitespace-nowrap text-sm font-bold px-3 md:px-4 py-2 rounded-full border border-white/60 text-white hover:bg-white/15 transition">

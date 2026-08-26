@@ -1,9 +1,9 @@
 -- ============================================================
--- P28：pending 訂單自動過期（30 分鐘未確認 → 自動取消＋回補庫存）
+-- P28：pending 訂單自動過期（1 分鐘未確認 → 自動取消＋回補庫存）
 -- ============================================================
 -- 問題：客戶結帳後不確認訂單 → pending 永不過期 →
 --       ①庫存被佔住（stock 已扣）②限購額度被吃掉（status<>'cancelled' 全算）→ 商品卡死無法再售
--- 解法：cron 每分鐘掃描，pending 超 30 分鐘 → cancelled（cancelled_by='timeout'）＋庫存回補。
+-- 解法：cron 每分鐘掃描，pending 超 1 分鐘 → cancelled（cancelled_by='timeout'）＋庫存回補。
 --       庫存回補後 product_is_settled 判定恢復運作（觸底＋一輪無人買 → 正常下架流程），
 --       管理員也可從後台手動「重新上架」立即恢復販售。
 --
@@ -25,14 +25,14 @@ begin
     select o.id, o.product_id, o.quantity
       from public.orders o
      where o.status = 'pending'
-       and o.purchased_at < now() - interval '30 minutes'
+       and o.purchased_at < now() - interval '1 minute'
        and o.product_id is not null
      for update skip locked
   loop
     update public.orders set
       status = 'cancelled',
       cancelled_by = 'timeout',
-      cancel_reason = coalesce(cancel_reason, '逾時未確認（30 分鐘），系統自動取消並釋回庫存'),
+      cancel_reason = coalesce(cancel_reason, '逾時未確認（1 分鐘），系統自動取消並釋回庫存'),
       updated_at = now()
      where id = r.id and status = 'pending';
     if found then

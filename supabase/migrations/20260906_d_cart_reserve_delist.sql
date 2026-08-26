@@ -119,7 +119,7 @@ begin
   insert into public.cart_reservations
     (user_id, product_id, quantity, locked_unit_price, reserved_at, expires_at, status)
   values
-    (v_user_id, p_product_id, p_quantity, v_price, v_now, v_now + interval '3 minutes', 'active');
+    (v_user_id, p_product_id, p_quantity, v_price, v_now, v_now + interval '1 minute', 'active');
 
   return jsonb_build_object(
     'ok', true,
@@ -128,7 +128,7 @@ begin
                           and status = 'active' limit 1),
     'locked_unit_price', v_price,
     'quantity', p_quantity,
-    'expires_at', v_now + interval '3 minutes'
+    'expires_at', v_now + interval '1 minute'
   );
 exception
   when others then

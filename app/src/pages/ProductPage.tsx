@@ -32,7 +32,7 @@ const REASON_TEXT: Record<string, string> = {
   invalid_quantity: '數量不正確。',
 }
 
-/** 購物車 3 分鐘倒數提示條（歸零自動收起，庫存由伺服器 cron 釋回） */
+/** 購物車 1 分鐘倒數提示條（歸零自動收起，庫存由伺服器 cron 釋回） */
 function CartCountdown({ expiresAt, onExpire }: { expiresAt: number; onExpire: () => void }) {
   const [left, setLeft] = useState(Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)))
   useEffect(() => {
@@ -222,7 +222,7 @@ export default function ProductPage() {
     )
   }, [product, campaign, now, notOpenYet])
 
-  // ---------- 購物車預訂制：放入購物車＝鎖庫存鎖價 3 分鐘 ----------
+  // ---------- 購物車預訂制：放入購物車＝鎖庫存鎖價 1 分鐘（效期由 DB reserve_ttl_minutes 決定） ----------
   const rpc = async (fn: string, args: Record<string, unknown>) => {
     const { data, error } = await supabase.rpc(fn, args)
     if (error) return { ok: false, reason: 'server_error' }
