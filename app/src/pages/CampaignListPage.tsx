@@ -50,7 +50,10 @@ export default function CampaignListPage() {
         .order('created_at', { ascending: false })
 
       // 全部 active 商品都陳列；進行中促銷商品 →「限時促銷」專區，其餘 → 一般區
-      const all = (data ?? []) as Product[]
+      const nowIso2 = Date.now()
+      const all = ((data ?? []) as Product[]).filter(
+        (p) => !p.forced_delist_at || new Date(p.forced_delist_at).getTime() > nowIso2,
+      )
       const promoIds = new Set<string>()
       const promoInfoMap: Record<string, { name: string; ends_at: string; kind?: string }> = {}
       for (const promo of runningPromos ?? []) {

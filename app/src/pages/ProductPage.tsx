@@ -13,6 +13,7 @@ type BuyState =
   | { kind: 'success'; orderNo: string; unitPrice: number; quantity: number }
   | { kind: 'soldout' }
   | { kind: 'error'; message: string }
+  | { kind: 'cart'; reservationId: string; lockedPrice: number; quantity: number; expiresAt: number }
 
 const REASON_TEXT: Record<string, string> = {
   sold_out: '商品已被其他客戶搶購完畢。',
@@ -24,6 +25,34 @@ const REASON_TEXT: Record<string, string> = {
   account_blocked: '帳號已被封鎖，請聯絡管理員。',
   offer_ended: '😅 太猶豫囉！此優惠已結束，錯過就沒有了。',
   not_open_yet: '⏳ 尚未開賣，敬請期待，時間一到即可下單。',
+  reservation_expired: '⌛ 考慮時間超過了，商品已回到架上，再試一次吧！',
+  reservation_inactive: '此預訂已失效，請重新放入購物車。',
+  not_found_or_not_owner: '找不到這筆預訂。',
+  invalid_quantity: '數量不正確。',
+}
+
+/** 購物車 3 分鐘倒數提示條（歸零自動收起，庫存由伺服器 cron 釋回） */
+function CartCountdown({ expiresAt, onExpire }: { expiresAt: number; onExpire: () => void }) {
+  const [left, setLeft] = useState(Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)))
+  useEffect(() => {
+    const id = setInterval(() => {
+      const s = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000))
+      setLeft(s)
+      if (s <= 0) {
+        clearInterval(id)
+        onExpire()
+      }
+    }, 250)
+    return () => clearInterval(id)
+  }, [expiresAt])
+  const urgent = left <= 60
+  return (
+    <div className={`mb-2 rounded-xl px-4 py-2.5 text-base font-bold flex items-center justify-between
+      ${urgent ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-accent-50 text-accent-700 border border-accent-200'}`}>
+      <span>🛒 商品已為您保留（價格已鎖定）</span>
+      <span className="tabular-nums">⏱ {formatCountdown(left)}</span>
+    </div>
+  )
 }
 
 export default function ProductPage() {
@@ -173,48 +202,66 @@ export default function ProductPage() {
     )
   }, [product, campaign, now, notOpenYet])
 
-  const buy = async () => {
+  // ---------- 購物車預訂制：放入購物車＝鎖庫存鎖價 3 分鐘 ----------
+  const rpc = async (fn: string, args: Record<string, unknown>) => {
+    const { data, error } = await supabase.rpc(fn, args)
+    if (error) return { ok: false, reason: 'server_error' }
+    return data as { ok: boolean; reason?: string; [k: string]: unknown }
+  }
+
+  const addToCart = async () => {
     if (buyState.kind === 'buying') return
     setBuyState({ kind: 'buying' })
     try {
-      const { data: sess } = await supabase.auth.getSession()
-      const token = sess.session?.access_token
-      if (!token) {
-        navigate('/login', { replace: true })
-        return
-      }
-      const fnBase = import.meta.env.VITE_SUPABASE_URL as string
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
-      const res = await fetch(`${fnBase}/functions/v1/purchase`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          apikey: anonKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ productId: product!.id, quantity }),
-      })
-      const data = await res.json().catch(() => null)
-      if (data?.ok) {
+      const res = await rpc('reserve_product', { p_product_id: product!.id, p_quantity: quantity })
+      if (res.ok) {
         setBuyState({
-          kind: 'success',
-          orderNo: data.order_no,
-          unitPrice: Number(data.unit_price),
-          quantity: data.quantity,
+          kind: 'cart',
+          reservationId: String(res.reservation_id),
+          lockedPrice: Number(res.locked_unit_price),
+          quantity: Number(res.quantity ?? quantity),
+          expiresAt: new Date(String(res.expires_at)).getTime(),
         })
-      } else if (data?.reason === 'sold_out') {
+      } else if (res.reason === 'sold_out') {
         setBuyState({ kind: 'soldout' })
       } else {
         setBuyState({
           kind: 'error',
-          message:
-            REASON_TEXT[data?.reason ?? ''] ??
-            '目前無法完成購買，請稍後再試。',
+          message: REASON_TEXT[res.reason ?? ''] ?? '目前無法放入購物車，請稍後再試。',
         })
       }
     } catch {
       setBuyState({ kind: 'error', message: '網路異常，請確認連線後再試。' })
     }
+  }
+
+  const checkoutCart = async () => {
+    if (buyState.kind !== 'cart') return
+    try {
+      const res = await rpc('checkout_reservation', { p_reservation_id: buyState.reservationId })
+      if (res.ok) {
+        setBuyState({
+          kind: 'success',
+          orderNo: String(res.order_no),
+          unitPrice: Number(res.unit_price),
+          quantity: Number(res.quantity),
+        })
+      } else {
+        setBuyState({
+          kind: 'error',
+          message: REASON_TEXT[res.reason ?? ''] ?? '結帳失敗，請重新嘗試。',
+        })
+      }
+    } catch {
+      setBuyState({ kind: 'error', message: '網路異常，請確認連線後再試。' })
+    }
+  }
+
+  const releaseCart = async () => {
+    if (buyState.kind !== 'cart') return
+    const rid = buyState.reservationId
+    setBuyState({ kind: 'idle' })
+    await rpc('release_reservation', { p_reservation_id: rid }).catch(() => null)
   }
 
   if (loading) {
@@ -477,8 +524,28 @@ export default function ProductPage() {
       {/* 底部 Sticky CTA */}
       <div className="fixed bottom-0 inset-x-0 z-20">
         <div className="max-w-md md:max-w-3xl mx-auto bg-white/95 backdrop-blur border-t border-ink-100 px-4 pt-3 pb-safe">
+          {buyState.kind === 'cart' && (
+            <>
+              <CartCountdown expiresAt={buyState.expiresAt} onExpire={() => setBuyState({ kind: 'idle' })} />
+              <div className="grid grid-cols-[1fr_auto] gap-2">
+                <button
+                  onClick={checkoutCart}
+                  className="h-14 rounded-2xl bg-accent-500 text-white text-base font-bold shadow-lg shadow-accent-500/25 active:scale-[0.98] transition"
+                >
+                  ✔ 結帳｜{fmtMoney(buyState.lockedPrice)} × {buyState.quantity}
+                </button>
+                <button
+                  onClick={releaseCart}
+                  className="h-14 px-4 rounded-2xl border border-ink-200 text-ink-600 text-base font-semibold active:scale-[0.98] transition"
+                >
+                  放棄
+                </button>
+              </div>
+            </>
+          )}
+          {buyState.kind !== 'cart' && (
           <button
-            onClick={buy}
+            onClick={addToCart}
             disabled={!canBuy}
             className={`w-full h-14 py-3.5 rounded-2xl text-base font-bold transition
               ${saleOpen && live.stock > 0
@@ -486,7 +553,7 @@ export default function ProductPage() {
                 : 'bg-ink-200 text-ink-400 cursor-not-allowed'}`}
           >
             {buyState.kind === 'buying'
-              ? '搶購中…'
+              ? '處理中…'
               : notOpenYet
                 ? `⏳ ${formatCountdown(saleRemain)} 後開賣`
                 : !saleOpen
@@ -494,10 +561,11 @@ export default function ProductPage() {
                   : live.stock <= 0
                       ? '已完售'
                       : atFloor
-                        ? `已是最優惠｜${fmtMoney(live.price)} × ${quantity}`
-                        : `立即搶購｜${fmtMoney(live.price)} × ${quantity}`}
+                        ? `🛒 放入購物車｜${fmtMoney(live.price)} × ${quantity}`
+                        : `🛒 放入購物車｜鎖定價 ${fmtMoney(live.price)} × ${quantity}`}
           </button>
-          {saleOpen && live.stock > 0 && !atFloor && (
+          )}
+          {saleOpen && live.stock > 0 && !atFloor && buyState.kind !== 'cart' && (
             <p className="mt-1.5 text-center text-base text-ink-600">
               再等等還會降，但庫存有限、不保證有貨
             </p>

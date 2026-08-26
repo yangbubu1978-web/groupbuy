@@ -70,6 +70,7 @@ export interface Product {
   status: ProductStatus
   sale_start_at: string | null
   last_order_at?: string | null
+  forced_delist_at?: string | null
   created_at?: string | null
   unit?: string
   items_per_unit?: number

@@ -74,6 +74,7 @@ export default function AdminProductsPage() {
     initial_stock: '20', max_per_customer: '2',
     unit: '件', items_per_unit: '1',
     sale_start_at: '',
+    forced_delist_at: '',
     status: 'active' as Product['status'],
     scope: 'all' as 'all' | 'companies' | 'groups',
     company_ids: [] as string[], group_ids: [] as string[],
@@ -139,6 +140,7 @@ export default function AdminProductsPage() {
           unit: p.unit ?? '件',
           items_per_unit: String(p.items_per_unit ?? 1),
           sale_start_at: p.sale_start_at ? toLocalInputValue(p.sale_start_at) : '',
+          forced_delist_at: p.forced_delist_at ? toLocalInputValue(p.forced_delist_at) : '',
           status: p.status,
           scope: 'all',
           company_ids: [], group_ids: [],
@@ -219,6 +221,7 @@ export default function AdminProductsPage() {
           unit: form.unit.trim() || '件',
           items_per_unit: Math.max(1, Number(form.items_per_unit) || 1),
           sale_start_at: form.sale_start_at ? new Date(form.sale_start_at).toISOString() : null,
+          forced_delist_at: form.forced_delist_at ? new Date(form.forced_delist_at).toISOString() : null,
           status: form.status,
         }).eq('id', editId)
         if (error) throw new Error(error.message)
@@ -253,6 +256,7 @@ export default function AdminProductsPage() {
           unit: form.unit.trim() || '件',
           items_per_unit: Math.max(1, Number(form.items_per_unit) || 1),
           sale_start_at: form.sale_start_at ? new Date(form.sale_start_at).toISOString() : null,
+          forced_delist_at: form.forced_delist_at ? new Date(form.forced_delist_at).toISOString() : null,
           status: form.status,
         }).select('id').single()
         if (insertErr) throw new Error(insertErr.message)
@@ -439,6 +443,17 @@ export default function AdminProductsPage() {
                 className={`${inputCls} mt-1`} />
               <span className="mt-1 block text-xs text-ink-500">
                 ※ 設為未來的時間，前台會顯示「⏳ 距開賣倒數」並鎖定不可下單，時間一到自動開賣；留空＝現在即可購買。
+              </span>
+            </label>
+
+            {/* 強制下架時間（選填；設為未來＝「即將結束」） */}
+            <label className="block text-xs text-ink-500">
+              強制下架時間（選填；設為未來＝「即將結束」）
+              <input type="datetime-local" value={form.forced_delist_at}
+                onChange={(e) => setForm({ ...form, forced_delist_at: e.target.value })}
+                className={`${inputCls} mt-1`} />
+              <span className="mt-1 block text-xs text-ink-500">
+                ※ 前台會顯示紅色「⏳ 即將結束」倒數標章；時間一到系統每分鐘自動下架收檔。留空＝不強制（由降價到底機制決定）。
               </span>
             </label>
 

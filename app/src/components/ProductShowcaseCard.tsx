@@ -86,6 +86,8 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
   const dropPct = original > 0 ? Math.round((dropped / original) * 100) : 0
   const stockPct = Math.max(0, Math.min(100, (live.stock / Math.max(1, product.initial_stock)) * 100))
   const soldOut = live.stock <= 0
+  const endingSoon =
+    !!product.forced_delist_at && new Date(product.forced_delist_at).getTime() > Date.now()
 
   return (
     <Link
@@ -105,6 +107,16 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
           {promoRemaining > 0 && (
             <span className="shrink-0 text-base font-bold tabular-nums">⏰ 剩 {formatCountdown(promoRemaining)}</span>
           )}
+        </div>
+      )}
+      {/* 即將結束帶（管理員設了強制下架時間且在未來） */}
+      {endingSoon && (
+        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2
+                        flex items-center justify-between gap-3">
+          <span className="text-base font-bold">⏳ 即將結束</span>
+          <span className="shrink-0 text-base font-bold tabular-nums">
+            {formatCountdown(Math.max(0, (new Date(product.forced_delist_at!).getTime() - Date.now()) / 1000))} 後下架
+          </span>
         </div>
       )}
 

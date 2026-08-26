@@ -12,29 +12,43 @@ const STATUS_LABEL: Record<string, string> = {
   blocked: '已封鎖',
 }
 
-/** 我的關注清單項目（含即時價格） */
-function FollowItem({ product }: { product: Product }) {
+/** 我的關注清單項目（含即時價格＋單筆取消關注） */
+function FollowItem({ product, onRemove, removing }: {
+  product: Product; onRemove: (id: string) => void; removing: boolean
+}) {
   const live = useLivePrice(product)
   return (
-    <Link
-      to={`/product/${product.id}`}
-      className="flex items-center gap-3 px-5 py-3.5 active:bg-ink-50 transition"
-    >
-      <div className="w-12 h-12 rounded-xl bg-ink-100 overflow-hidden shrink-0 flex items-center justify-center">
-        {product.image_url ? (
-          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-lg opacity-30">🎁</span>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-base font-semibold text-ink-900 truncate">{product.name}</p>
-        <p className="text-sm text-ink-600">剩餘 {live.stock} 件</p>
-      </div>
-      <span className="text-base font-extrabold text-ink-900 tabular-nums shrink-0">
-        {fmtMoney(live.price)}
-      </span>
-    </Link>
+    <div className="flex items-center gap-3 px-5 py-3.5">
+      <Link
+        to={`/product/${product.id}`}
+        className="flex items-center gap-3 flex-1 min-w-0 active:bg-ink-50 transition"
+      >
+        <div className="w-12 h-12 rounded-xl bg-ink-100 overflow-hidden shrink-0 flex items-center justify-center">
+          {product.image_url ? (
+            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-lg opacity-30">🎁</span>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-base font-semibold text-ink-900 truncate">{product.name}</p>
+          <p className="text-sm text-ink-600">剩餘 {live.stock} 件</p>
+        </div>
+        <span className="text-base font-extrabold text-ink-900 tabular-nums shrink-0">
+          {fmtMoney(live.price)}
+        </span>
+      </Link>
+      <button
+        onClick={() => onRemove(product.id)}
+        disabled={removing}
+        aria-label={`取消關注 ${product.name}`}
+        className="w-11 h-11 shrink-0 rounded-full border border-ink-200 text-ink-500
+                   hover:bg-red-50 hover:text-red-600 hover:border-red-200
+                   disabled:opacity-40 transition flex items-center justify-center"
+      >
+        ✕
+      </button>
+    </div>
   )
 }
 
@@ -53,6 +67,26 @@ export default function ProfilePage() {
   const [phoneInput, setPhoneInput] = useState('')
   const [phoneBusy, setPhoneBusy] = useState(false)
   const [phoneMsg, setPhoneMsg] = useState<string | null>(null)
+  const [removingFollowId, setRemovingFollowId] = useState<string | null>(null)
+
+  // 取消單筆關注（Realtime 訂閱會自動把清單同步）
+  const removeFollow = async (productId: string) => {
+    if (!userId) return
+    setRemovingFollowId(productId)
+    try {
+      const { error } = await supabase
+        .from('product_follows')
+        .delete()
+        .eq('user_id', userId)
+        .eq('product_id', productId)
+      if (error) throw error
+      setFollowedProducts((prev) => prev.filter((x) => x.id !== productId))
+    } catch {
+      // 失敗不阻斷 UI；下次 Realtime 同步會修正
+    } finally {
+      setRemovingFollowId(null)
+    }
+  }
 
   useEffect(() => {
     if (!customer) return
@@ -235,7 +269,10 @@ export default function ProfilePage() {
           </div>
           {followedProducts.length > 0 ? (
             <div className="divide-y divide-ink-50">
-              {followedProducts.map((p) => <FollowItem key={p.id} product={p} />)}
+              {followedProducts.map((p) => (
+                <FollowItem key={p.id} product={p}
+                  onRemove={removeFollow} removing={removingFollowId === p.id} />
+              ))}
             </div>
           ) : (
             <p className="px-5 py-6 text-base text-ink-500 text-center">
