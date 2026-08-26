@@ -46,7 +46,11 @@ begin
       new.id,
       old.status::text,
       new.status::text,
-      coalesce(auth.uid(), new.cancelled_by::uuid),  -- cancelled_by 是文字('admin'/'member')，cast 幾乎必為 null → 實務上多走 auth.uid() 或 system(null)
+      coalesce(
+        auth.uid(),
+        case when new.cancelled_by ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+             then new.cancelled_by::uuid end  -- cancelled_by 多為文字標籤('admin'/'member'/'timeout')；是 UUID 才轉
+      ),
       case when new.status::text in ('cancelled','refunding','refunded')
            then coalesce(new.cancel_reason, new.note) end
     );
