@@ -149,6 +149,7 @@ export default function CampaignListPage() {
           <ul className="space-y-2 text-base text-ink-700 leading-relaxed">
             <li>・價格會隨時間 <b className="text-ink-900">自動往下調</b>，每件商品依自己的節奏隨機降價，越晚下手越便宜。</li>
             <li>・<b className="text-ink-900">價格只會越來越低</b>：但庫存有限、先買先贏，錯過就不再回來，猶豫太久會後悔。</li>
+            <li>・看到心動商品，先加入「<b className="text-ink-900">關注</b>」❤️ 結帳時間有限，需要購買時可直接從「<b className="text-ink-900">個人資料</b>」快速找到商品，搶先一步完成結帳。</li>
           </ul>
           <p className="mt-2 text-base font-bold text-accent-600">❤️ 心動就下手，別等到最後一秒！</p>
         </section>
@@ -180,11 +181,6 @@ export default function CampaignListPage() {
                 })()}
                   <span className="ml-auto text-sm font-bold text-accent-700 whitespace-nowrap">限量優惠，先搶先贏 →</span>
                 </div>
-                {/* 官方說明：活動＝行銷展示層，不影響銷售邏輯 */}
-                <p className="-mt-2 flex items-start gap-1.5 text-sm text-ink-500 anim-fade-up">
-                  <span aria-hidden="true">ℹ️</span>
-                  <span>活動僅用於商品展示與行銷分類，不影響商品價格、庫存、上下架及降價規則。</span>
-                </p>
                 <div className="space-y-5">
                   {promoProducts.map((p, i) => (
                     <ProductShowcaseCard key={p.id} product={p} index={i} promo={promoInfo[p.id] ?? null} followCount={followMap[p.id] ?? 0} />
