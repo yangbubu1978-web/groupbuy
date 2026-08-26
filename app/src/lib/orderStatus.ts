@@ -46,6 +46,7 @@ export const ORDER_STATUS_ICON: Record<OrderStatus, string> = {
 export const NEXT_STATUSES: Partial<
   Record<OrderStatus, { to: OrderStatus; label: string; danger?: boolean }[]>
 > = {
+  // P30 簡化流程：待確認 → 已確認 → 已付款 → 已完成（shipped 不再出現在按鈕）
   pending: [
     { to: 'confirmed', label: '✅ 確認訂單' },
     { to: 'cancelled', label: '❌ 取消（回補庫存）', danger: true },
@@ -55,16 +56,13 @@ export const NEXT_STATUSES: Partial<
     { to: 'cancelled', label: '❌ 取消（回補庫存）', danger: true },
   ],
   paid: [
-    { to: 'shipped', label: '🚚 出貨' },
+    { to: 'completed', label: '📦 完成訂單' },
     { to: 'refunding', label: '↩️ 進入退款', danger: true },
   ],
-  shipped: [
-    { to: 'completed', label: '📦 完成' },
-    { to: 'refunding', label: '↩️ 退貨退款', danger: true },
-  ],
+  // shipped 僅舊資料可能停留；不提供按鈕（DB 端仍允許 shipped→completed/refunding 收尾）
   completed: [{ to: 'refunding', label: '↩️ 售後退款', danger: true }],
   refunding: [
     { to: 'refunded', label: '💸 退款完成（回補庫存）', danger: true },
-    { to: 'shipped', label: '🚫 退款被拒，恢復出貨' },
+    { to: 'paid', label: '🚫 退款被拒，恢復已付款' },
   ],
 }

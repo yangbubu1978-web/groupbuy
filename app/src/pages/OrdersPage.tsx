@@ -8,8 +8,8 @@ import { useAuth } from '../context/AuthContext'
 // 狀態文案/樣式/圖示：共用字典單一真相來源（P19）
 import { ORDER_STATUS_LABEL as STATUS_LABEL, ORDER_STATUS_STYLE as STATUS_STYLE, ORDER_STATUS_ICON as STATUS_ICON } from '../lib/orderStatus'
 
-/** 電商進度條：五個正向里程碑 */
-const PROGRESS_STEPS = ['pending', 'confirmed', 'paid', 'shipped', 'completed'] as const
+/** 電商進度條：P30 簡化版四個正向里程碑（下單→確認→付款→完成） */
+const PROGRESS_STEPS = ['pending', 'confirmed', 'paid', 'completed'] as const
 function progressIndex(status: string): number {
   return PROGRESS_STEPS.indexOf(status as (typeof PROGRESS_STEPS)[number])
 }
@@ -248,7 +248,7 @@ export default function OrdersPage() {
                     ))}
                   </div>
                   <div className="flex justify-between mt-1 text-[11px] text-ink-600">
-                    <span>下單</span><span className="hidden xs:inline">確認</span><span>付款</span><span className="hidden xs:inline">出貨</span><span>完成</span>
+                    <span>下單</span><span className="hidden xs:inline">確認</span><span>付款</span><span className="hidden xs:inline">完成</span>
                   </div>
                 </div>
               )}
