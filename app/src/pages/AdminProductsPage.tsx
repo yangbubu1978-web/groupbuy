@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Campaign, Company, CustomerGroup, Product, Promotion } from '../lib/types'
@@ -53,7 +53,10 @@ export default function AdminProductsPage() {
   }
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const editId = searchParams.get('id') // 有值 = 編輯模式
+  /** 複製商品進行中：抑制 URL id 的編輯模式判定 */
+  const [duplicateMode, setDuplicateMode] = useState(false)
+  // 有值 = 編輯模式（duplicateMode 時忽略 URL id，走新增路徑）
+  const editId = duplicateMode ? null : searchParams.get('id')
 
   const [products, setProducts] = useState<Product[]>([])
   // 活動欄位已從表活動欄位已從表單移除：僅在背景抓第一個活動 ID 自動帶入
@@ -87,6 +90,14 @@ export default function AdminProductsPage() {
   // 促銷活動（商品 ↔ 多個促銷）
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [promoIds, setPromoIds] = useState<string[]>([])
+
+  // 狀態排序管理（P23-A）：chips 篩選
+  type StatusFilter = 'all' | Product['status']
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const visibleProducts = useMemo(() => {
+    if (statusFilter === 'all') return products
+    return products.filter((x) => x.status === statusFilter)
+  }, [products, statusFilter])
 
   useEffect(() => {
     if (!authLoading && !isAdmin) navigate('/', { replace: true })
@@ -274,9 +285,10 @@ export default function AdminProductsPage() {
             if (rows.length > 0) await supabase.from('campaign_groups').upsert(rows)
           }
         }
-        setMsg('✅ 已新增商品')
+        setMsg(duplicateMode ? '✅ 副本已建立（草稿狀態），確認內容後可發布' : '✅ 已新增商品')
         setForm(emptyForm)
         setShowForm(false)
+        setDuplicateMode(false)
         await reloadProducts()
       }
     } catch (e) {
@@ -348,6 +360,68 @@ export default function AdminProductsPage() {
     setBusy(false)
   }
 
+  /**
+   * 重新上架（P23-B）：ended/paused 商品重新開賣
+   * - 狀態 → active
+   * - 開賣時間 → 現在（降價曲線從「原始價格」重新起算，不是接著上次的價格）
+   * - 庫存回補到初始值（上一輪沒賣出的貨重新可賣；已售出的訂單不受影響）
+   */
+  const relist = async (p: Product) => {
+    const ok = await ask({
+      title: '重新上架',
+      message: `「${p.name}」將從原始價格 ${fmtMoney(Number(p.original_price))} 重新開始降價。\n庫存回補至 ${p.initial_stock}，現有訂單紀錄保留。\n確定重新上架？`,
+      danger: false,
+    })
+    if (!ok) return
+    setBusy(true); setMsg(null)
+    try {
+      const { error } = await supabase.from('products').update({
+        status: 'active',
+        sale_start_at: new Date().toISOString(),
+        stock: p.initial_stock,
+      }).eq('id', p.id)
+      if (error) throw error
+      setMsg(`✅ 「${p.name}」已重新上架——從原始價格 ${fmtMoney(Number(p.original_price))} 開始降價`)
+      await reloadProducts()
+    } catch (e) {
+      setMsg(`❌ ${e instanceof Error ? e.message : '操作失敗'}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** 複製商品（P23-C）：載入原條件進表單，名稱加副本、SKU 加 -COPY、開賣時間清空＝儲存後立即開始降價 */
+  const duplicateProduct = (p: Product) => {
+    // 走「新增」路徑：duplicateMode 抑制 URL id 的編輯判定，儲存時 insert 新商品
+    setDuplicateMode(true)
+    navigate('/admin/products', { replace: true })
+    setForm({
+      campaign_id: p.campaign_id,
+      name: `${p.name}（副本）`,
+      description: p.description ?? '',
+      image_url: p.image_url ?? '',
+      sku: `${p.sku}-COPY`,
+      item_no: (p as unknown as { item_no?: string }).item_no ?? '',
+      original_price: String(p.original_price),
+      minimum_price: String(p.minimum_price),
+      price_interval_seconds: String(p.price_interval_seconds),
+      price_decrease: String(p.price_decrease),
+      price_decrease_max: p.price_decrease_max != null ? String(p.price_decrease_max) : '',
+      initial_stock: String(p.initial_stock),
+      max_per_customer: String(p.max_per_customer),
+      unit: p.unit ?? '件',
+      items_per_unit: String(p.items_per_unit ?? 1),
+      sale_start_at: '',                  // 清空＝儲存當下立即開始降價
+      _origSaleStartNull: true,
+      forced_delist_at: p.forced_delist_at ? toLocalInputValue(p.forced_delist_at) : '',
+      status: 'draft',                    // 先以草稿建立，確認內容再發布
+      scope: 'all',
+      company_ids: [], group_ids: [],
+    })
+    setShowForm(true)
+    window.scrollTo({ top: 0 })
+  }
+
   const inputCls =
     'w-full h-12 px-3 rounded-xl border border-ink-200 bg-white text-base text-ink-900 focus:outline-none focus:ring-2 focus:ring-accent-400'
 
@@ -360,7 +434,7 @@ export default function AdminProductsPage() {
             <p className="text-sm md:text-base text-ink-500">設定販售商品、開賣時間與草稿</p>
           </div>
           {showForm ? (
-            <button onClick={() => setShowForm(false)}
+            <button onClick={() => { setShowForm(false); setDuplicateMode(false); navigate('/admin/products', { replace: true }) }}
               className="h-10 px-4 rounded-xl border border-ink-200 bg-white text-sm font-medium text-ink-600">
               取消
             </button>
@@ -373,6 +447,32 @@ export default function AdminProductsPage() {
         </div>
 
         {msg && <p className="text-sm text-center bg-white border border-ink-100 rounded-xl py-2.5 shadow-sm">{msg}</p>}
+
+        {/* 狀態篩選 chips（P23-A） */}
+        {!showForm && (
+          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+            {([
+              ['all', `全部 ${products.length}`],
+              ['active', `銷售中 ${products.filter((x) => x.status === 'active').length}`],
+              ['draft', `草稿 ${products.filter((x) => x.status === 'draft').length}`],
+              ['paused', `已暫停 ${products.filter((x) => x.status === 'paused').length}`],
+              ['ended', `已下架 ${products.filter((x) => x.status === 'ended').length}`],
+            ] as [StatusFilter, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setStatusFilter(key)}
+                aria-pressed={statusFilter === key}
+                className={`shrink-0 h-9 px-3.5 rounded-full text-xs font-semibold transition ${
+                  statusFilter === key
+                    ? 'bg-ink-900 text-white'
+                    : 'bg-white border border-ink-200 text-ink-600'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* 刪除被擋：講清楚為什麼＋給替代方案 */}
         {blockedProduct && (
@@ -415,7 +515,9 @@ export default function AdminProductsPage() {
         {/* 新增／編輯表單 */}
         {showForm && loaded && (
           <section className="bg-white rounded-2xl border border-ink-100 p-5 space-y-3 shadow-sm">
-            <h2 className="text-sm font-bold text-ink-900">{editId ? '編輯商品' : '新增商品'}</h2>
+            <h2 className="text-sm font-bold text-ink-900">
+              {editId ? '編輯商品' : duplicateMode && form.name.includes('副本') ? '複製商品（確認後建立）' : '新增商品'}
+            </h2>
 
             <input placeholder="商品名稱" value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
@@ -643,7 +745,7 @@ export default function AdminProductsPage() {
 
             <button onClick={submit} disabled={busy || !form.name || !form.sku}
               className="w-full h-11 rounded-xl bg-ink-900 text-white text-base font-bold disabled:opacity-40">
-              {busy ? '儲存中…' : editId ? '儲存變更' : '建立商品'}
+              {busy ? '儲存中…' : editId ? '儲存變更' : duplicateMode ? '建立副本' : '建立商品'}
             </button>
           </section>
         )}
@@ -651,7 +753,7 @@ export default function AdminProductsPage() {
         {/* 商品列表 */}
         {!showForm && (
           <section className="space-y-3">
-            {products.map((p) => (
+            {visibleProducts.map((p) => (
               <div key={p.id} className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -688,10 +790,22 @@ export default function AdminProductsPage() {
                     className="px-3.5 py-2 rounded-lg bg-ink-100 text-ink-700 text-sm font-semibold disabled:opacity-50">
                     {p.status === 'active' ? '⏸ 暫停販售' : p.status === 'draft' ? '▶ 發布' : '▶ 恢復販售'}
                   </button>
+                  {(p.status === 'ended' || p.status === 'paused') && (
+                    <button onClick={() => void relist(p)} disabled={busy}
+                      className="px-3.5 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200 text-sm font-semibold disabled:opacity-50"
+                      title={`從原始價格 ${fmtMoney(Number(p.original_price))} 重新開始降價`}>
+                      🔄 重新上架
+                    </button>
+                  )}
                   <Link to={`/admin/products?id=${p.id}`}
                     className="px-3.5 py-2 rounded-lg bg-blue-50 text-blue-700 text-sm font-semibold">
                     ✏️ 編輯
                   </Link>
+                  <button onClick={() => duplicateProduct(p)} disabled={busy}
+                    className="px-3.5 py-2 rounded-lg bg-purple-50 text-purple-700 text-sm font-semibold disabled:opacity-50"
+                    title="複製此商品的降價條件建立新商品">
+                    ⧉ 複製
+                  </button>
                   <button onClick={() => remove(p)} disabled={busy}
                     className="px-3.5 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-semibold disabled:opacity-50">
                     🗑 刪除
@@ -699,8 +813,10 @@ export default function AdminProductsPage() {
                 </div>
               </div>
             ))}
-            {products.length === 0 && (
-              <p className="text-center text-sm text-ink-400 py-8">尚無商品</p>
+            {visibleProducts.length === 0 && (
+              <p className="text-center text-sm text-ink-400 py-8">
+                {statusFilter === 'all' ? '尚無商品' : '此狀態沒有商品'}
+              </p>
             )}
           </section>
         )}
