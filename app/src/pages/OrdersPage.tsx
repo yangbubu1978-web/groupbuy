@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase'
 import type { Order } from '../lib/types'
 import { fmtMoney, fmtDateTime } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
-import { useConfirm } from '../components/ConfirmDialog'
 
 const STATUS_LABEL: Record<string, string> = {
   pending: '待確認',
@@ -46,12 +45,10 @@ type Tab = 'active' | 'done'
 
 export default function OrdersPage() {
   const { customer } = useAuth()
-  const ask = useConfirm()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState<Tab>('active')
   const [busyId, setBusyId] = useState<string | null>(null)
-  const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   useEffect(() => {
@@ -84,35 +81,6 @@ export default function OrdersPage() {
       setMsg({ ok: false, text: `❌ ${e instanceof Error ? e.message : '確認失敗'}` })
     } finally {
       setBusyId(null)
-    }
-  }
-
-  // 會員取消訂單（限待確認／已確認；Server 回補庫存）
-  const cancelOrder = async (o: Order) => {
-    // 兩段式：先彈確認
-    if (!(await ask({ title: '取消訂單', message: `確定要取消這筆訂單嗎？\n${o.order_no}｜${o.product_name_snapshot}`, danger: true }))) return
-    setCancellingId(o.id)
-    setMsg(null)
-    try {
-      const { data, error } = await supabase.rpc('cancel_own_order', { p_order_id: o.id })
-      const res = (data ?? {}) as { ok?: boolean; reason?: string }
-      if (error) throw new Error(error.message)
-      if (!res.ok) {
-        const reasonText: Record<string, string> = {
-          unauthenticated: '登入狀態已失效，請重新登入',
-          not_found_or_not_owner: '找不到這筆訂單',
-          invalid_status: '此訂單目前無法取消（已付款請聯絡管理員）',
-        }
-        throw new Error(reasonText[res.reason ?? ''] ?? `取消失敗（${res.reason}）`)
-      }
-      setOrders((prev) =>
-        prev.map((x) => (x.id === o.id ? { ...x, status: 'cancelled' as Order['status'] } : x)),
-      )
-      setMsg({ ok: true, text: '訂單已取消，庫存已釋回' })
-    } catch (e) {
-      setMsg({ ok: false, text: `❌ ${e instanceof Error ? e.message : '取消失敗'}` })
-    } finally {
-      setCancellingId(null)
     }
   }
 
@@ -294,16 +262,8 @@ export default function OrdersPage() {
                     {busyId === o.id ? '確認中…' : '✔ 確認訂單'}
                   </button>
                 )}
-                {(o.status === 'pending' || o.status === 'confirmed') && (
-                  <button
-                    onClick={() => cancelOrder(o)}
-                    disabled={cancellingId === o.id}
-                    className="h-12 px-4 rounded-xl border border-red-200 text-red-500
-                               text-base font-bold active:scale-[0.98] transition disabled:opacity-50"
-                  >
-                    {cancellingId === o.id ? '取消中…' : '取消訂單'}
-                  </button>
-                )}
+                {/* 會員自助取消已移除（2026-08-25）：降價商城取消重買＝零風險套利，
+                    誤購請聯絡管理員由後台處理 */}
                 {/* 再次購買：有 product_id 且商品仍在架上才顯示 */}
                 {(o.status === 'completed' || o.status === 'cancelled') && o.product_id && (
                   <Link
