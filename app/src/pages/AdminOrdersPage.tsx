@@ -30,6 +30,9 @@ interface ConfirmState {
 
 /** 需要「原因」的目標狀態（寫入 cancel_reason，匯出表會帶出） */
 const REASON_STATUSES: ReadonlySet<string> = new Set(['cancelled', 'refunding', 'refunded'])
+/** 本地時區日期字串 → 當天起訖的 epoch ms（含頭含尾） */
+const dayStartMs = (s: string): number => new Date(`${s}T00:00:00`).getTime()
+const dayEndMs = (s: string): number => new Date(`${s}T23:59:59.999`).getTime()
 /** 訂單列表輪詢間隔（與前台列表 30s 一致；分頁隱藏時暫停） */
 const POLL_MS = 30_000
 
@@ -49,6 +52,11 @@ export default function AdminOrdersPage() {
   const [reason, setReason] = useState('')
   const [historyFor, setHistoryFor] = useState<string | null>(null)
   const [history, setHistory] = useState<Record<string, HistoryRow[]>>({})
+  /** 匯出範圍：預設僅有效訂單（排除已取消／已退款），可關閉看全流水 */
+  const [exportValidOnly, setExportValidOnly] = useState(true)
+  /** 日期範圍篩選（本地時區 YYYY-MM-DD；含頭含尾） */
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   /** 新訂單提醒：比對上一輪 pending 數量 */
   const prevPendingRef = useRef<number | null>(null)
   const [newOrderAlert, setNewOrderAlert] = useState(false)
@@ -157,8 +165,8 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // ---- 篩選＋搜尋（手機號碼正規化：+886/符號都能搜到） ----
-  const filtered = useMemo(() => {
+  // ---- 篩選第一層：chips＋搜尋（手機號碼正規化：+886/符號都能搜到） ----
+  const searched = useMemo(() => {
     let list = orders
     if (filter !== 'all') list = list.filter((o) => o.status === filter)
     const kwRaw = keyword.trim()
@@ -179,8 +187,26 @@ export default function AdminOrdersPage() {
         )
       })
     }
+    // 日期範圍（含頭含尾，以 purchased_at 為準）
+    if (dateFrom) {
+      const from = dayStartMs(dateFrom)
+      list = list.filter((o) => new Date(o.purchased_at).getTime() >= from)
+    }
+    if (dateTo) {
+      const to = dayEndMs(dateTo)
+      list = list.filter((o) => new Date(o.purchased_at).getTime() <= to)
+    }
     return list
-  }, [orders, filter, keyword, customers])
+  }, [orders, filter, keyword, customers, dateFrom, dateTo])
+
+  // ---- 篩選第二層：「全部」分頁預設隱藏已取消／已退款（點「已取消」chip 仍可查看，不滅證） ----
+  const filtered = useMemo(
+    () =>
+      filter === 'all'
+        ? searched.filter((o) => !['cancelled', 'refunded'].includes(o.status))
+        : searched,
+    [searched, filter],
+  )
 
   // ---- 統計卡（待處理含 confirmed/paid：管理員實際要動手的都算） ----
   const stats = useMemo(() => {
@@ -207,10 +233,14 @@ export default function AdminOrdersPage() {
         '銷售單位', '數量(單位)', '單價', '金額', '換算單件總數',
         '狀態', '取消者', '取消/退款原因',
       ]]
+      // 匯出來源＝chips＋搜尋結果，「已取消/已退款」由開關控制（與列表顯示規則獨立）
+      const exportList = (exportValidOnly
+        ? searched.filter((o) => !['cancelled', 'refunded'].includes(o.status))
+        : searched) as (Order & { user_id: string })[]
       let sumQty = 0
       let sumAmount = 0
       let sumUnits = 0
-      for (const o of filtered as (Order & { user_id: string })[]) {
+      for (const o of exportList) {
         const p = prodMap.get(o.product_id ?? '')
         const ipu = Math.max(1, Number(p?.items_per_unit ?? 1))
         const c = customers.get(o.user_id)
@@ -237,7 +267,7 @@ export default function AdminOrdersPage() {
       }
       // 彙總列：15 欄對齊——數量=第9欄、金額=第11欄、換算單件總數=第12欄
       rows.push([])
-      rows.push(['合計', `${filtered.length} 筆`, '', '', '', '', '', '', sumQty, '', sumAmount, sumUnits])
+      rows.push(['合計', `${exportList.length} 筆${exportValidOnly ? '（僅有效訂單）' : '（含取消/退款）'}`, '', '', '', '', '', '', sumQty, '', sumAmount, sumUnits])
       // HTML <table> 包成 .xls：Excel 97-2003 可直接開啟
       const esc = (v: string | number) =>
         String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -266,13 +296,34 @@ export default function AdminOrdersPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `訂單報表_${new Date().toISOString().slice(0, 10)}.xls`
+      a.download = `訂單報表_${exportValidOnly ? '有效訂單' : '全部'}_${new Date().toISOString().slice(0, 10)}.xls`
       a.click()
       URL.revokeObjectURL(url)
     } finally {
       setBusyId(null)
     }
   }
+
+  /** 日期快速選：今天／近7天／本月／上月（YYYY-MM-DD 本地時區） */
+  const applyQuickDate = (kind: 'today' | 'last7' | 'thisMonth' | 'lastMonth') => {
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const now = new Date()
+    if (kind === 'today') {
+      const t = fmt(now)
+      setDateFrom(t); setDateTo(t)
+    } else if (kind === 'last7') {
+      const d = new Date(now); d.setDate(d.getDate() - 6)
+      setDateFrom(fmt(d)); setDateTo(fmt(now))
+    } else if (kind === 'thisMonth') {
+      setDateFrom(fmt(new Date(now.getFullYear(), now.getMonth(), 1))); setDateTo(fmt(now))
+    } else {
+      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      const last = new Date(now.getFullYear(), now.getMonth(), 0)
+      setDateFrom(fmt(first)); setDateTo(fmt(last))
+    }
+  }
+  const hasDateFilter = !!(dateFrom || dateTo)
 
   const FILTERS: { key: FilterKey; label: string }[] = [
     { key: 'all', label: `全部 ${orders.length}` },
@@ -314,10 +365,21 @@ export default function AdminOrdersPage() {
           </h1>
           <p className="text-sm md:text-base text-ink-500">查看與匯出成交紀錄</p>
         </div>
-        <button onClick={exportXls} disabled={busyId === '__export__'}
-          className="h-10 px-4 rounded-xl bg-ink-900 text-white text-sm font-semibold active:scale-[0.98] transition disabled:opacity-50">
-          {busyId === '__export__' ? '匯出中…' : '⬇ 匯出 Excel'}
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          <button onClick={exportXls} disabled={busyId === '__export__'}
+            className="h-10 px-4 rounded-xl bg-ink-900 text-white text-sm font-semibold active:scale-[0.98] transition disabled:opacity-50">
+            {busyId === '__export__' ? '匯出中…' : '⬇ 匯出 Excel'}
+          </button>
+          <label className="flex items-center gap-1.5 text-xs text-ink-600 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={exportValidOnly}
+              onChange={(e) => setExportValidOnly(e.target.checked)}
+              className="w-4 h-4 accent-accent-500"
+            />
+            僅有效訂單（排除取消/退款）
+          </label>
+        </div>
       </div>
 
       {/* 統計卡 */}
@@ -366,6 +428,51 @@ export default function AdminOrdersPage() {
         placeholder="搜尋：訂單編號／商品／SKU／客戶／手機"
         className="w-full h-11 px-4 rounded-xl border border-ink-200 bg-white text-base placeholder:text-ink-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus:border-accent-400"
       />
+
+      {/* 日期篩選：起訖＋快速選＋清除 */}
+      <div className="bg-white rounded-2xl border border-ink-100 p-3 shadow-sm space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold text-ink-700 shrink-0">📅 日期</span>
+          <input
+            type="date"
+            value={dateFrom}
+            max={dateTo || undefined}
+            onChange={(e) => setDateFrom(e.target.value)}
+            aria-label="起始日期"
+            className="flex-1 min-w-0 h-11 px-2.5 rounded-xl border border-ink-200 bg-white text-base tabular-nums focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus:border-accent-400"
+          />
+          <span className="text-ink-400 shrink-0">～</span>
+          <input
+            type="date"
+            value={dateTo}
+            min={dateFrom || undefined}
+            onChange={(e) => setDateTo(e.target.value)}
+            aria-label="結束日期"
+            className="flex-1 min-w-0 h-11 px-2.5 rounded-xl border border-ink-200 bg-white text-base tabular-nums focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus:border-accent-400"
+          />
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {([
+            ['today', '今天'], ['last7', '近 7 天'], ['thisMonth', '本月'], ['lastMonth', '上月'],
+          ] as const).map(([k, label]) => (
+            <button
+              key={k}
+              onClick={() => applyQuickDate(k)}
+              className="h-9 px-3 rounded-full text-xs font-semibold bg-ink-50 border border-ink-200 text-ink-600 hover:bg-accent-50 hover:border-accent-300 hover:text-accent-700 transition"
+            >
+              {label}
+            </button>
+          ))}
+          {hasDateFilter && (
+            <button
+              onClick={() => { setDateFrom(''); setDateTo('') }}
+              className="h-9 px-3 rounded-full text-xs font-semibold border border-red-200 text-red-500 hover:bg-red-50 transition ml-auto"
+            >
+              ✕ 清除日期
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* 狀態篩選 chips */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
