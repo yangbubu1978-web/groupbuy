@@ -335,25 +335,36 @@ export default function ProductPage() {
             ←
           </button>
 
-          {/* 中央：先買先贏 + 大字倒數 */}
+          {/* 中央：先買先贏 + 大字倒數（預約中＝鎖定態，降價暫停顯示） */}
           <div className="min-w-0 flex-1 text-center">
             <div className="text-xs tracking-widest text-accent-100 font-bold whitespace-nowrap">⚡ 先買先贏</div>
-            {!atFloor ? (
-              <div
-                className="text-2xl md:text-4xl font-extrabold text-white tabular-nums leading-tight tracking-wide drop-shadow-sm"
-                role="timer"
-                aria-label={`下次降價倒數 ${formatCountdown(live.nextDropIn)}`}
-              >
-                ⏰ {formatCountdown(live.nextDropIn)}
-              </div>
+            {buyState.kind === 'cart' ? (
+              <>
+                <div className="text-xl md:text-3xl font-extrabold text-white leading-tight whitespace-nowrap">
+                  🔒 價格已鎖定 {fmtMoney(buyState.lockedPrice)}
+                </div>
+                <div className="text-[11px] md:text-xs text-accent-100 font-medium whitespace-nowrap">
+                  結帳前不會再變動
+                </div>
+              </>
+            ) : !atFloor ? (
+              <>
+                <div
+                  className="text-2xl md:text-4xl font-extrabold text-white tabular-nums leading-tight tracking-wide drop-shadow-sm"
+                  role="timer"
+                  aria-label={`下次降價倒數 ${formatCountdown(live.nextDropIn)}`}
+                >
+                  ⏰ {formatCountdown(live.nextDropIn)}
+                </div>
+                <div className="text-[11px] md:text-xs text-accent-100 font-medium whitespace-nowrap">
+                  下次降價倒數
+                </div>
+              </>
             ) : (
               <div className="text-xl md:text-2xl font-extrabold text-white leading-tight whitespace-nowrap">
                 ✅ 已是最優惠價
               </div>
             )}
-            <div className="text-[11px] md:text-xs text-accent-100 font-medium whitespace-nowrap">
-              {!atFloor && '下次降價倒數'}
-            </div>
           </div>
 
           <div className="w-11 shrink-0" />
@@ -426,7 +437,9 @@ export default function ProductPage() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-base text-ink-500 mb-0.5">目前價格</div>
+                <div className="text-base text-ink-500 mb-0.5">
+                  {buyState.kind === 'cart' ? '已鎖定價格' : '目前價格'}
+                </div>
                 <div
                   className={`text-4xl font-extrabold tracking-tight transition-colors duration-500 ${
                     priceFlash ? 'text-green-600' : 'text-ink-900'
