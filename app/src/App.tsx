@@ -19,6 +19,7 @@ const AdminOrdersPage = lazy(() => import('./pages/AdminOrdersPage'))
 const AdminCompaniesPage = lazy(() => import('./pages/AdminCompaniesPage'))
 const AdminBannersPage = lazy(() => import('./pages/AdminBannersPage'))
 const AdminPromotionsPage = lazy(() => import('./pages/AdminPromotionsPage'))
+const CartPage = lazy(() => import('./pages/CartPage'))
 
 function PageFallback() {
   return (
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/" element={<RequireAuth><CampaignListPage /></RequireAuth>} />
         <Route path="/change-password" element={<ChangePasswordGate />} />
         <Route path="/product/:productId" element={<RequireAuth><LazyRoute><ProductPage /></LazyRoute></RequireAuth>} />
+        <Route path="/cart" element={<RequireAuth><LazyRoute><CartPage /></LazyRoute></RequireAuth>} />
         <Route path="/orders" element={<RequireAuth><LazyRoute><OrdersPage /></LazyRoute></RequireAuth>} />
         <Route path="/profile" element={<RequireAuth><LazyRoute><ProfilePage /></LazyRoute></RequireAuth>} />
         <Route path="/admin" element={<RequireAuth><AdminLayout /></RequireAuth>}>

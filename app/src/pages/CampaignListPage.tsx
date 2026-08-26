@@ -20,6 +20,41 @@ function CardSkeleton() {
   )
 }
 
+/** 購物車待結帳數徽章（查 cart_reservations active，Realtime 即時同步） */
+function CartBadge() {
+  const { userId } = useAuth()
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    if (!userId) return
+    let alive = true
+    const fetchCount = async () => {
+      const { count } = await supabase
+        .from('cart_reservations')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('status', 'active')
+      if (alive) setCount(count ?? 0)
+    }
+    fetchCount()
+    const ch = supabase
+      .channel(`cart-badge-${userId}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'cart_reservations', filter: `user_id=eq.${userId}` },
+        () => fetchCount())
+      .subscribe()
+    return () => { alive = false; supabase.removeChannel(ch) }
+  }, [userId])
+
+  if (count <= 0) return null
+  return (
+    <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-red-600 text-white
+                     text-xs font-bold flex items-center justify-center border-2 border-white">
+      {count > 9 ? '9+' : count}
+    </span>
+  )
+}
+
 export default function CampaignListPage() {
   const { customer, isAdmin } = useAuth()
   const [promoProducts, setPromoProducts] = useState<Product[]>([])
@@ -109,6 +144,14 @@ export default function CampaignListPage() {
             <h1 className="text-lg font-extrabold text-white tracking-wide">吸引力生活好物</h1>
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              to="/cart"
+              aria-label="購物車"
+              className="relative w-10 h-10 rounded-full bg-white flex items-center justify-center text-lg shadow-sm hover:bg-accent-50 transition"
+            >
+              🛒
+              <CartBadge />
+            </Link>
             <Link
               to={isAdmin ? '/admin/orders' : '/orders'}
               className="text-base font-bold px-4 py-2 rounded-full border border-white/60 text-white hover:bg-white/15 transition"
