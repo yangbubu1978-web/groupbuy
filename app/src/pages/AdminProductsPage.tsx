@@ -74,6 +74,7 @@ export default function AdminProductsPage() {
     initial_stock: '20', max_per_customer: '2',
     unit: '件', items_per_unit: '1',
     sale_start_at: '',
+    _origSaleStartNull: true,
     forced_delist_at: '',
     status: 'active' as Product['status'],
     scope: 'all' as 'all' | 'companies' | 'groups',
@@ -142,6 +143,7 @@ export default function AdminProductsPage() {
           sale_start_at: p.sale_start_at ? toLocalInputValue(p.sale_start_at) : '',
           forced_delist_at: p.forced_delist_at ? toLocalInputValue(p.forced_delist_at) : '',
           status: p.status,
+          _origSaleStartNull: !p.sale_start_at,
           scope: 'all',
           company_ids: [], group_ids: [],
         })
@@ -220,7 +222,10 @@ export default function AdminProductsPage() {
           max_per_customer: Number(form.max_per_customer),
           unit: form.unit.trim() || '件',
           items_per_unit: Math.max(1, Number(form.items_per_unit) || 1),
-          sale_start_at: form.sale_start_at ? new Date(form.sale_start_at).toISOString() : null,
+          // 開賣時間留空＝自動以現在開始降價（杜絕「永遠原價」幽靈商品）
+          sale_start_at: form.sale_start_at
+            ? new Date(form.sale_start_at).toISOString()
+            : (form._origSaleStartNull ? new Date().toISOString() : null),
           forced_delist_at: form.forced_delist_at ? new Date(form.forced_delist_at).toISOString() : null,
           status: form.status,
         }).eq('id', editId)
@@ -255,7 +260,8 @@ export default function AdminProductsPage() {
           max_per_customer: Number(form.max_per_customer),
           unit: form.unit.trim() || '件',
           items_per_unit: Math.max(1, Number(form.items_per_unit) || 1),
-          sale_start_at: form.sale_start_at ? new Date(form.sale_start_at).toISOString() : null,
+          // 開賣時間留空＝自動以現在開始降價
+          sale_start_at: form.sale_start_at ? new Date(form.sale_start_at).toISOString() : new Date().toISOString(),
           forced_delist_at: form.forced_delist_at ? new Date(form.forced_delist_at).toISOString() : null,
           status: form.status,
         }).select('id').single()
@@ -437,12 +443,12 @@ export default function AdminProductsPage() {
 
             {/* 開賣時間（選填；留空＝立即上架） */}
             <label className="block text-xs text-ink-500">
-              開賣時間（選填；設為未來＝「即將開賣」）
+              開賣時間（留空＝立即開始降價；設為未來＝「即將開賣」）
               <input type="datetime-local" value={form.sale_start_at}
                 onChange={(e) => setForm({ ...form, sale_start_at: e.target.value })}
                 className={`${inputCls} mt-1`} />
               <span className="mt-1 block text-xs text-ink-500">
-                ※ 設為未來的時間，前台會顯示「⏳ 距開賣倒數」並鎖定不可下單，時間一到自動開賣；留空＝現在即可購買。
+                ※ 設為未來的時間，前台會顯示「⏳ 距開賣倒數」並鎖定不可下單，時間一到自動開賣；留空＝系統自動以儲存當下開始降價。
               </span>
             </label>
 

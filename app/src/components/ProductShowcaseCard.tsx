@@ -34,7 +34,6 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
   const primaryPromo = promos[0] ?? null
   const extraCount = Math.max(0, promos.length - 1)
   const live = useLivePrice(product)
-  const promoRemaining = primaryPromo ? Math.max(0, (new Date(primaryPromo.ends_at).getTime() - Date.now()) / 1000) : 0
   const original = Number(product.original_price)
   // 即將開賣（開賣時間在未來）→ 鎖定卡：顯示「距開賣」倒數，不顯示降價、不可點
   const isUpcoming = upcoming === true
@@ -115,14 +114,9 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
           <span className="text-base font-bold truncate">
             {primaryPromo.icon ? `${primaryPromo.icon} ` : '🏷️ '}{primaryPromo.name}
           </span>
-          <span className="shrink-0 flex items-center gap-2">
-            {extraCount > 0 && (
-              <span className="text-sm font-bold bg-white/20 rounded-full px-2 py-0.5">+{extraCount}</span>
-            )}
-            {promoRemaining > 0 && (
-              <span className="text-base font-bold tabular-nums">⏰ 剩 {formatCountdown(promoRemaining)}</span>
-            )}
-          </span>
+          {extraCount > 0 && (
+            <span className="shrink-0 text-sm font-bold bg-white/20 rounded-full px-2 py-0.5">+{extraCount}</span>
+          )}
         </div>
       )}
       {/* 即將結束帶（管理員設了強制下架時間且在未來） */}

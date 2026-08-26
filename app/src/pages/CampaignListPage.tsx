@@ -129,6 +129,33 @@ export default function CampaignListPage() {
     return () => { alive = false }
   }, [])
 
+  // 每 30 秒輕量輪詢：商品被 cron 下架/完售時自動從畫面消失
+  useEffect(() => {
+    const id = setInterval(async () => {
+      const { data } = await supabase
+        .from('products')
+        .select('id, status, stock, forced_delist_at')
+        .in('id', [
+          ...promoProducts.map((p) => p.id),
+          ...regularProducts.map((p) => p.id),
+          ...upcomingProducts.map((p) => p.id),
+        ])
+      if (!data) return
+      const nowMs = Date.now()
+      const aliveIds = new Set(
+        (data as { id: string; status: string; stock: number; forced_delist_at: string | null }[])
+          .filter((x) => x.status === 'active'
+            && x.stock > 0
+            && (!x.forced_delist_at || new Date(x.forced_delist_at).getTime() > nowMs))
+          .map((x) => x.id),
+      )
+      setPromoProducts((prev) => prev.filter((p) => aliveIds.has(p.id)))
+      setRegularProducts((prev) => prev.filter((p) => aliveIds.has(p.id)))
+      setUpcomingProducts((prev) => prev.filter((p) => aliveIds.has(p.id)))
+    }, 30_000)
+    return () => clearInterval(id)
+  }, [promoProducts, regularProducts, upcomingProducts])
+
   // 問候語：依時段變化
   const hour = new Date().getHours()
   const greeting =
