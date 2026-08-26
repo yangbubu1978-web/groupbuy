@@ -232,20 +232,15 @@ export default function AdminProductsPage() {
           status: form.status,
         }).eq('id', editId)
         if (error) throw new Error(error.message)
-        // 同步促銷關聯（商品 ↔ 促銷）
-        await supabase.from('promotion_items').delete().eq('product_id', editId)
-        if (promoIds.length > 0) {
-          await supabase.from('promotion_items').insert(
-            promoIds.map((promotion_id) => ({ promotion_id, product_id: editId as string, sort_order: 0 }))
-          )
-        }
+        // 促銷關聯唯讀化（P22）：寫入權統一在「促銷活動」頁——
+        // 此頁若再全量替換會踩爛活動內排序（sort_order）並覆蓋他頁設定
         setMsg('✅ 已儲存變更')
         await reloadProducts()
         setShowForm(false)
         navigate('/admin/products')
       } else {
         // ---------- 新增 ----------
-        const { data: created, error: insertErr } = await supabase.from('products').insert({
+        const { error: insertErr } = await supabase.from('products').insert({
           campaign_id: campaignId,
           name: form.name,
           description: form.description || null,
@@ -266,9 +261,8 @@ export default function AdminProductsPage() {
           sale_start_at: form.sale_start_at ? new Date(form.sale_start_at).toISOString() : new Date().toISOString(),
           forced_delist_at: form.forced_delist_at ? new Date(form.forced_delist_at).toISOString() : null,
           status: form.status,
-        }).select('id').single()
+        })
         if (insertErr) throw new Error(insertErr.message)
-        const newProductId = (created as { id: string }).id
 
         // 授權範圍寫入對應表
         if (form.scope !== 'all') {
@@ -279,12 +273,6 @@ export default function AdminProductsPage() {
             const rows = form.group_ids.map((id) => ({ campaign_id: campaignId, group_id: id }))
             if (rows.length > 0) await supabase.from('campaign_groups').upsert(rows)
           }
-        }
-        // 同步促銷關聯（商品 ↔ 促銷）
-        if (promoIds.length > 0) {
-          await supabase.from('promotion_items').insert(
-            promoIds.map((promotion_id) => ({ promotion_id, product_id: newProductId, sort_order: 0 }))
-          )
         }
         setMsg('✅ 已新增商品')
         setForm(emptyForm)
@@ -565,29 +553,28 @@ export default function AdminProductsPage() {
               )}
             </div>
 
-            {/* 參與促銷活動（商品 ↔ 促銷多選） */}
+            {/* 參與促銷活動（唯讀顯示；寫入權統一在「促銷活動」頁，避免雙主人互相覆蓋） */}
             <div className="rounded-xl bg-ink-50 p-3 space-y-2">
-              <p className="text-sm font-semibold text-ink-600">加入促銷活動（可多選）</p>
-              {promotions.length === 0 ? (
-                <p className="text-xs text-ink-400">尚無促銷活動，可先到「🏷️ 促銷活動」建立。</p>
+              <p className="text-sm font-semibold text-ink-600">參與促銷活動（唯讀）</p>
+              {promoIds.length === 0 ? (
+                <p className="text-xs text-ink-400">尚未參加任何活動。要掛活動請到「🏷️ 促銷活動」編輯該活動的商品清單。</p>
               ) : (
-                <div className="space-y-1 max-h-44 overflow-y-auto">
-                  {promotions.map((pro) => (
-                    <label key={pro.id} className="flex items-center gap-2 text-sm text-ink-700">
-                      <input type="checkbox" checked={promoIds.includes(pro.id)}
-                        onChange={(e) =>
-                          setPromoIds(e.target.checked
-                            ? [...promoIds, pro.id]
-                            : promoIds.filter((x) => x !== pro.id))
-                        } />
-                      <span>{pro.name}</span>
-                      <span className="ml-auto text-xs text-ink-500">
-                        {pro.status === 'draft' ? '📝 草稿' : pro.is_active ? '啟用中' : '已停用'}
+                <div className="flex flex-wrap gap-1.5">
+                  {promoIds.map((pid) => {
+                    const pro = promotions.find((x) => x.id === pid)
+                    if (!pro) return null
+                    return (
+                      <span key={pid} className="inline-flex items-center gap-1 h-8 px-3 rounded-full bg-white border border-accent-200 text-xs font-semibold text-accent-700">
+                        {(pro as { icon?: string | null }).icon || '🏷️'} {pro.name}
+                        <span className="text-ink-400 font-normal">
+                          {pro.status === 'draft' ? '（草稿）' : pro.is_active ? '' : '（已停用）'}
+                        </span>
                       </span>
-                    </label>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
+              <p className="text-xs text-ink-400">🔒 促銷關聯與排序統一在「促銷活動」頁管理（此頁唯讀，避免互相覆蓋）。</p>
             </div>
 
             {/* 授權範圍（僅新增模式） */}
