@@ -486,10 +486,6 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* 活動剩餘時間 */}
-            <div className="mt-2 text-base text-ink-600 text-right tabular-nums">
-              活動至 {new Date(campaign.end_at).toLocaleString('zh-TW')}
-            </div>
           </section>
 
           {/* 庫存 */}
