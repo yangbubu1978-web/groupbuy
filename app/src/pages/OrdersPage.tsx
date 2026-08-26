@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Order } from '../lib/types'
@@ -18,6 +18,34 @@ function progressIndex(status: string): number {
 const ACTIVE_STATUSES = ['pending', 'confirmed', 'paid', 'shipped']
 type Tab = 'active' | 'done'
 
+/** P29c：待確認訂單倒數（1 分鐘自動過期；歸零即刷新列表由 cron 收走） */
+function PendingCountdown({ purchasedAt, onExpire }: { purchasedAt: string; onExpire: () => void }) {
+  const expiresAt = new Date(new Date(purchasedAt).getTime() + 60_000).getTime()
+  const [left, setLeft] = useState(Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)))
+  useEffect(() => {
+    const id = setInterval(() => {
+      const s = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000))
+      setLeft(s)
+      if (s <= 0) {
+        clearInterval(id)
+        onExpire()
+      }
+    }, 250)
+    return () => clearInterval(id)
+  }, [expiresAt])
+  return (
+    <div className={`mt-2 rounded-xl px-4 py-2.5 text-sm font-bold flex items-center justify-between border
+      ${left <= 20
+        ? 'bg-red-50 text-red-700 border-red-200 animate-pulse'
+        : 'bg-accent-50 text-accent-700 border-accent-200'}`}
+      role="timer"
+      aria-label={`訂單確認剩餘 ${left} 秒`}>
+      <span>⏳ 請在 {left} 秒內確認訂單</span>
+      <span className="text-base tabular-nums">{left}s</span>
+    </div>
+  )
+}
+
 export default function OrdersPage() {
   const { customer } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
@@ -26,18 +54,19 @@ export default function OrdersPage() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
-  useEffect(() => {
-    let alive = true
-    supabase
+  // P29c：抽出載入函式（pending 倒數歸零時也會呼叫刷新）
+  const reloadOrders = useCallback(async () => {
+    const { data } = await supabase
       .from('orders')
       .select('*')
       .order('purchased_at', { ascending: false })
-      .then(({ data }) => {
-        if (alive && data) setOrders(data as Order[])
-        if (alive) setLoading(false)
-      })
-    return () => { alive = false }
+    if (data) setOrders(data as Order[])
+    setLoading(false)
   }, [])
+
+  useEffect(() => {
+    void reloadOrders()
+  }, [reloadOrders])
 
   // 客戶自行確認（pending → confirmed）
   const confirmOrder = async (o: Order) => {
@@ -190,6 +219,14 @@ export default function OrdersPage() {
                 </span>
                 <span className="font-bold text-ink-900 tabular-nums">{fmtMoney(Number(o.total_amount))}</span>
               </div>
+
+              {/* P29c：待確認倒數（1 分鐘過期） */}
+              {o.status === 'pending' && (
+                <PendingCountdown
+                  purchasedAt={o.purchased_at}
+                  onExpire={() => void reloadOrders()}
+                />
+              )}
 
               {/* 電商進度條（取消／退款不顯示） */}
               {pIdx >= 0 && (
