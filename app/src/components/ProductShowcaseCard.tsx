@@ -21,8 +21,8 @@ function DropTimer({ seconds }: { seconds: number }) {
 }
 
 /** 首頁大圖商品卡 v2：照片為主視覺＋降價倒數＋庫存溫度。promo 非空＝促銷商品 */
-/** 活動標籤資料（行銷展示層；不影響價格/庫存/上下架） */
-export interface PromoTag { name: string; icon?: string | null; ends_at: string; kind?: string }
+/** 活動標籤資料（行銷展示層；不影響價格/庫存/上下架）——全站單一真相來源 */
+export interface PromoTag { name: string; icon?: string | null; kind?: string; sort_order?: number }
 
 function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 }: {
   product: Product; index: number
@@ -109,13 +109,21 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
       {/* 限時促銷帶（促銷商品專屬） */}
       {/* 活動展示帶（行銷用途；價格/庫存/上下架不受影響） */}
       {primaryPromo && (
-        <div className="bg-gradient-to-r from-accent-500 to-accent-600 text-white px-4 py-2.5
-                        flex items-center justify-between gap-3">
+        <div
+          className="bg-gradient-to-r from-accent-500 to-accent-600 text-white px-4 py-2.5
+                        flex items-center justify-between gap-3"
+          title={extraCount > 0 ? `${primaryPromo.name} 等 ${promos.length} 項活動` : primaryPromo.name}
+        >
           <span className="text-base font-bold truncate">
             {primaryPromo.icon ? `${primaryPromo.icon} ` : '🏷️ '}{primaryPromo.name}
           </span>
           {extraCount > 0 && (
-            <span className="shrink-0 text-sm font-bold bg-white/20 rounded-full px-2 py-0.5">+{extraCount}</span>
+            <span
+              className="shrink-0 text-sm font-bold bg-white/20 rounded-full px-2 py-0.5"
+              aria-label={`另有 ${extraCount} 項活動`}
+            >
+              +{extraCount}
+            </span>
           )}
         </div>
       )}

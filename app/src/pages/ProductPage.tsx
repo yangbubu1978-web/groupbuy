@@ -5,6 +5,7 @@ import type { Campaign, Product } from '../lib/types'
 import { fmtMoney } from '../lib/types'
 import { formatCountdown, formatInterval } from '../lib/pricing'
 import { useLivePrice } from '../lib/useLivePrice'
+import type { PromoTag } from '../components/ProductShowcaseCard'
 import { useAuth } from '../context/AuthContext'
 
 type BuyState =
@@ -65,6 +66,7 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1)
   const [buyState, setBuyState] = useState<BuyState>({ kind: 'idle' })
   const [priceFlash, setPriceFlash] = useState(false)
+  const [activePromos, setActivePromos] = useState<PromoTag[]>([])
 
   // ---------- 關注（Follow）狀態 ----------
   const [following, setFollowing] = useState(false)
@@ -89,6 +91,24 @@ export default function ProductPage() {
           .eq('id', (p as Product).campaign_id)
           .maybeSingle()
         if (alive && c) setCampaign(c as Campaign)
+        // 該商品的進行中活動（行銷展示層：只影響顯示，不影響銷售邏輯）
+        const nowIso = new Date().toISOString()
+        const { data: items } = await supabase
+          .from('promotion_items')
+          .select('promotions!inner(id, name, icon, kind, starts_at, ends_at, is_active, status, sort_order)')
+          .eq('product_id', (p as Product).id)
+          .gte('promotions.ends_at', nowIso)
+          .lte('promotions.starts_at', nowIso)
+          .eq('promotions.is_active', true)
+          .eq('promotions.status', 'active')
+          .order('promotions.sort_order', { ascending: true })
+        if (alive) {
+          setActivePromos(
+            ((items ?? []) as unknown as { promotions: PromoTag | null }[])
+              .map((x) => x.promotions)
+              .filter((x): x is PromoTag => !!x),
+          )
+        }
       }
       if (alive) setLoading(false)
     })()
@@ -334,6 +354,19 @@ export default function ProductPage() {
           <div>
             <div className="flex items-start justify-between gap-3">
               <h1 className="text-2xl font-bold text-ink-900 font-display">{product.name}</h1>
+              {activePromos.length > 0 && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {activePromos.slice(0, 3).map((promo) => (
+                    <span key={promo.name}
+                      className="inline-flex items-center gap-1 rounded-full bg-accent-50 border border-accent-200 px-3 py-1 text-sm font-bold text-accent-700">
+                      {promo.icon ? `${promo.icon} ` : '🏷️ '}{promo.name}
+                    </span>
+                  ))}
+                  {activePromos.length > 3 && (
+                    <span className="text-sm font-bold text-accent-600">+{activePromos.length - 3}</span>
+                  )}
+                </div>
+              )}
               {/* 關注按鈕 */}
               <button
                 onClick={toggleFollow}

@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { Product } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
 import BannerCarousel from '../components/BannerCarousel'
-import ProductShowcaseCard from '../components/ProductShowcaseCard'
+import ProductShowcaseCard, { type PromoTag } from '../components/ProductShowcaseCard'
 
 /** 載入中的骨架屏 */
 function CardSkeleton() {
@@ -60,7 +60,7 @@ export default function CampaignListPage() {
   const [promoProducts, setPromoProducts] = useState<Product[]>([])
   const [regularProducts, setRegularProducts] = useState<Product[]>([])
   const [upcomingProducts, setUpcomingProducts] = useState<Product[]>([])
-  const [promoInfo, setPromoInfo] = useState<Record<string, { name: string; icon?: string | null; ends_at: string; kind?: string; sort_order?: number }[]>>({})
+  const [promoInfo, setPromoInfo] = useState<Record<string, PromoTag[]>>({})
   const [followMap, setFollowMap] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
 
@@ -72,7 +72,7 @@ export default function CampaignListPage() {
       // 進行中的促銷活動（時間窗內＋已啟用）
       const { data: runningPromos } = await supabase
         .from('promotions')
-        .select('id, name, ends_at, kind, promotion_items(product_id)')
+        .select('id, name, icon, sort_order, ends_at, kind, promotion_items(product_id)')
         .lte('starts_at', nowIso)
         .gte('ends_at', nowIso)
         .eq('is_active', true)
@@ -90,22 +90,19 @@ export default function CampaignListPage() {
         (p) => !p.forced_delist_at || new Date(p.forced_delist_at).getTime() > nowIso2,
       )
       const promoIds = new Set<string>()
-      type PromoTagInfo = { name: string; icon?: string | null; ends_at: string; kind?: string; sort_order?: number }
-      const promoInfoMap: Record<string, PromoTagInfo[]> = {}
-      for (const promo of (runningPromos ?? []) as { id: string; name: string; icon?: string | null; ends_at: string; kind?: string; sort_order?: number; promotion_items?: { product_id: string }[] }[]) {
+      const promoInfoMap: Record<string, PromoTag[]> = {}
+      for (const promo of (runningPromos ?? []) as { id: string; name: string; icon?: string | null; kind?: string; sort_order?: number; promotion_items?: { product_id: string }[] }[]) {
         for (const item of (promo.promotion_items ?? []) as { product_id: string }[]) {
           promoIds.add(item.product_id)
           if (!promoInfoMap[item.product_id]) promoInfoMap[item.product_id] = []
           promoInfoMap[item.product_id].push({
             name: promo.name,
             icon: promo.icon,
-            ends_at: promo.ends_at,
             kind: promo.kind,
-            sort_order: promo.sort_order ?? 0,
           })
         }
       }
-      // 每個商品的活动清單按活動排序（sort_order 小在前）
+      // 每個商品的活動清單按活動排序（sort_order 小在前）
       for (const k of Object.keys(promoInfoMap)) {
         promoInfoMap[k].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
       }
@@ -129,17 +126,26 @@ export default function CampaignListPage() {
     return () => { alive = false }
   }, [])
 
-  // 每 30 秒輕量輪詢：商品被 cron 下架/完售時自動從畫面消失
+  // 每 30 秒輕量輪詢：商品被 cron 下架/完售時自動從畫面消失；活動到期時商品降級到一般區
   useEffect(() => {
     const id = setInterval(async () => {
-      const { data } = await supabase
-        .from('products')
-        .select('id, status, stock, forced_delist_at')
-        .in('id', [
-          ...promoProducts.map((p) => p.id),
-          ...regularProducts.map((p) => p.id),
-          ...upcomingProducts.map((p) => p.id),
-        ])
+      const ids = [
+        ...promoProducts.map((p) => p.id),
+        ...regularProducts.map((p) => p.id),
+        ...upcomingProducts.map((p) => p.id),
+      ]
+      if (ids.length === 0) return
+      const nowIso = new Date().toISOString()
+      const [{ data }, { data: stillRunning }] = await Promise.all([
+        supabase.from('products').select('id, status, stock, forced_delist_at').in('id', ids),
+        supabase
+          .from('promotions')
+          .select('id, promotion_items(product_id)')
+          .lte('starts_at', nowIso)
+          .gte('ends_at', nowIso)
+          .eq('is_active', true)
+          .eq('status', 'active'),
+      ])
       if (!data) return
       const nowMs = Date.now()
       const aliveIds = new Set(
@@ -149,9 +155,29 @@ export default function CampaignListPage() {
             && (!x.forced_delist_at || new Date(x.forced_delist_at).getTime() > nowMs))
           .map((x) => x.id),
       )
-      setPromoProducts((prev) => prev.filter((p) => aliveIds.has(p.id)))
-      setRegularProducts((prev) => prev.filter((p) => aliveIds.has(p.id)))
-      setUpcomingProducts((prev) => prev.filter((p) => aliveIds.has(p.id)))
+      // 仍在進行中活動的商品集合（活動到期 → 自動降級到一般區）
+      const livePromoIds = new Set<string>()
+      for (const promo of (stillRunning ?? []) as { promotion_items?: { product_id: string }[] }[]) {
+        for (const item of promo.promotion_items ?? []) livePromoIds.add(item.product_id)
+      }
+      // 只在真的有變化時才更新（避免無謂重渲染）
+      const prune = (prev: Product[]) => {
+        const next = prev.filter((p) => aliveIds.has(p.id))
+        return next.length === prev.length ? prev : next
+      }
+      setPromoProducts((prev) => {
+        const kept = prev.filter((p) => aliveIds.has(p.id) && livePromoIds.has(p.id))
+        return kept.length === prev.length ? prev : kept
+      })
+      setRegularProducts((prev) => {
+        const demoted = promoProducts.filter(
+          (p) => aliveIds.has(p.id) && !livePromoIds.has(p.id) && !prev.some((q) => q.id === p.id),
+        )
+        const kept = prev.filter((p) => aliveIds.has(p.id))
+        const next = [...kept, ...demoted]
+        return next.length === prev.length && demoted.length === 0 ? prev : next
+      })
+      setUpcomingProducts((prev) => prune(prev))
     }, 30_000)
     return () => clearInterval(id)
   }, [promoProducts, regularProducts, upcomingProducts])
