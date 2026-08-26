@@ -5,33 +5,8 @@ import type { Order } from '../lib/types'
 import { fmtMoney, fmtDateTime } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: '待確認',
-  confirmed: '已確認',
-  paid: '已付款',
-  shipped: '已出貨',
-  completed: '已完成',
-  refunding: '退款處理中',
-  refunded: '已退款',
-  cancelled: '已取消',
-}
-
-const STATUS_STYLE: Record<string, string> = {
-  pending: 'bg-amber-50 text-amber-700',
-  confirmed: 'bg-blue-50 text-blue-700',
-  paid: 'bg-green-50 text-green-700',
-  shipped: 'bg-indigo-50 text-indigo-700',
-  completed: 'bg-ink-100 text-ink-600',
-  refunding: 'bg-orange-50 text-orange-700',
-  refunded: 'bg-ink-100 text-ink-500',
-  cancelled: 'bg-red-50 text-red-600',
-}
-
-const STATUS_ICON: Record<string, string> = {
-  pending: '⏳', confirmed: '✅', paid: '💳',
-  shipped: '🚚', completed: '📦', refunding: '↩️',
-  refunded: '💸', cancelled: '❌',
-}
+// 狀態文案/樣式/圖示：共用字典單一真相來源（P19）
+import { ORDER_STATUS_LABEL as STATUS_LABEL, ORDER_STATUS_STYLE as STATUS_STYLE, ORDER_STATUS_ICON as STATUS_ICON } from '../lib/orderStatus'
 
 /** 電商進度條：五個正向里程碑 */
 const PROGRESS_STEPS = ['pending', 'confirmed', 'paid', 'shipped', 'completed'] as const

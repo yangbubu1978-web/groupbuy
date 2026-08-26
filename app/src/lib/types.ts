@@ -93,6 +93,7 @@ export interface Order {
   purchased_at: string
   cancelled_by?: string | null
   cancel_reason?: string | null
+  note?: string | null
   product_id?: string | null
 }
 
