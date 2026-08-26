@@ -159,7 +159,7 @@ export default function CartPage() {
         {/* 結帳成功通知 */}
         {doneOrders.length > 0 && (
           <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3 text-sm text-green-800 anim-fade-up">
-            🎉 結帳成功！訂單編號：{doneOrders.join('、')}
+            🎉 結帳成功，訂單已確認！編號：{doneOrders.join('、')}
             <Link to="/orders" className="ml-2 font-bold underline">查看訂單</Link>
           </div>
         )}
