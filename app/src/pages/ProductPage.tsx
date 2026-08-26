@@ -324,18 +324,39 @@ export default function ProductPage() {
 
   return (
     <div className="min-h-dvh bg-ink-50 pb-28">
-      {/* 頂部 */}
-      <header className="bg-white/90 backdrop-blur border-b border-ink-100 px-4 py-3 sticky top-0 z-10">
-        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between">
+      {/* 頂部：倒數計時器進駐（P27——顯眼大字） */}
+      <header className="bg-gradient-to-r from-accent-500 to-accent-600 px-4 py-3 sticky top-0 z-10 shadow-md">
+        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="w-11 h-11 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-700 flex items-center justify-center"
+            className="w-11 h-11 -ml-1.5 rounded-full hover:bg-white/20 text-white flex items-center justify-center shrink-0"
             aria-label="返回"
           >
             ←
           </button>
-          <div className="text-base tracking-widest text-ink-600">⚡ 先買先贏</div>
-          <div className="w-11" />
+
+          {/* 中央：先買先贏 + 大字倒數 */}
+          <div className="min-w-0 flex-1 text-center">
+            <div className="text-xs tracking-widest text-accent-100 font-bold whitespace-nowrap">⚡ 先買先贏</div>
+            {!atFloor ? (
+              <div
+                className="text-2xl md:text-4xl font-extrabold text-white tabular-nums leading-tight tracking-wide drop-shadow-sm"
+                role="timer"
+                aria-label={`下次降價倒數 ${formatCountdown(live.nextDropIn)}`}
+              >
+                ⏰ {formatCountdown(live.nextDropIn)}
+              </div>
+            ) : (
+              <div className="text-xl md:text-2xl font-extrabold text-white leading-tight whitespace-nowrap">
+                ✅ 已是最優惠價
+              </div>
+            )}
+            <div className="text-[11px] md:text-xs text-accent-100 font-medium whitespace-nowrap">
+              {!atFloor && '下次降價倒數'}
+            </div>
+          </div>
+
+          <div className="w-11 shrink-0" />
         </div>
       </header>
 
@@ -397,18 +418,6 @@ export default function ProductPage() {
 
           {/* 價格主角區 */}
           <section className="bg-white rounded-2xl border border-ink-100 p-5 shadow-sm" aria-live="polite">
-            {/* 核心張力：價格自己會降、好貨不等人 */}
-            <div className="flex items-center justify-between rounded-xl bg-accent-50 border border-accent-100 px-4 py-3 mb-4">
-              <span className="text-base font-bold text-accent-700">
-                🕐 價格自己會降
-              </span>
-              {!atFloor && (
-                <span className="text-base font-bold tabular-nums text-ink-700">
-                  ⏰ 下次降價 {formatCountdown(live.nextDropIn)}
-                </span>
-              )}
-            </div>
-
             <div className="flex items-end justify-between">
               <div>
                 <div className="text-base text-ink-500 mb-0.5">原價</div>
