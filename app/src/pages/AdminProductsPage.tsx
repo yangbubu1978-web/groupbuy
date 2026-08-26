@@ -63,6 +63,8 @@ export default function AdminProductsPage() {
   const [showForm, setShowForm] = useState(!!editId)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  /** 刪除被擋（有訂單引用）→ 顯示替代方案對話框 */
+  const [blockedProduct, setBlockedProduct] = useState<{ p: Product; orderCount: number } | null>(null)
   const [loaded, setLoaded] = useState(!editId)
 
   // 表單欄位
@@ -296,17 +298,54 @@ export default function AdminProductsPage() {
     }
   }
 
+  /** 刪除商品：有訂單引用時 FK 擋下 → 講清楚原因＋提供「改為已暫停」快捷鈕 */
   const remove = async (p: Product) => {
+    // 先偵測訂單數，講人話不讓使用者撞牆
+    const { count } = await supabase
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('product_id', p.id)
+    if ((count ?? 0) > 0) {
+      setBlockedProduct({ p, orderCount: count ?? 0 })
+      return
+    }
     if (!(await ask({ title: '刪除商品', message: `確定刪除商品「${p.name}」？\n此操作無法復原！`, danger: true }))) return
+    await doDelete(p)
+  }
+
+  const doDelete = async (p: Product) => {
     setBusy(true); setMsg(null)
     try {
       const { error } = await supabase.from('products').delete().eq('id', p.id)
-      if (error) throw new Error(error.message.includes('foreign key')
-        ? '此商品已有訂單，無法刪除。建議將狀態改為「已暫停」。'
-        : error.message)
+      if (error) {
+        throw new Error(error.message.includes('foreign key')
+          ? `「${p.name}」已有訂單紀錄，為保護對帳憑證無法刪除。可改用下方「改為已暫停」。`
+          : error.message)
+      }
       await reloadProducts()
     } catch (e) {
       setMsg(`❌ ${e instanceof Error ? e.message : '刪除失敗'}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** 刪除被擋的替代方案：一鍵轉已暫停（前台立即隱藏，資料保留） */
+  const pauseInstead = async () => {
+    if (!blockedProduct) return
+    await doPause(blockedProduct.p)
+    setBlockedProduct(null)
+  }
+
+  const doPause = async (p: Product) => {
+    setBusy(true); setMsg(null)
+    try {
+      const { error } = await supabase.from('products').update({ status: 'paused' }).eq('id', p.id)
+      if (error) throw error
+      setMsg(`⏸ 已將「${p.name}」改為已暫停——前台不再顯示，訂單紀錄完整保留`)
+      await reloadProducts()
+    } catch (e) {
+      setMsg(`❌ ${e instanceof Error ? e.message : '操作失敗'}`)
     } finally {
       setBusy(false)
     }
@@ -346,6 +385,44 @@ export default function AdminProductsPage() {
         </div>
 
         {msg && <p className="text-sm text-center bg-white border border-ink-100 rounded-xl py-2.5 shadow-sm">{msg}</p>}
+
+        {/* 刪除被擋：講清楚為什麼＋給替代方案 */}
+        {blockedProduct && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 anim-pop-in"
+            role="dialog" aria-modal="true" aria-label="無法刪除商品"
+            onClick={() => setBlockedProduct(null)}>
+            <div className="w-full max-w-md bg-white rounded-2xl p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <h2 className="text-lg font-bold text-ink-900">🔒 這個商品不能刪除</h2>
+              <p className="mt-2 text-sm text-ink-600 leading-relaxed">
+                「<span className="font-bold">{blockedProduct.p.name}</span>」已有{' '}
+                <span className="font-bold text-orange-600 tabular-nums">{blockedProduct.orderCount}</span>{' '}
+                筆訂單紀錄。
+                訂單是對帳憑證，刪掉商品會讓歷史訂單失去連結，所以系統刻意保護它。
+              </p>
+              <div className="mt-3 rounded-xl bg-accent-50 border border-accent-200 p-3">
+                <p className="text-xs font-bold text-accent-700">建議做法</p>
+                <p className="mt-1 text-xs text-ink-600 leading-relaxed">
+                  改為「已暫停」：前台立刻不顯示、不能再購買，訂單紀錄完整保留——效果跟刪除一樣，但帳目安全。
+                </p>
+              </div>
+              <div className="mt-4 flex flex-col gap-2">
+                <button
+                  onClick={() => void pauseInstead()}
+                  disabled={busy}
+                  className="h-12 rounded-xl bg-ink-900 text-white text-base font-bold active:scale-[0.98] transition disabled:opacity-50"
+                >
+                  ⏸ 改為已暫停（建議）
+                </button>
+                <button
+                  onClick={() => setBlockedProduct(null)}
+                  className="h-11 rounded-xl border border-ink-200 text-sm font-semibold text-ink-500 active:scale-[0.98] transition"
+                >
+                  知道了
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 新增／編輯表單 */}
         {showForm && loaded && (

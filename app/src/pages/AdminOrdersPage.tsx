@@ -208,16 +208,20 @@ export default function AdminOrdersPage() {
     [searched, filter],
   )
 
-  // ---- 統計卡（待處理含 confirmed/paid：管理員實際要動手的都算） ----
+  // ---- 統計卡：跟隨當前篩選範圍（日期＋chips＋搜尋），月報表體驗一致 ----
+  // 待處理/退款中例外：永遠看全站（管理員的待辦不該被日期藏起來）
   const stats = useMemo(() => {
+    const inScope = (o: Order) =>
+      searched.some((s) => s.id === o.id)
     const valid = orders.filter((o) => !['cancelled', 'refunded'].includes(o.status))
+    const scopedValid = valid.filter(inScope)
     return {
-      total: orders.length,
-      revenue: valid.reduce((s, o) => s + Number(o.total_amount), 0),
+      total: searched.length,
+      revenue: scopedValid.reduce((s, o) => s + Number(o.total_amount), 0),
       needAction: orders.filter((o) => ['pending', 'confirmed', 'paid'].includes(o.status)).length,
       refunding: orders.filter((o) => o.status === 'refunding').length,
     }
-  }, [orders])
+  }, [orders, searched])
 
   // ---- 匯出 Excel（.xls HTML 格式；合計列欄位已對齊） ----
   const exportXls = async () => {
@@ -386,7 +390,7 @@ export default function AdminOrdersPage() {
       <section className="grid grid-cols-3 gap-2 anim-fade-up">
         <div className="bg-white rounded-xl border border-ink-100 p-3 text-center shadow-sm">
           <div className="text-lg font-bold text-ink-900 tabular-nums">{stats.total}</div>
-          <div className="text-xs text-ink-500 mt-0.5">總訂單</div>
+          <div className="text-xs text-ink-500 mt-0.5">{hasDateFilter ? '範圍內訂單' : '總訂單'}</div>
         </div>
         <div className="bg-white rounded-xl border border-accent-200 bg-gradient-to-br from-accent-50 to-white p-3 text-center shadow-sm">
           <div className="text-lg font-bold text-accent-600 tabular-nums">{fmtMoney(stats.revenue)}</div>
