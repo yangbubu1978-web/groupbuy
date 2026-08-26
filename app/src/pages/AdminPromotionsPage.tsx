@@ -177,6 +177,10 @@ export default function AdminPromotionsPage() {
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-ink-900">促銷活動</h1>
             <p className="text-xs md:text-sm text-ink-400">限時促銷與草稿發布</p>
+            <p className="mt-2 flex items-start gap-1.5 text-xs md:text-sm text-ink-500 bg-accent-50 border border-accent-100 rounded-lg px-3 py-2">
+              <span aria-hidden="true">ℹ️</span>
+              <span>活動僅用於商品展示與行銷分類，不影響商品價格、庫存、上下架及降價規則。</span>
+            </p>
           </div>
           <button onClick={() => setShowForm(true)}
             className="h-10 px-4 rounded-xl bg-ink-900 text-white text-sm font-semibold active:scale-[0.98] transition">
