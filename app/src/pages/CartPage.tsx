@@ -141,15 +141,15 @@ export default function CartPage() {
   return (
     <div className="min-h-dvh bg-ink-50 pb-24">
       {/* 頂部（跟首頁同款橘色漸層） */}
-      <header className="bg-gradient-to-r from-accent-500 to-accent-600 px-5 py-4 sticky top-0 z-10 shadow-md">
-        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-extrabold text-white tracking-wide">🛒 購物車</h1>
-            <p className="text-xs text-accent-100 mt-0.5">
+      <header className="bg-gradient-to-r from-accent-500 to-accent-600 px-3 md:px-5 py-3 md:py-4 sticky top-0 z-10 shadow-md">
+        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-base md:text-lg font-extrabold text-white tracking-wide whitespace-nowrap">🛒 購物車</h1>
+            <p className="text-xs text-accent-100 mt-0.5 truncate">
               每件商品保留 3 分鐘，逾時自動取消釋回庫存
             </p>
           </div>
-          <Link to="/" className="text-sm font-bold px-4 py-2 rounded-full border border-white/60 text-white hover:bg-white/15 transition">
+          <Link to="/" className="shrink-0 whitespace-nowrap text-sm font-bold px-3 md:px-4 py-2 rounded-full border border-white/60 text-white hover:bg-white/15 transition">
             繼續逛
           </Link>
         </div>

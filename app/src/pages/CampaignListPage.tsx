@@ -164,31 +164,35 @@ export default function CampaignListPage() {
   return (
     <div className="min-h-dvh bg-ink-50 pb-24">
       {/* 頂部：台灣電商風橘色漸層橫幅 */}
-      <header className="bg-gradient-to-r from-accent-500 to-accent-600 px-5 py-4 sticky top-0 z-10 shadow-md">
-        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between">
-          <div>
-            <div className="text-base tracking-widest text-accent-100 font-bold">⚡ 先買先贏</div>
-            <h1 className="text-lg font-extrabold text-white tracking-wide">吸引力生活好物</h1>
+      <header className="bg-gradient-to-r from-accent-500 to-accent-600 px-3 md:px-5 py-3 md:py-4 sticky top-0 z-10 shadow-md">
+        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between gap-2">
+          {/* 標題區：min-w-0 讓它可被壓縮截斷，不壓到右側按鈕 */}
+          <div className="min-w-0">
+            <div className="text-xs md:text-base tracking-widest text-accent-100 font-bold whitespace-nowrap">⚡ 先買先贏</div>
+            <h1 className="text-base md:text-lg font-extrabold text-white tracking-wide whitespace-nowrap truncate">
+              吸引力生活好物
+            </h1>
           </div>
-          <div className="flex items-center gap-3">
+          {/* 按鈕區：shrink-0 + nowrap，手機上永遠一行排開 */}
+          <div className="flex items-center gap-2 shrink-0">
             <Link
               to="/cart"
               aria-label="購物車"
-              className="relative w-10 h-10 rounded-full bg-white flex items-center justify-center text-lg shadow-sm hover:bg-accent-50 transition"
+              className="relative w-9 h-9 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center text-base md:text-lg shadow-sm hover:bg-accent-50 transition"
             >
               🛒
               <CartBadge />
             </Link>
             <Link
               to={isAdmin ? '/admin/orders' : '/orders'}
-              className="text-base font-bold px-4 py-2 rounded-full border border-white/60 text-white hover:bg-white/15 transition"
+              className="whitespace-nowrap text-sm md:text-base font-bold px-3 md:px-4 py-2 rounded-full border border-white/60 text-white hover:bg-white/15 transition"
             >
-              {isAdmin ? '訂單管理' : '我的訂單'}
+              {isAdmin ? '訂單管理' : '訂單'}
             </Link>
             <Link
               to="/profile"
               aria-label="我的帳號"
-              className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-base font-bold text-accent-600 shadow-sm"
+              className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center text-sm md:text-base font-bold text-accent-600 shadow-sm"
             >
               {customer?.name?.slice(0, 1) ?? '?'}
             </Link>
@@ -199,7 +203,7 @@ export default function CampaignListPage() {
       <main className="max-w-md md:max-w-3xl mx-auto px-4 pt-5 space-y-5">
         {/* 問候區（活潑電商風） */}
         <section className="pt-1 pb-1 anim-fade-up">
-          <h2 className="text-[24px] leading-snug font-extrabold text-ink-900">
+          <h2 className="text-[21px] md:text-3xl leading-snug font-extrabold text-ink-900 truncate">
             {greeting}，{customer?.name} 👋
           </h2>
           <p className="mt-1 text-base text-ink-500">
