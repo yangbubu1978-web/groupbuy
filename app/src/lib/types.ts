@@ -48,6 +48,10 @@ export interface Promotion {
   ends_at: string
   is_active: boolean
   status: 'draft' | 'active'
+  icon?: string | null
+  banner_url?: string | null
+  theme_color?: string | null
+  sort_order?: number
   created_at?: string | null
 }
 

@@ -25,7 +25,7 @@ export default function CampaignListPage() {
   const [promoProducts, setPromoProducts] = useState<Product[]>([])
   const [regularProducts, setRegularProducts] = useState<Product[]>([])
   const [upcomingProducts, setUpcomingProducts] = useState<Product[]>([])
-  const [promoInfo, setPromoInfo] = useState<Record<string, { name: string; ends_at: string; kind?: string }>>({})
+  const [promoInfo, setPromoInfo] = useState<Record<string, { name: string; icon?: string | null; ends_at: string; kind?: string; sort_order?: number }[]>>({})
   const [followMap, setFollowMap] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
 
@@ -55,18 +55,24 @@ export default function CampaignListPage() {
         (p) => !p.forced_delist_at || new Date(p.forced_delist_at).getTime() > nowIso2,
       )
       const promoIds = new Set<string>()
-      const promoInfoMap: Record<string, { name: string; ends_at: string; kind?: string }> = {}
-      for (const promo of runningPromos ?? []) {
+      type PromoTagInfo = { name: string; icon?: string | null; ends_at: string; kind?: string; sort_order?: number }
+      const promoInfoMap: Record<string, PromoTagInfo[]> = {}
+      for (const promo of (runningPromos ?? []) as { id: string; name: string; icon?: string | null; ends_at: string; kind?: string; sort_order?: number; promotion_items?: { product_id: string }[] }[]) {
         for (const item of (promo.promotion_items ?? []) as { product_id: string }[]) {
           promoIds.add(item.product_id)
-          if (!promoInfoMap[item.product_id]) {
-            promoInfoMap[item.product_id] = {
-              name: promo.name,
-              ends_at: promo.ends_at,
-              kind: (promo as { kind?: string }).kind ?? 'flash',
-            }
-          }
+          if (!promoInfoMap[item.product_id]) promoInfoMap[item.product_id] = []
+          promoInfoMap[item.product_id].push({
+            name: promo.name,
+            icon: promo.icon,
+            ends_at: promo.ends_at,
+            kind: promo.kind,
+            sort_order: promo.sort_order ?? 0,
+          })
         }
+      }
+      // 每個商品的活动清單按活動排序（sort_order 小在前）
+      for (const k of Object.keys(promoInfoMap)) {
+        promoInfoMap[k].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
       }
       const nowMs = Date.now()
       const isUpcoming = (p: Product) => !!p.sale_start_at && new Date(p.sale_start_at).getTime() > nowMs
@@ -167,12 +173,18 @@ export default function CampaignListPage() {
                   <span className="w-1 h-5 rounded-full bg-accent-500" aria-hidden="true" />
                   <h3 className="text-xl font-extrabold text-ink-900">限時促銷</h3>
                 {promoProducts[0] && (() => {
-                  const k = (promoInfo[promoProducts[0].id] as { kind?: string } | undefined)?.kind ?? 'flash'
+                  const first = promoInfo[promoProducts[0].id]?.[0]
+                  const k = (first as { kind?: string } | undefined)?.kind ?? 'flash'
                   const L: Record<string, string> = { flash: '⚡ 限時場', accel: '🚀 加速場', bundle: '📦 組合場', clearance: '🏷️ 清倉場', focus: '⭐ 焦點新品' }
                   return <span className="ml-1 text-sm font-bold text-accent-600 bg-accent-50 px-2.5 py-1 rounded-full whitespace-nowrap">{L[k] ?? '⚡ 限時場'}</span>
                 })()}
                   <span className="ml-auto text-sm font-bold text-accent-700 whitespace-nowrap">限量優惠，先搶先贏 →</span>
                 </div>
+                {/* 官方說明：活動＝行銷展示層，不影響銷售邏輯 */}
+                <p className="-mt-2 flex items-start gap-1.5 text-sm text-ink-500 anim-fade-up">
+                  <span aria-hidden="true">ℹ️</span>
+                  <span>活動僅用於商品展示與行銷分類，不影響商品價格、庫存、上下架及降價規則。</span>
+                </p>
                 <div className="space-y-5">
                   {promoProducts.map((p, i) => (
                     <ProductShowcaseCard key={p.id} product={p} index={i} promo={promoInfo[p.id] ?? null} followCount={followMap[p.id] ?? 0} />

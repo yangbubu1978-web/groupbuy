@@ -53,6 +53,7 @@ export default function AdminPromotionsPage() {
 
   const emptyForm = {
     name: '', description: '', kind: 'flash',
+    icon: '', sort_order: '0',
     starts_at: toLocalInputValue(new Date().toISOString()),
     ends_at: toLocalInputValue(new Date(Date.now() + 7 * 86400_000).toISOString()),
     product_ids: [] as string[],
@@ -92,6 +93,8 @@ export default function AdminPromotionsPage() {
         ends_at: new Date(form.ends_at).toISOString(),
         status: draft ? ('draft' as const) : ('active' as const),
         kind: form.kind ?? 'flash',
+        icon: form.icon.trim() || null,
+        sort_order: Math.max(0, Number(form.sort_order) || 0),
       }
 
       let promoId = editId
@@ -127,6 +130,8 @@ export default function AdminPromotionsPage() {
     setForm({
       name: p.name,
       description: p.description ?? '',
+      icon: (p as { icon?: string | null }).icon ?? '',
+      sort_order: String((p as { sort_order?: number }).sort_order ?? 0),
       starts_at: toLocalInputValue(p.starts_at),
       ends_at: toLocalInputValue(p.ends_at),
       product_ids: (p.items ?? []).map((i) => i.product_id),
@@ -207,9 +212,23 @@ export default function AdminPromotionsPage() {
             )}
             <input placeholder="活動名稱（例：中秋禮盒特賣）" value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputCls} />
+            <div className="grid grid-cols-[80px_1fr] gap-2">
+              <input placeholder="🔥 圖示" value={form.icon} maxLength={4}
+                onChange={(e) => setForm({ ...form, icon: e.target.value })} className={inputCls} />
+              <label className="flex items-center gap-2 text-xs text-ink-500">
+                顯示排序
+                <input type="number" min="0" value={form.sort_order}
+                  onChange={(e) => setForm({ ...form, sort_order: e.target.value })}
+                  className="flex-1 px-3 py-2.5 rounded-xl border border-ink-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-400" />
+                <span className="whitespace-nowrap">數字小＝顯示在前面</span>
+              </label>
+            </div>
             <textarea placeholder="活動說明（選填）" rows={2} value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               className="w-full px-3 py-2.5 rounded-xl border border-ink-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-accent-400" />
+            <p className="text-xs text-ink-400">
+              ℹ️ 活動僅用於商品展示與行銷分類，不影響商品價格、庫存、上下架及降價規則。
+            </p>
             {/* 活動類型 */}
             <label className="block text-xs text-ink-500">
               活動類型

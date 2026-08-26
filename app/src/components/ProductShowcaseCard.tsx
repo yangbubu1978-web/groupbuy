@@ -21,12 +21,20 @@ function DropTimer({ seconds }: { seconds: number }) {
 }
 
 /** 首頁大圖商品卡 v2：照片為主視覺＋降價倒數＋庫存溫度。promo 非空＝促銷商品 */
+/** 活動標籤資料（行銷展示層；不影響價格/庫存/上下架） */
+export interface PromoTag { name: string; icon?: string | null; ends_at: string; kind?: string }
+
 function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 }: {
-  product: Product; index: number; promo?: { name: string; ends_at: string } | null
+  product: Product; index: number
+  promo?: PromoTag | PromoTag[] | null
   upcoming?: boolean; followCount?: number
 }) {
+  // 多活動：按傳入順序取第一個顯示，其餘以「+N」計數呈現
+  const promos: PromoTag[] = Array.isArray(promo) ? promo : promo ? [promo] : []
+  const primaryPromo = promos[0] ?? null
+  const extraCount = Math.max(0, promos.length - 1)
   const live = useLivePrice(product)
-  const promoRemaining = promo ? Math.max(0, (new Date(promo.ends_at).getTime() - Date.now()) / 1000) : 0
+  const promoRemaining = primaryPromo ? Math.max(0, (new Date(primaryPromo.ends_at).getTime() - Date.now()) / 1000) : 0
   const original = Number(product.original_price)
   // 即將開賣（開賣時間在未來）→ 鎖定卡：顯示「距開賣」倒數，不顯示降價、不可點
   const isUpcoming = upcoming === true
@@ -96,17 +104,25 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
                   active:scale-[0.99] hover:shadow-lg hover:-translate-y-0.5
                   transition-all duration-200 will-change-transform anim-fade-up ${
                     soldOut ? 'opacity-60' : ''
-                  } ${promo ? 'border-accent-300 ring-2 ring-accent-100 shadow-accent-200/40 shadow-lg' : 'border-ink-100'}`}
+                  } ${primaryPromo ? 'border-accent-300 ring-2 ring-accent-100 shadow-accent-200/40 shadow-lg' : 'border-ink-100'}`}
       style={{ animationDelay: `${Math.min(index * 60, 300)}ms` }}
     >
       {/* 限時促銷帶（促銷商品專屬） */}
-      {promo && (
+      {/* 活動展示帶（行銷用途；價格/庫存/上下架不受影響） */}
+      {primaryPromo && (
         <div className="bg-gradient-to-r from-accent-500 to-accent-600 text-white px-4 py-2.5
                         flex items-center justify-between gap-3">
-          <span className="text-base font-bold truncate">🏷️ 限時促銷 · {promo.name}</span>
-          {promoRemaining > 0 && (
-            <span className="shrink-0 text-base font-bold tabular-nums">⏰ 剩 {formatCountdown(promoRemaining)}</span>
-          )}
+          <span className="text-base font-bold truncate">
+            {primaryPromo.icon ? `${primaryPromo.icon} ` : '🏷️ '}{primaryPromo.name}
+          </span>
+          <span className="shrink-0 flex items-center gap-2">
+            {extraCount > 0 && (
+              <span className="text-sm font-bold bg-white/20 rounded-full px-2 py-0.5">+{extraCount}</span>
+            )}
+            {promoRemaining > 0 && (
+              <span className="text-base font-bold tabular-nums">⏰ 剩 {formatCountdown(promoRemaining)}</span>
+            )}
+          </span>
         </div>
       )}
       {/* 即將結束帶（管理員設了強制下架時間且在未來） */}
