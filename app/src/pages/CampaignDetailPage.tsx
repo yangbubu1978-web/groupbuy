@@ -130,7 +130,7 @@ export default function CampaignDetailPage() {
           .select('*')
           .eq('campaign_id', campaignId ?? '')
           .order('created_at', { ascending: true })
-        if (alive && ps) setProducts(ps as Product[])
+        if (alive && ps) setProducts((ps as Product[]).filter((p: Product) => p.stock > 0))
       }
       if (alive) setLoading(false)
     })()

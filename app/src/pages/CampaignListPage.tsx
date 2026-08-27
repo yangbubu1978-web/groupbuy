@@ -86,8 +86,9 @@ export default function CampaignListPage() {
 
       // 全部 active 商品都陳列；進行中促銷商品 →「限時促銷」專區，其餘 → 一般區
       const nowIso2 = Date.now()
+      // 已完售（庫存歸零）直接隱藏，不展示「已完售」卡片
       const all = ((data ?? []) as Product[]).filter(
-        (p) => !p.forced_delist_at || new Date(p.forced_delist_at).getTime() > nowIso2,
+        (p) => p.stock > 0 && (!p.forced_delist_at || new Date(p.forced_delist_at).getTime() > nowIso2),
       )
       const promoIds = new Set<string>()
       const promoInfoMap: Record<string, PromoTag[]> = {}
