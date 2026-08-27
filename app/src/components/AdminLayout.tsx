@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export const ADMIN_NAV = [
@@ -16,6 +16,14 @@ export const ADMIN_NAV = [
 export default function AdminLayout() {
   const { isAdmin, loading, customer, signOut } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const handleNavReset = (to: string) => {
+    window.dispatchEvent(new CustomEvent('admin-nav-reset', { detail: to }))
+    if (location.pathname === to || location.pathname.startsWith(to + '?') || location.search) {
+      navigate(to, { replace: true })
+    }
+    window.scrollTo({ top: 0 })
+  }
 
   useEffect(() => {
     if (!loading && !isAdmin) navigate('/login', { replace: true })
@@ -43,6 +51,7 @@ export default function AdminLayout() {
               key={n.to}
               to={n.to}
               end={n.end}
+              onClick={() => handleNavReset(n.to)}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] md:text-base font-medium transition ${
                   isActive ? 'bg-white/25 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
@@ -91,6 +100,7 @@ export default function AdminLayout() {
               key={n.to}
               to={n.to}
               end={n.end}
+              onClick={() => handleNavReset(n.to)}
               className={({ isActive }) =>
                 `shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium ${
                   isActive ? 'bg-white text-ink-900' : 'bg-white/15 text-white/90'
@@ -101,7 +111,7 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-        <main className="px-4 py-5 md:px-8 md:py-8">
+        <main key={location.key} className="px-4 py-5 md:px-8 md:py-8">
           <div className="max-w-5xl mx-auto">
             <Outlet />
           </div>

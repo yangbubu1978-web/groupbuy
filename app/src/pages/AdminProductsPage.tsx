@@ -125,6 +125,11 @@ export default function AdminProductsPage() {
     })()
   }, [])
 
+  // 點側邊「商品管理」回到列表：清空 id 時關表單（同路徑 Link 需靠此效應）
+  useEffect(() => {
+    if (!editId && !duplicateMode) setShowForm(false)
+  }, [editId, duplicateMode])
+
   // 編輯模式：載入既有商品
   useEffect(() => {
     if (!editId) { setLoaded(true); return }
