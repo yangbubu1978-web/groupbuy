@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import FollowButton from './FollowButton'
 import type { Product } from '../lib/types'
 import { fmtMoney } from '../lib/types'
 import { useLivePrice } from '../lib/useLivePrice'
@@ -84,6 +85,9 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
             </span>
           </div>
           <p className="mt-2 text-base text-ink-500">尚未開賣，敬請期待</p>
+          <div className="mt-3" onClick={(e) => { e.preventDefault(); e.stopPropagation() }}>
+            <FollowButton productId={product.id} saleStartAt={product.sale_start_at} size="card" />
+          </div>
         </div>
       </div>
     )

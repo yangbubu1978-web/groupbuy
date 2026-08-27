@@ -128,12 +128,26 @@ export default function CampaignListPage() {
   }, [])
 
   // Realtime：單件棄單罰則會推 sale_start_at，首頁需即時反映倒數變長
+  // + 關注商品開賣時本地通知（Mobile First：關站推播由 pg_cron/Edge 補強）
   useEffect(() => {
     const ch = supabase.channel('products-penalty')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'products' }, (payload) => {
-        const n = payload.new as unknown as { id: string; sale_start_at: string | null }
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'products' }, async (payload) => {
+        const n = payload.new as unknown as { id: string; sale_start_at: string | null; name?: string }
         const patchOne = (prev: Product[]) => prev.map((p) => p.id === n.id ? { ...p, sale_start_at: n.sale_start_at } as Product : p)
         setPromoProducts(patchOne); setRegularProducts(patchOne); setUpcomingProducts(patchOne)
+        // 若此商品剛開賣（sale_start_at 變成已過）且用戶有關注，發本地通知
+        try {
+          const saleAt = n.sale_start_at ? new Date(n.sale_start_at).getTime() : 0
+          if (saleAt && saleAt <= Date.now()) {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) return
+            const { data: f } = await supabase.from('product_follows').select('product_id').eq('user_id', user.id).eq('product_id', n.id).maybeSingle()
+            if (!f) return
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+              new Notification('🔥 商品已上架！', { body: `${(n as { name?: string }).name ?? '您關注的商品'}已開賣，快去搶購！`, icon: './icons/icon-192.png', tag: `sale-${n.id}` })
+            }
+          }
+        } catch {}
       })
       .subscribe()
     return () => { supabase.removeChannel(ch) }
@@ -219,6 +233,13 @@ export default function CampaignListPage() {
               className="whitespace-nowrap text-sm md:text-base font-bold px-3 md:px-4 py-2 rounded-full border border-white/60 text-white hover:bg-white/15 transition"
             >
               {isAdmin ? '訂單管理' : '訂單'}
+            </Link>
+            <Link
+              to="/me/follows"
+              aria-label="我的關注"
+              className="whitespace-nowrap text-sm font-bold px-3 py-2 rounded-full bg-white/20 text-white hover:bg-white/30 transition"
+            >
+              🔔 關注
             </Link>
             <Link
               to="/cart"

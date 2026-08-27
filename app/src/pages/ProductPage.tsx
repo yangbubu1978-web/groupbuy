@@ -7,6 +7,7 @@ import { formatCountdown, formatInterval } from '../lib/pricing'
 import { useLivePrice } from '../lib/useLivePrice'
 import type { PromoTag } from '../components/ProductShowcaseCard'
 import { useAuth } from '../context/AuthContext'
+import FollowButton from '../components/FollowButton'
 
 type BuyState =
   | { kind: 'idle' }
@@ -653,6 +654,11 @@ export default function ProductPage() {
                 </button>
               </div>
             </>
+          )}
+          {notOpenYet && buyState.kind !== 'cart' && product && (
+            <div className="mb-2">
+              <FollowButton productId={product.id} saleStartAt={product.sale_start_at} size="detail" />
+            </div>
           )}
           {buyState.kind !== 'cart' && (
           <button

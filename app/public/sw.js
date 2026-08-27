@@ -63,3 +63,21 @@ self.addEventListener('fetch', (e) => {
     )
   }
 })
+
+// --- 推播通知：關注商品上架 ---
+self.addEventListener('push', (e) => {
+  let data={}; try{ data=e.data?e.data.json():{} }catch{ data={ title:e.data?e.data.text():'', body:'' } }
+  const title=data.title||'\uD83D\uDD25 商品已上架！';
+  const body=data.body||'您關注的商品已開賣，快去搶購！';
+  const url=data.url||'/#/';
+  e.waitUntil(self.registration.showNotification(title,{ body, icon:'./icons/icon-192.png', badge:'./icons/icon-192.png', data:{url}, tag:data.tag||'sale-start' }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url=(e.notification.data&&e.notification.data.url)||'/#/';
+  const target=new URL(url,self.location.origin).href;
+  e.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then((wins)=>{
+    for(const w of wins){ if(w.url.includes(self.location.origin)){ w.focus(); if(target!==w.url) w.navigate(target); return; } }
+    return clients.openWindow(target);
+  }));
+});

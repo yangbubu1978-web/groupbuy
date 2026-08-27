@@ -20,6 +20,7 @@ const AdminCompaniesPage = lazy(() => import('./pages/AdminCompaniesPage'))
 const AdminBannersPage = lazy(() => import('./pages/AdminBannersPage'))
 const AdminPromotionsPage = lazy(() => import('./pages/AdminPromotionsPage'))
 const CartPage = lazy(() => import('./pages/CartPage'))
+const MyFollowsPage = lazy(() => import('./pages/MyFollowsPage'))
 
 function PageFallback() {
   return (
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="/cart" element={<RequireAuth><LazyRoute><CartPage /></LazyRoute></RequireAuth>} />
         <Route path="/orders" element={<RequireAuth><LazyRoute><OrdersPage /></LazyRoute></RequireAuth>} />
         <Route path="/profile" element={<RequireAuth><LazyRoute><ProfilePage /></LazyRoute></RequireAuth>} />
+        <Route path="/me/follows" element={<RequireAuth><LazyRoute><MyFollowsPage /></LazyRoute></RequireAuth>} />
         <Route path="/admin" element={<RequireAuth><AdminLayout /></RequireAuth>}>
           <Route index element={<LazyRoute><AdminPage /></LazyRoute>} />
           <Route path="products" element={<LazyRoute><AdminProductsPage /></LazyRoute>} />
