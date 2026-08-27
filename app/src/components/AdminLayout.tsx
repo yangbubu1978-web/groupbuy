@@ -33,10 +33,10 @@ export default function AdminLayout() {
     <div className="min-h-dvh bg-ink-50 md:flex">
       {/* 亮橘側欄（桌機） */}
       <aside className="hidden md:flex w-72 shrink-0 flex-col min-h-[100dvh] bg-accent-500 text-white sticky top-0 h-[100dvh]">
-        <div className="px-6 py-5 border-b border-white/15">
+        <Link to="/" className="block px-6 py-5 border-b border-white/15 hover:bg-white/10 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="回到前台首頁">
           <div className="text-base md:text-lg font-bold tracking-wide">特價倒數平台</div>
-          <div className="text-xs md:text-sm text-white/70 mt-1">管理後台</div>
-        </div>
+          <div className="text-xs md:text-sm text-white/70 mt-1">管理後台 · 點此回前台</div>
+        </Link>
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {ADMIN_NAV.map((n) => (
             <NavLink
@@ -76,10 +76,13 @@ export default function AdminLayout() {
       <div className="flex-1 min-w-0">
         {/* 手機頂部列 */}
         <header className="md:hidden sticky top-0 z-20 bg-accent-500 text-white px-4 py-3 flex items-center justify-between">
-          <span className="text-sm font-bold">特價倒數平台</span>
-          <button onClick={signOut} className="text-xs font-medium text-red-200">
-            登出（{customer?.name ?? '管理員'}）
-          </button>
+          <Link to="/" className="text-sm font-bold hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded" aria-label="回到前台首頁">特價倒數平台 🏠</Link>
+          <div className="flex items-center gap-3">
+            <Link to="/" className="text-xs font-bold px-2.5 py-1 rounded-full bg-white/20 hover:bg-white/30 transition">回前台</Link>
+            <button onClick={signOut} className="text-xs font-medium text-red-200">
+              登出（{customer?.name ?? '管理員'}）
+            </button>
+          </div>
         </header>
         {/* 手機橫向導覽 */}
         <nav className="md:hidden sticky top-[48px] z-20 bg-accent-500 text-white px-3 py-2 flex gap-1.5 overflow-x-auto">

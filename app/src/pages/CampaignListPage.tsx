@@ -205,13 +205,13 @@ export default function CampaignListPage() {
       {/* 頂部：台灣電商風橘色漸層橫幅 */}
       <header className="bg-gradient-to-r from-accent-500 to-accent-600 px-3 md:px-5 py-3 md:py-4 sticky top-0 z-10 shadow-md">
         <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between gap-2">
-          {/* 標題區：min-w-0 讓它可被壓縮截斷，不壓到右側按鈕 */}
-          <div className="min-w-0">
+          {/* 標題區：可點回首頁 */}
+          <Link to="/" className="min-w-0 hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-lg" aria-label="回到首頁">
             <div className="text-xs md:text-base tracking-widest text-accent-100 font-bold whitespace-nowrap">⚡ 先買先贏</div>
             <h1 className="text-base md:text-lg font-extrabold text-white tracking-wide whitespace-nowrap truncate">
               吸引力生活好物
             </h1>
-          </div>
+          </Link>
           {/* 按鈕區：shrink-0 + nowrap，手機上永遠一行排開 */}
           <div className="flex items-center gap-2 shrink-0">
             <Link

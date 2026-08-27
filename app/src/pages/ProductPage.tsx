@@ -376,15 +376,19 @@ export default function ProductPage() {
       <header className="bg-gradient-to-r from-accent-500 to-accent-600 px-4 py-3 sticky top-0 z-10 shadow-md">
         <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between gap-3">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => {
+              if (window.history.length > 1) navigate(-1)
+              else navigate('/', { replace: true })
+            }}
             className="w-11 h-11 -ml-1.5 rounded-full hover:bg-white/20 text-white flex items-center justify-center shrink-0"
             aria-label="返回"
           >
             ←
           </button>
 
-          {/* 中央：先買先贏 + 大字倒數（預約中＝鎖定態，降價暫停顯示） */}
-          <div className="min-w-0 flex-1 text-center">
+          {/* 中央：先買先贏 + 大字倒數（可點回首頁） */}
+          <Link to="/" className="min-w-0 flex-1 text-center hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-lg" aria-label="回到首頁">
+
             <div className="text-xs tracking-widest text-accent-100 font-bold whitespace-nowrap">⚡ 先買先贏</div>
             {buyState.kind === 'cart' ? (
               <>
@@ -413,7 +417,7 @@ export default function ProductPage() {
                 ✅ 已是最優惠價
               </div>
             )}
-          </div>
+          </Link>
 
           <div className="w-11 shrink-0" />
         </div>
