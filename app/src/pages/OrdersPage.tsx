@@ -248,7 +248,7 @@ export default function OrdersPage() {
                     ))}
                   </div>
                   <div className="flex justify-between mt-1 text-[11px] text-ink-600">
-                    <span>下單</span><span className="hidden xs:inline">結帳</span><span>付款</span><span className="hidden xs:inline">領貨</span>
+                    <span>下單</span><span>結帳</span><span>付款</span><span>領貨</span>
                   </div>
                 </div>
               )}
