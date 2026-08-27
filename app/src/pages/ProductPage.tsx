@@ -24,6 +24,7 @@ const REASON_TEXT: Record<string, string> = {
   not_authorized: '您沒有參加此團購的權限。',
   account_inactive: '帳號已停用，請聯絡管理員。',
   account_blocked: '帳號已被封鎖，請聯絡管理員。',
+  cooldown: '您剛棄單，此商品需冷卻 3 分鐘後才能再搶。',
   offer_ended: '😅 太猶豫囉！此優惠已結束，錯過就沒有了。',
   not_open_yet: '⏳ 尚未開賣，敬請期待，時間一到即可下單。',
   reservation_expired: '⌛ 考慮時間超過了，商品已回到架上，再試一次吧！',
@@ -245,7 +246,6 @@ export default function ProductPage() {
       } else if (res.reason === 'sold_out') {
         setBuyState({ kind: 'soldout' })
       } else if (res.reason === 'already_reserved') {
-        // 已有預約：不延長，直接用既有預約的到期時間
         setBuyState({
           kind: 'cart',
           reservationId: String(res.reservation_id),
@@ -253,6 +253,9 @@ export default function ProductPage() {
           quantity: Number(quantity),
           expiresAt: new Date(String(res.expires_at)).getTime(),
         })
+      } else if (res.reason === 'cooldown') {
+        const secs = Number((res as unknown as { retry_after?: number }).retry_after ?? 180)
+        setBuyState({ kind: 'error', message: `您剛棄單，此商品需冷卻 ${Math.ceil(secs/60)} 分鐘後才能再搶。` })
       } else {
         setBuyState({
           kind: 'error',
@@ -290,7 +293,15 @@ export default function ProductPage() {
     if (buyState.kind !== 'cart') return
     const rid = buyState.reservationId
     setBuyState({ kind: 'idle' })
-    await rpc('release_reservation', { p_reservation_id: rid }).catch(() => null)
+    try {
+      const r = await rpc('release_reservation', { p_reservation_id: rid }) as unknown as { penalty_secs?: number }
+      if (r && typeof r.penalty_secs === 'number' && r.penalty_secs > 0) {
+        const s = r.penalty_secs
+        const label = s >= 60 ? `${Math.floor(s/60)}分${s%60 ? `${s%60}秒` : ''}` : `${s}秒`
+        setBuyState({ kind: 'error', message: `已棄單，此商品下次降價延後 ${label}。單件商品棄單將進入 3 分鐘冷卻。` })
+        setTimeout(() => setBuyState({ kind: 'idle' }), 4000)
+      }
+    } catch {}
   }
 
   if (loading) {

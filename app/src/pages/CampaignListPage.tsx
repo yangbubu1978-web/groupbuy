@@ -127,6 +127,18 @@ export default function CampaignListPage() {
     return () => { alive = false }
   }, [])
 
+  // Realtime：單件棄單罰則會推 sale_start_at，首頁需即時反映倒數變長
+  useEffect(() => {
+    const ch = supabase.channel('products-penalty')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'products' }, (payload) => {
+        const n = payload.new as unknown as { id: string; sale_start_at: string | null }
+        const patchOne = (prev: Product[]) => prev.map((p) => p.id === n.id ? { ...p, sale_start_at: n.sale_start_at } as Product : p)
+        setPromoProducts(patchOne); setRegularProducts(patchOne); setUpcomingProducts(patchOne)
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [])
+
   // 每 30 秒輕量輪詢：商品被 cron 下架/完售時自動從畫面消失；活動到期時商品降級到一般區
   useEffect(() => {
     const id = setInterval(async () => {
