@@ -244,6 +244,15 @@ export default function ProductPage() {
         })
       } else if (res.reason === 'sold_out') {
         setBuyState({ kind: 'soldout' })
+      } else if (res.reason === 'already_reserved') {
+        // 已有預約：不延長，直接用既有預約的到期時間
+        setBuyState({
+          kind: 'cart',
+          reservationId: String(res.reservation_id),
+          lockedPrice: buyState.kind === 'cart' ? buyState.lockedPrice : Number(product!.original_price),
+          quantity: Number(quantity),
+          expiresAt: new Date(String(res.expires_at)).getTime(),
+        })
       } else {
         setBuyState({
           kind: 'error',
