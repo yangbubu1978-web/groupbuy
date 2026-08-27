@@ -116,6 +116,32 @@ export default function ProductPage() {
     return () => { alive = false }
   }, [productId])
 
+  // 載入既有預約（解決：加入購物車後回商品頁仍顯示已完售）
+  useEffect(() => {
+    if (!productId || !userId) return
+    let alive = true
+    ;(async () => {
+      const { data } = await supabase.from('cart_reservations')
+        .select('id, quantity, locked_unit_price, expires_at')
+        .eq('user_id', userId).eq('product_id', productId).eq('status', 'active').maybeSingle()
+      if (!alive || !data) return
+      const exp = new Date(String((data as unknown as { expires_at: string }).expires_at)).getTime()
+      if (exp <= Date.now()) {
+        // 已逾時：自動釋放（不需進購物車）
+        try { await supabase.rpc('release_reservation', { p_reservation_id: (data as unknown as { id: string }).id }) } catch {}
+        return
+      }
+      setBuyState({
+        kind: 'cart',
+        reservationId: String((data as unknown as { id: string }).id),
+        lockedPrice: Number((data as unknown as { locked_unit_price: number }).locked_unit_price),
+        quantity: Number((data as unknown as { quantity: number }).quantity),
+        expiresAt: exp,
+      })
+    })()
+    return () => { alive = false }
+  }, [productId, userId])
+
   const live = useLivePrice(product)
 
   // ---------- 關注：載入人數＋我的狀態，並訂閱即時變化 ----------
@@ -603,7 +629,11 @@ export default function ProductPage() {
         <div className="max-w-md md:max-w-3xl mx-auto bg-white/95 backdrop-blur border-t border-ink-100 px-4 pt-3 pb-safe">
           {buyState.kind === 'cart' && (
             <>
-              <CartCountdown expiresAt={buyState.expiresAt} onExpire={() => setBuyState({ kind: 'idle' })} />
+              <CartCountdown expiresAt={buyState.expiresAt} onExpire={async () => {
+                const rid = buyState.kind === 'cart' ? buyState.reservationId : null
+                setBuyState({ kind: 'idle' })
+                if (rid) try { await supabase.rpc('release_reservation', { p_reservation_id: rid }) } catch {}
+              }} />
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <button
                   onClick={checkoutCart}
