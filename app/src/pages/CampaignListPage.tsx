@@ -304,15 +304,17 @@ export default function CampaignListPage() {
             {/* 限時促銷專區（置頂，突顯促銷商品） */}
             {promoProducts.length > 0 && (
               <section className="space-y-4">
-                <div className="pt-1 flex items-center gap-2 anim-fade-up">
-                  <span className="w-1 h-5 rounded-full bg-accent-500" aria-hidden="true" />
-                  <h3 className="text-xl font-extrabold text-ink-900">限時促銷</h3>
-                {promoProducts[0] && (() => {
-                  const first = promoInfo[promoProducts[0].id]?.[0]
-                  const k = (first as { kind?: string } | undefined)?.kind ?? 'flash'
-                  const L: Record<string, string> = { flash: '⚡ 限時場', accel: '🚀 加速場', bundle: '📦 組合場', clearance: '🏷️ 清倉場', focus: '⭐ 焦點新品' }
-                  return <span className="ml-1 text-sm font-bold text-accent-600 bg-accent-50 px-2.5 py-1 rounded-full whitespace-nowrap">{L[k] ?? '⚡ 限時場'}</span>
-                })()}
+                <div className="pt-1 flex flex-wrap items-center gap-2 anim-fade-up">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="w-1 h-5 rounded-full bg-accent-500" aria-hidden="true" />
+                    <h3 className="text-xl font-extrabold text-ink-900 whitespace-nowrap">限時促銷</h3>
+                    {promoProducts[0] && (() => {
+                      const first = promoInfo[promoProducts[0].id]?.[0]
+                      const k = (first as { kind?: string } | undefined)?.kind ?? 'flash'
+                      const L: Record<string, string> = { flash: '⚡ 限時場', accel: '🚀 加速場', bundle: '📦 組合場', clearance: '🏷️ 清倉場', focus: '⭐ 焦點新品' }
+                      return <span className="text-sm font-bold text-accent-600 bg-accent-50 px-2.5 py-1 rounded-full whitespace-nowrap">{L[k] ?? '⚡ 限時場'}</span>
+                    })()}
+                  </div>
                   <span className="ml-auto text-sm font-bold text-accent-700 whitespace-nowrap">限量優惠，先搶先贏 →</span>
                 </div>
                 <div className="space-y-5">
