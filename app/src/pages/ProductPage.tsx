@@ -302,10 +302,12 @@ export default function ProductPage() {
   }
 
   // 已降價幅度（原價 − 現價）
+  // P31c：預約中價格凍結（結帳前不跳動）
+  const displayPrice = buyState.kind === 'cart' ? buyState.lockedPrice : live.price
   const original = Number(product.original_price)
   const minimum = Math.min(Number(product.minimum_price), original)
-  const atFloor = live.price <= minimum
-  const dropped = original - live.price
+  const atFloor = displayPrice <= minimum
+  const dropped = original - displayPrice
   const dropPct = original > 0 ? Math.max(0, Math.min(100, (dropped / original) * 100)) : 0
 
   // ---- 特價倒數規則：熱銷 / 即將完售 / 到底價 FOMO（底價不外顯）----
@@ -445,7 +447,7 @@ export default function ProductPage() {
                     priceFlash ? 'text-green-600' : 'text-ink-900'
                   }`}
                 >
-                  {fmtMoney(live.price)}
+                  {fmtMoney(displayPrice)}
                 </div>
               </div>
             </div>
@@ -485,10 +487,14 @@ export default function ProductPage() {
               <span className="text-base text-ink-700">
                 每 {formatInterval(product.price_interval_seconds)} 隨機降 {dropLabel}
               </span>
-              {!atFloor && (
-                <span className="text-base font-bold tabular-nums text-ink-700">
-                  下一次降價 {formatCountdown(live.nextDropIn)}
-                </span>
+              {buyState.kind === 'cart' ? (
+                <span className="text-base font-bold text-accent-700">🔒 已鎖定</span>
+              ) : (
+                !atFloor && (
+                  <span className="text-base font-bold tabular-nums text-ink-700">
+                    下一次降價 {formatCountdown(live.nextDropIn)}
+                  </span>
+                )
               )}
             </div>
 
@@ -612,8 +618,8 @@ export default function ProductPage() {
                   : live.stock <= 0
                       ? '已完售'
                       : atFloor
-                        ? `🛒 放入購物車｜${fmtMoney(live.price)} × ${quantity}`
-                        : `🛒 放入購物車｜鎖定價 ${fmtMoney(live.price)} × ${quantity}`}
+                        ? `🛒 放入購物車｜${fmtMoney(displayPrice)} × ${quantity}`
+                        : `🛒 放入購物車｜鎖定價 ${fmtMoney(displayPrice)} × ${quantity}`}
           </button>
           )}
           {saleOpen && live.stock > 0 && !atFloor && buyState.kind !== 'cart' && (
