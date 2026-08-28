@@ -4,32 +4,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        // 日系霧藍 · UI UX Pro Max 優化版
-        // 靈感：Soft UI Evolution + Hero-Centric + 信任感電商
+        // 日系生活感 · 活潑（zakka / 北歐日雜感）
+        // 米紙白 + 木質棕 + 朱紅活力點綴
         ink: {
-          50: '#F0F5F9',  // 霧藍背景
-          100: '#E8EFF6',
-          200: '#C8D9E8', // 邊框
-          300: '#A8BECF',
-          400: '#8AA0B5',
-          500: '#6B7C8F',
-          600: '#4A5E73',
-          700: '#25364A', // 主文字（對比 7:1）
-          800: '#1E3A5F',
-          900: '#152A45',
-          950: '#0F1F33',
+          50: '#FFFBF5',  // 米紙白背景
+          100: '#F9F1E7', // 淺米
+          200: '#E8DDD0', // 邊框
+          300: '#D6C4B0',
+          400: '#BBA693',
+          500: '#9C8B7A',
+          600: '#7A6B5A',
+          700: '#4A3F35', // 木質棕主文字
+          800: '#2C2420',
+          900: '#1A1612',
+          950: '#0F0D0A',
         },
         accent: {
-          50: '#EFF5FA',
-          100: '#E0ECF5',
-          200: '#C8D9E8',
-          300: '#A8C4DC',
-          400: '#7AA6C8',
-          500: '#5B8DBE', // 晴空藍 CTA
-          600: '#3D6A99',
-          700: '#2A4A6E',
-          800: '#1E3A5F', // 深灰藍 primary
-          900: '#152A45',
+          50: '#FFF0EC',
+          100: '#FFD9CC',
+          200: '#FFB8A0',
+          300: '#FF8A6B',
+          400: '#F26B4A',
+          500: '#E85D3F', // 朱紅主色（鳥居/印章感）
+          600: '#C94A2E',
+          700: '#A33A22',
+          800: '#7A2E1B',
+          900: '#552515',
         },
       },
       fontFamily: {
@@ -38,16 +38,12 @@ export default {
           '"PingFang TC"', '"Microsoft JhengHei"', 'sans-serif',
         ],
         display: [
-          '"Shippori Mincho"', '"Noto Serif TC"', 'serif',
+          '"Zen Maru Gothic"', '"Noto Sans TC"', 'sans-serif',
         ],
       },
       boxShadow: {
-        'soft': '0 6px 24px rgba(30,58,95,.08)',
-        'soft-lg': '0 10px 36px rgba(30,58,95,.12)',
-      },
-      borderRadius: {
-        '2xl': '16px',
-        '3xl': '20px',
+        'soft': '0 6px 24px rgba(74,63,53,.08)',
+        'soft-lg': '0 10px 36px rgba(74,63,53,.12)',
       },
     },
   },
