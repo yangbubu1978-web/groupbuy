@@ -449,7 +449,7 @@ export default function ProductPage() {
           >
             {/* 卡片頂部標籤 */}
             <div className="flex items-center gap-2">
-              <span className="h-6 px-2.5 rounded-full bg-ink-900 text-white text-xs font-bold tracking-wide inline-flex items-center">限時降價中</span>
+              <span className="h-6 px-3 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-extrabold tracking-wide inline-flex items-center gap-1 shadow-sm shadow-red-500/20"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" aria-hidden="true" />限時降價中</span>
               {buyState.kind === 'cart' && (
                 <span className="h-6 px-2.5 rounded-full bg-emerald-500 text-white text-xs font-bold inline-flex items-center gap-1">🔒 已鎖定</span>
               )}
@@ -464,7 +464,7 @@ export default function ProductPage() {
                 <div className="text-[13px] font-semibold tracking-wide text-ink-400 mb-1">
                   {buyState.kind === 'cart' ? '已鎖定價格' : '目前價格'}
                 </div>
-                <div className={`text-[36px] md:text-[40px] font-extrabold tracking-tight leading-none transition-colors duration-500 ${priceFlash ? 'text-emerald-600' : 'text-ink-900'}`}>
+                <div className={`text-[36px] md:text-[40px] font-extrabold tracking-tight leading-none transition-colors duration-500 ${priceFlash ? 'text-emerald-600' : 'text-red-600'}`}>
                   {fmtMoney(displayPrice)}
                 </div>
               </div>
@@ -517,7 +517,7 @@ export default function ProductPage() {
               </div>
               <div className="h-2.5 rounded-full bg-ink-100 overflow-hidden p-0.5">
                 <div
-                  className={`h-full rounded-full transition-[width] duration-700 ease-out ${atFloor ? 'bg-emerald-500' : 'bg-gradient-to-r from-accent-400 to-accent-600'}`}
+                  className={`h-full rounded-full transition-[width] duration-700 ease-out ${atFloor ? 'bg-emerald-500' : 'bg-gradient-to-r from-red-400 to-red-600'}`}
                   style={{ width: `${dropPct}%` }}
                 />
               </div>
@@ -627,7 +627,7 @@ export default function ProductPage() {
               disabled={!canBuy}
               className={`w-full h-[56px] rounded-full text-[16px] font-extrabold tracking-wide transition-all border active:scale-[0.97]
                 ${saleOpen && live.stock > 0
-                  ? 'bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-600 text-white shadow-[0_6px_20px_rgba(238,77,45,0.35),0_1px_3px_rgba(0,0,0,0.08)] border-accent-600/20'
+                  ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-600 text-white shadow-[0_6px_20px_rgba(239,68,68,0.35),0_1px_3px_rgba(0,0,0,0.08)] border-red-600/20'
                   : 'bg-ink-100 text-ink-400 border-ink-200 cursor-not-allowed shadow-none'}`}
             >
               {buyState.kind === 'buying'
