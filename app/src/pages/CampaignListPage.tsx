@@ -280,13 +280,13 @@ export default function CampaignListPage() {
             <span className="text-base" aria-hidden="true">⚠️</span>
             <h3 className="text-base font-bold text-ink-900">購買注意事項｜下單前請留意</h3>
           </div>
-          <ol className="space-y-1.5 text-[15px] text-ink-700 leading-relaxed list-none">
-            <li><span className="font-bold text-ink-900">1. ⏰ 荷蘭式降價</span> — 越晚越便宜，售完即下架，先搶先贏。</li>
-            <li><span className="font-bold text-ink-900">2. 🛒 鎖價 60 秒</span> — 放入購物車保留 60 秒，逾時自動釋放。</li>
-            <li><span className="font-bold text-ink-900">3. ✅ 結帳即確認</span> — <b className="text-red-600">無法自行取消</b>，請謹慎下單。</li>
-            <li><span className="font-bold text-ink-900">4. ❄️ 棄單冷卻 3 分鐘</span> — 限量 1 件棄單後，3 分鐘內不能再搶。</li>
-            <li><span className="font-bold text-ink-900">5. 💳 結帳後請找窗口付款</span> — 付款後為您備貨。</li>
-            <li><span className="font-bold text-ink-900">6. 📦 備貨後通知領貨</span> — 取貨完成，訂單才算完成。</li>
+          <ol className="space-y-1.5 text-[15px] text-ink-700 leading-relaxed list-decimal list-inside marker:font-bold marker:text-ink-900">
+            <li>越晚越便宜，售完即下架，被人買走就沒有了。</li>
+            <li>放入購物車保留 60 秒，逾時即棄單，自動釋放庫存，讓給別人買。</li>
+            <li>結帳即確認，<b className="text-red-600">無法自行取消</b>，請謹慎下單。</li>
+            <li>限量 1 件棄單後，系統冷卻 3 分鐘內不能再搶同一件商品。</li>
+            <li>結帳後請找窗口付款，付款後為您備貨。</li>
+            <li>備貨後通知領貨，取貨完成，訂單才算完成。</li>
           </ol>
           <p className="mt-2.5 text-[15px] font-bold text-accent-600">❤️ 心動別猶豫，結帳前再確認一次！</p>
         </section>
