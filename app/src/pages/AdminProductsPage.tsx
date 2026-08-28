@@ -129,6 +129,17 @@ export default function AdminProductsPage() {
   useEffect(() => {
     if (!editId && !duplicateMode) setShowForm(false)
   }, [editId, duplicateMode])
+  // 側邊同項再點（handleNavReset 發的事件）→ 回列表，但複製進行中不關
+  useEffect(() => {
+    const onReset = (e: Event) => {
+      if ((e as CustomEvent).detail !== '/admin/products') return
+      if (duplicateMode) return
+      setShowForm(false)
+      navigate('/admin/products', { replace: true })
+    }
+    window.addEventListener('admin-nav-reset', onReset)
+    return () => window.removeEventListener('admin-nav-reset', onReset)
+  }, [duplicateMode, navigate])
 
   // 編輯模式：載入既有商品
   useEffect(() => {

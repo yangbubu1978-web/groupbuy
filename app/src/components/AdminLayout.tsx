@@ -111,7 +111,7 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-        <main key={location.key} className="px-4 py-5 md:px-8 md:py-8">
+        <main className="px-4 py-5 md:px-8 md:py-8">
           <div className="max-w-5xl mx-auto">
             <Outlet />
           </div>
