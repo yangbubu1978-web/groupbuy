@@ -34,7 +34,7 @@ const REASON_TEXT: Record<string, string> = {
   invalid_quantity: '數量不正確。',
 }
 
-/** 購物車 1 分鐘倒數提示條（歸零自動收起，庫存由伺服器 cron 釋回） */
+/** 購物車倒數 — shadcn Card 風格膠囊條，BeUI 柔和警示 */
 function CartCountdown({ expiresAt, onExpire }: { expiresAt: number; onExpire: () => void }) {
   const [left, setLeft] = useState(Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)))
   useEffect(() => {
@@ -47,13 +47,22 @@ function CartCountdown({ expiresAt, onExpire }: { expiresAt: number; onExpire: (
       }
     }, 250)
     return () => clearInterval(id)
-  }, [expiresAt])
+  }, [expiresAt, onExpire])
   const urgent = left <= 60
   return (
-    <div className={`mb-2 rounded-xl px-4 py-2.5 text-base font-bold flex items-center justify-between
-      ${urgent ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-accent-50 text-accent-700 border border-accent-200'}`}>
-      <span>🛒 商品已為您保留（價格已鎖定）</span>
-      <span className="tabular-nums">⏱ {formatCountdown(left)}</span>
+    <div
+      className={`mb-3 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 border shadow-sm backdrop-blur
+        ${urgent
+          ? 'bg-red-50/90 border-red-200 text-red-700 shadow-red-100/50'
+          : 'bg-amber-50/90 border-amber-200 text-amber-800 shadow-amber-100/50'}`}
+    >
+      <span className="flex items-center gap-2 text-[15px] font-bold leading-none">
+        <span className={`w-2 h-2 rounded-full shrink-0 ${urgent ? 'bg-red-500 animate-pulse' : 'bg-amber-500'}`} />
+        商品已為您保留（價格已鎖定）
+      </span>
+      <span className={`tabular-nums text-[15px] font-extrabold px-3 py-1.5 rounded-full border ${urgent ? 'bg-white border-red-200 text-red-700' : 'bg-white border-amber-200 text-amber-800'}`}>
+        ⏱ {formatCountdown(left)}
+      </span>
     </div>
   )
 }
@@ -93,7 +102,6 @@ export default function ProductPage() {
           .eq('id', (p as Product).campaign_id)
           .maybeSingle()
         if (alive && c) setCampaign(c as Campaign)
-        // 該商品的進行中活動（行銷展示層：只影響顯示，不影響銷售邏輯）
         const nowIso = new Date().toISOString()
         const { data: items } = await supabase
           .from('promotion_items')
@@ -117,7 +125,7 @@ export default function ProductPage() {
     return () => { alive = false }
   }, [productId])
 
-  // 載入既有預約（解決：加入購物車後回商品頁仍顯示已完售）
+  // 載入既有預約
   useEffect(() => {
     if (!productId || !userId) return
     let alive = true
@@ -128,7 +136,6 @@ export default function ProductPage() {
       if (!alive || !data) return
       const exp = new Date(String((data as unknown as { expires_at: string }).expires_at)).getTime()
       if (exp <= Date.now()) {
-        // 已逾時：自動釋放（不需進購物車）
         try { await supabase.rpc('release_reservation', { p_reservation_id: (data as unknown as { id: string }).id }) } catch {}
         return
       }
@@ -149,12 +156,9 @@ export default function ProductPage() {
   useEffect(() => {
     if (!productId) return
     let alive = true
-
     ;(async () => {
-      const { data: cnt } = await supabase
-        .rpc('product_follower_count', { p_product_id: productId })
+      const { data: cnt } = await supabase.rpc('product_follower_count', { p_product_id: productId })
       if (alive && cnt !== null) setFollowerCount(Number(cnt))
-
       if (userId) {
         const { data: mine } = await supabase
           .from('product_follows')
@@ -165,23 +169,18 @@ export default function ProductPage() {
         if (alive) setFollowing(!!mine)
       }
     })()
-
-    // Realtime：任何人關注／取消關注，數字即時跳動
     const channel = supabase
       .channel(`follows-${productId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'product_follows', filter: `product_id=eq.${productId}` },
         () => {
-          supabase
-            .rpc('product_follower_count', { p_product_id: productId })
-            .then(({ data: c }) => {
-              if (alive && c !== null) setFollowerCount(Number(c))
-            })
+          supabase.rpc('product_follower_count', { p_product_id: productId }).then(({ data: c }) => {
+            if (alive && c !== null) setFollowerCount(Number(c))
+          })
         },
       )
       .subscribe()
-
     return () => {
       alive = false
       supabase.removeChannel(channel)
@@ -189,32 +188,21 @@ export default function ProductPage() {
   }, [productId, userId])
 
   const toggleFollow = async () => {
-    if (!userId) {
-      navigate('/login', { replace: true })
-      return
-    }
+    if (!userId) { navigate('/login', { replace: true }); return }
     if (!productId || followBusy) return
     setFollowBusy(true)
-    // 樂觀更新：先改畫面再同步後端
     const next = !following
     setFollowing(next)
     setFollowerCount((n) => Math.max(0, n + (next ? 1 : -1)))
     try {
       if (next) {
-        const { error } = await supabase
-          .from('product_follows')
-          .insert({ user_id: userId, product_id: productId })
-        if (error && error.code !== '23505') throw error // 重複關注視為成功
+        const { error } = await supabase.from('product_follows').insert({ user_id: userId, product_id: productId })
+        if (error && error.code !== '23505') throw error
       } else {
-        const { error } = await supabase
-          .from('product_follows')
-          .delete()
-          .eq('user_id', userId)
-          .eq('product_id', productId)
+        const { error } = await supabase.from('product_follows').delete().eq('user_id', userId).eq('product_id', productId)
         if (error) throw error
       }
     } catch {
-      // 失敗回滾
       setFollowing(!next)
       setFollowerCount((n) => Math.max(0, n + (next ? -1 : 1)))
     } finally {
@@ -222,7 +210,7 @@ export default function ProductPage() {
     }
   }
 
-  // 價格下降時閃一下動畫
+  // 價格下降閃爍
   const prevPrice = useRef(live.price)
   useEffect(() => {
     if (live.price < prevPrice.current) {
@@ -235,7 +223,6 @@ export default function ProductPage() {
   }, [live.price])
 
   const now = Date.now()
-  // 尚未開賣（開賣時間在未來）→ 鎖定不可下單，顯示等待倒數
   const saleStartMs = product?.sale_start_at ? new Date(product.sale_start_at).getTime() : 0
   const notOpenYet = saleStartMs > now
   const saleRemain = notOpenYet ? Math.max(0, (saleStartMs - now) / 1000) : 0
@@ -250,7 +237,6 @@ export default function ProductPage() {
     )
   }, [product, campaign, now, notOpenYet])
 
-  // ---------- 購物車預訂制：放入購物車＝鎖庫存鎖價 1 分鐘（效期由 DB reserve_ttl_minutes 決定） ----------
   const rpc = async (fn: string, args: Record<string, unknown>) => {
     const { data, error } = await supabase.rpc(fn, args)
     if (error) return { ok: false, reason: 'server_error' }
@@ -284,10 +270,7 @@ export default function ProductPage() {
         const secs = Number((res as unknown as { retry_after?: number }).retry_after ?? 180)
         setBuyState({ kind: 'error', message: `您剛棄單，此商品需冷卻 ${Math.ceil(secs/60)} 分鐘後才能再搶。` })
       } else {
-        setBuyState({
-          kind: 'error',
-          message: REASON_TEXT[res.reason ?? ''] ?? '目前無法放入購物車，請稍後再試。',
-        })
+        setBuyState({ kind: 'error', message: REASON_TEXT[res.reason ?? ''] ?? '目前無法放入購物車，請稍後再試。' })
       }
     } catch {
       setBuyState({ kind: 'error', message: '網路異常，請確認連線後再試。' })
@@ -299,17 +282,9 @@ export default function ProductPage() {
     try {
       const res = await rpc('checkout_reservation', { p_reservation_id: buyState.reservationId })
       if (res.ok) {
-        setBuyState({
-          kind: 'success',
-          orderNo: String(res.order_no),
-          unitPrice: Number(res.unit_price),
-          quantity: Number(res.quantity),
-        })
+        setBuyState({ kind: 'success', orderNo: String(res.order_no), unitPrice: Number(res.unit_price), quantity: Number(res.quantity) })
       } else {
-        setBuyState({
-          kind: 'error',
-          message: REASON_TEXT[res.reason ?? ''] ?? '結帳失敗，請重新嘗試。',
-        })
+        setBuyState({ kind: 'error', message: REASON_TEXT[res.reason ?? ''] ?? '結帳失敗，請重新嘗試。' })
       }
     } catch {
       setBuyState({ kind: 'error', message: '網路異常，請確認連線後再試。' })
@@ -333,292 +308,275 @@ export default function ProductPage() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh bg-ink-50 flex items-center justify-center">
-        <p className="text-base text-ink-400">載入中…</p>
+      <div className="min-h-dvh bg-[#fcfcfc] flex items-center justify-center">
+        <p className="text-[17px] text-ink-400">載入中…</p>
       </div>
     )
   }
-
   if (!product || !campaign) {
     return (
-      <div className="min-h-dvh bg-ink-50 flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-base text-ink-500">找不到此商品</p>
-        <Link to="/" className="text-base font-medium text-accent-600">回到活動列表</Link>
+      <div className="min-h-dvh bg-[#fcfcfc] flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-[17px] text-ink-500">找不到此商品</p>
+        <Link to="/" className="text-[17px] font-semibold text-accent-600 underline-offset-4 hover:underline">回到活動列表</Link>
       </div>
     )
   }
 
-  // 已降價幅度（原價 − 現價）
-  // P31c：預約中價格凍結（結帳前不跳動）
   const displayPrice = buyState.kind === 'cart' ? buyState.lockedPrice : live.price
   const original = Number(product.original_price)
   const minimum = Math.min(Number(product.minimum_price), original)
   const atFloor = displayPrice <= minimum
   const dropped = original - displayPrice
   const dropPct = original > 0 ? Math.max(0, Math.min(100, (dropped / original) * 100)) : 0
-
-  // ---- 特價倒數規則：熱銷 / 即將完售 / 到底價 FOMO（底價不外顯）----
   const stockPct = Math.max(0, Math.min(100, (live.stock / Math.max(1, product.initial_stock)) * 100))
-  const soldPct = 100 - stockPct // 已售比例
+  const soldPct = 100 - stockPct
   const hotLabel = soldPct >= 50 && live.stock > 0
   const almostGone = stockPct <= 20 && live.stock > 0
-
-  // 規則：單程到底、只降不漲；到底價後停留一輪、無下單即由 Server 自動下架（歸零計時）
-  // 降價說明文字（隨機區間或固定）
   const decLo = Number(product.price_decrease)
   const decHi = product.price_decrease_max != null ? Number(product.price_decrease_max) : decLo
-  const dropLabel =
-    decLo === decHi ? fmtMoney(decLo) : `${fmtMoney(decLo)} ~ ${fmtMoney(decHi)}`
+  const dropLabel = decLo === decHi ? fmtMoney(decLo) : `${fmtMoney(decLo)} ~ ${fmtMoney(decHi)}`
   const canBuy = saleOpen && live.stock >= quantity && buyState.kind !== 'buying'
+  const qtyMax = Math.min(product.max_per_customer, live.stock)
 
   return (
-    <div className="min-h-dvh bg-ink-50 pb-28">
-      {/* 頂部：倒數計時器進駐（P27——顯眼大字） */}
-      <header className="bg-gradient-to-r from-accent-500 to-accent-600 px-4 py-3 sticky top-0 z-10 shadow-md">
-        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between gap-3">
+    <div className="min-h-dvh bg-[#fcfcfc] pb-32">
+      {/* ─── 頂部倒數 — 玻璃漸層 header（shadcn 陰影 + BeUI 微動） ─── */}
+      <header className="sticky top-0 z-10 bg-gradient-to-br from-accent-500 via-accent-500 to-accent-600 shadow-[0_4px_24px_rgba(238,77,45,0.25),0_1px_3px_rgba(0,0,0,0.08)]">
+        <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between gap-3 px-4 py-3.5">
           <button
-            onClick={() => {
-              if (window.history.length > 1) navigate(-1)
-              else navigate('/', { replace: true })
-            }}
-            className="w-11 h-11 -ml-1.5 rounded-full hover:bg-white/20 text-white flex items-center justify-center shrink-0"
+            onClick={() => { if (window.history.length > 1) navigate(-1); else navigate('/', { replace: true }) }}
+            className="w-10 h-10 -ml-1 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur text-white flex items-center justify-center shrink-0 transition active:scale-95 border border-white/20"
             aria-label="返回"
           >
-            ←
+            <span className="text-lg leading-none">‹</span>
           </button>
 
-          {/* 中央：先買先贏 + 大字倒數（可點回首頁） */}
-          <Link to="/" className="min-w-0 flex-1 text-center hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-lg" aria-label="回到首頁">
-
-            <div className="text-xs tracking-widest text-accent-100 font-bold whitespace-nowrap">⚡ 先買先贏</div>
+          <Link to="/" className="min-w-0 flex-1 text-center rounded-xl px-2 py-1 hover:bg-white/10 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="回到首頁">
+            <div className="text-[11px] tracking-[0.18em] text-white/85 font-bold">⚡ 先買先贏 · 荷蘭式降價</div>
             {buyState.kind === 'cart' ? (
               <>
-                <div className="text-xl md:text-3xl font-extrabold text-white leading-tight whitespace-nowrap">
+                <div className="text-[22px] md:text-[30px] font-extrabold text-white leading-tight tracking-tight">
                   🔒 價格已鎖定 {fmtMoney(buyState.lockedPrice)}
                 </div>
-                <div className="text-[11px] md:text-xs text-accent-100 font-medium whitespace-nowrap">
-                  結帳前不會再變動
-                </div>
+                <div className="text-[11px] md:text-xs text-white/80 font-medium">結帳前不會再變動</div>
               </>
             ) : !atFloor ? (
               <>
                 <div
-                  className="text-2xl md:text-4xl font-extrabold text-white tabular-nums leading-tight tracking-wide drop-shadow-sm"
+                  className="text-[26px] md:text-[36px] font-extrabold text-white tabular-nums leading-tight tracking-wide drop-shadow-[0_1px_8px_rgba(0,0,0,0.15)]"
                   role="timer"
                   aria-label={`下次降價倒數 ${formatCountdown(live.nextDropIn)}`}
                 >
                   ⏰ {formatCountdown(live.nextDropIn)}
                 </div>
-                <div className="text-[11px] md:text-xs text-accent-100 font-medium whitespace-nowrap">
-                  下次降價倒數
-                </div>
+                <div className="text-[11px] md:text-xs text-white/80 font-medium tracking-wide">下次降價倒數</div>
               </>
             ) : (
-              <div className="text-xl md:text-2xl font-extrabold text-white leading-tight whitespace-nowrap">
-                ✅ 已是最優惠價
-              </div>
+              <div className="text-xl md:text-2xl font-extrabold text-white leading-tight">✅ 已是最優惠價</div>
             )}
           </Link>
 
-          <div className="w-11 shrink-0" />
+          <div className="w-10 shrink-0" />
         </div>
       </header>
 
       <main className="max-w-md md:max-w-3xl mx-auto">
-        {/* 商品圖 */}
-        <div className="aspect-square bg-white border-b border-ink-100 flex items-center justify-center overflow-hidden">
-          {product.image_url ? (
-            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-5xl opacity-20">🎁</span>
-          )}
+        {/* ─── 商品圖 — 圓角卡片化 ─── */}
+        <div className="mx-3 mt-3 md:mx-0 md:mt-4 bg-white rounded-[24px] border border-ink-100 shadow-[0_4px_24px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div className="aspect-square flex items-center justify-center overflow-hidden bg-gradient-to-b from-ink-50/50 to-white">
+            {product.image_url ? (
+              <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-6xl opacity-15">🎁</span>
+            )}
+          </div>
         </div>
 
-        <div className="px-5 pt-5 space-y-5">
-          {/* 名稱與描述 */}
-          <div>
+        <div className="px-4 md:px-0 pt-6 space-y-6">
+          {/* ─── 名稱與描述 — 加大行距、長輩友善 ─── */}
+          <div className="space-y-3">
             <div className="flex items-start justify-between gap-3">
-              <h1 className="text-2xl font-bold text-ink-900 font-display">{product.name}</h1>
-              {activePromos.length > 0 && (
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  {activePromos.slice(0, 3).map((promo) => (
-                    <span key={promo.name}
-                      className="inline-flex items-center gap-1 rounded-full bg-accent-50 border border-accent-200 px-3 py-1 text-sm font-bold text-accent-700">
-                      {promo.icon ? `${promo.icon} ` : '🏷️ '}{promo.name}
-                    </span>
-                  ))}
-                  {activePromos.length > 3 && (
-                    <span className="text-sm font-bold text-accent-600">+{activePromos.length - 3}</span>
-                  )}
-                </div>
-              )}
-              {/* 關注按鈕 */}
+              <h1 className="text-[22px] md:text-2xl font-bold text-ink-900 leading-snug tracking-tight flex-1 min-w-0">
+                {product.name}
+              </h1>
+              {/* 關注按鈕 — shadcn pill + 微陰影 */}
               <button
                 onClick={toggleFollow}
                 disabled={followBusy}
                 aria-pressed={following}
-                className={`shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-full text-base font-bold
-                            border transition active:scale-95 disabled:opacity-60 ${
-                  following
-                    ? 'bg-accent-50 border-accent-300 text-accent-700'
-                    : 'bg-white border-ink-200 text-ink-700'
-                }`}
+                className={`shrink-0 inline-flex items-center gap-1.5 px-4 h-11 rounded-full text-[15px] font-bold border shadow-sm transition-all active:scale-[0.96] disabled:opacity-60
+                  ${following
+                    ? 'bg-ink-900 border-ink-900 text-white shadow-ink-900/15 hover:bg-ink-800'
+                    : 'bg-white border-ink-200 text-ink-700 hover:border-ink-300 hover:bg-ink-50'}`}
               >
                 <span className={following ? 'anim-pop-in' : ''}>{following ? '❤️' : '🤍'}</span>
                 {following ? '已關注' : '關注'}
               </button>
             </div>
+
+            {/* Promo 標籤列 */}
+            {activePromos.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {activePromos.slice(0, 3).map((promo) => (
+                  <span key={promo.name} className="inline-flex items-center gap-1 rounded-full bg-accent-50 border border-accent-200/70 px-3.5 py-1.5 text-[13px] font-bold text-accent-700 shadow-sm">
+                    {promo.icon ? `${promo.icon} ` : '🏷️ '}{promo.name}
+                  </span>
+                ))}
+                {activePromos.length > 3 && (
+                  <span className="text-sm font-bold text-accent-600">+{activePromos.length - 3}</span>
+                )}
+              </div>
+            )}
+
             {product.description && (
-              <p className="mt-1.5 text-base text-ink-600 leading-relaxed">{product.description}</p>
+              <p className="text-[15px] md:text-[16px] text-ink-600 leading-relaxed">{product.description}</p>
             )}
-            <p className="mt-1 text-base text-ink-500">SKU：{product.sku}</p>
-            {/* 關注人數（社會證明） */}
-            {followerCount > 0 && (
-              <p className={`mt-2 text-base ${followerCount >= 5 ? 'text-red-600 font-bold' : 'text-ink-600'}`}>
-                🔥 {followerCount} 人正在關注這項商品
-              </p>
-            )}
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[13px] text-ink-400 bg-ink-50 border border-ink-100 rounded-full px-3 py-1">SKU：{product.sku}</span>
+              {followerCount > 0 && (
+                <span className={`inline-flex items-center gap-1.5 text-[14px] px-3 py-1 rounded-full border shadow-sm ${followerCount >= 5 ? 'bg-red-50 border-red-200 text-red-700 font-bold' : 'bg-white border-ink-200 text-ink-600 font-medium'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${followerCount >= 5 ? 'bg-red-500 animate-pulse' : 'bg-ink-400'}`} />
+                  {followerCount} 人正在關注
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* 價格主角區 */}
-          <section className="bg-white rounded-2xl border border-ink-100 p-5 shadow-sm" aria-live="polite">
-            <div className="flex items-end justify-between">
+          {/* ─── 價格主角卡 — shadcn Card 立體化 ─── */}
+          <section
+            className="bg-white rounded-[24px] border border-ink-100 shadow-[0_8px_32px_rgba(0,0,0,0.06),0_1px_4px_rgba(0,0,0,0.04)] p-5 md:p-6 space-y-4"
+            aria-live="polite"
+          >
+            {/* 卡片頂部標籤 */}
+            <div className="flex items-center gap-2">
+              <span className="h-6 px-2.5 rounded-full bg-ink-900 text-white text-xs font-bold tracking-wide inline-flex items-center">限時降價中</span>
+              {buyState.kind === 'cart' && (
+                <span className="h-6 px-2.5 rounded-full bg-emerald-500 text-white text-xs font-bold inline-flex items-center gap-1">🔒 已鎖定</span>
+              )}
+            </div>
+
+            <div className="flex items-end justify-between gap-4">
               <div>
-                <div className="text-base text-ink-500 mb-0.5">原價</div>
-                <div className="text-base text-ink-500 line-through">
-                  {fmtMoney(Number(product.original_price))}
-                </div>
+                <div className="text-[13px] font-semibold tracking-wide text-ink-400 mb-1">原價</div>
+                <div className="text-[16px] text-ink-400 line-through decoration-ink-300">{fmtMoney(Number(product.original_price))}</div>
               </div>
               <div className="text-right">
-                <div className="text-base text-ink-500 mb-0.5">
+                <div className="text-[13px] font-semibold tracking-wide text-ink-400 mb-1">
                   {buyState.kind === 'cart' ? '已鎖定價格' : '目前價格'}
                 </div>
-                <div
-                  className={`text-4xl font-extrabold tracking-tight transition-colors duration-500 ${
-                    priceFlash ? 'text-green-600' : 'text-ink-900'
-                  }`}
-                >
+                <div className={`text-[36px] md:text-[40px] font-extrabold tracking-tight leading-none transition-colors duration-500 ${priceFlash ? 'text-emerald-600' : 'text-ink-900'}`}>
                   {fmtMoney(displayPrice)}
                 </div>
               </div>
             </div>
 
-            {/* 優惠說明：還有多少空間（但不保證有貨） */}
             {!atFloor && (
-              <p className="mt-2 text-base text-ink-600">
-                再等等還會更便宜，但庫存有限、不保證買得到。
+              <p className="text-[14px] text-ink-500 leading-relaxed bg-ink-50 rounded-xl px-3.5 py-2.5 border border-ink-100">
+                💡 再等等還會更便宜，但庫存有限、不保證買得到。
               </p>
             )}
 
-            {/* 已降價 badge + 熱銷/完售標籤 */}
-            <div className="mt-3 flex flex-wrap gap-2">
+            {/* 徽章列 */}
+            <div className="flex flex-wrap gap-2">
               {dropped > 0 && (
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-red-50 border border-red-100
-                                px-3.5 py-1.5 text-base font-bold text-red-600 anim-pop-in">
-                  <span>📉</span>
-                  <span>已降價 {fmtMoney(dropped)}（{Math.round(dropPct)}% off）</span>
-                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 border border-red-200 px-3.5 py-1.5 text-[14px] font-bold text-red-600 shadow-sm anim-pop-in">
+                  📉 已降 {fmtMoney(dropped)}（{Math.round(dropPct)}% off）
+                </span>
               )}
               {hotLabel && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200
-                                px-3.5 py-1.5 text-base font-bold text-orange-600 anim-pop-in">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200 px-3.5 py-1.5 text-[14px] font-bold text-orange-600 shadow-sm anim-pop-in">
                   🔥 熱銷中
                 </span>
               )}
               {almostGone && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3.5 py-1.5
-                                text-base font-bold text-white anim-pop-in">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-red-500 to-red-600 px-3.5 py-1.5 text-[14px] font-bold text-white shadow-md shadow-red-500/20 anim-pop-in">
                   ⚡ 即將完售
                 </span>
               )}
             </div>
 
-            {/* 降價規則 + 倒數 */}
-            <div className="mt-4 flex items-center justify-between rounded-xl bg-ink-50 px-4 py-3 gap-3">
-              <span className="text-base text-ink-700">
-                每 {formatInterval(product.price_interval_seconds)} 隨機降 {dropLabel}
-              </span>
+            {/* 降價規則條 — 柔和內嵌卡 */}
+            <div className="flex items-center justify-between gap-3 rounded-2xl bg-ink-50 border border-ink-100 px-4 py-3.5">
+              <span className="text-[14px] font-medium text-ink-700">每 {formatInterval(product.price_interval_seconds)} 隨機降 {dropLabel}</span>
               {buyState.kind === 'cart' ? (
-                <span className="text-base font-bold text-accent-700">🔒 已鎖定</span>
+                <span className="text-[13px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">🔒 已鎖定</span>
               ) : (
                 !atFloor && (
-                  <span className="text-base font-bold tabular-nums text-ink-700">
-                    下一次降價 {formatCountdown(live.nextDropIn)}
+                  <span className="text-[13px] font-bold tabular-nums text-ink-700 bg-white border border-ink-200 rounded-full px-3 py-1 shadow-sm">
+                    下次 {formatCountdown(live.nextDropIn)}
                   </span>
                 )
               )}
             </div>
 
-            {/* 降價進度條：原價 ── 目前 ── 優惠價 */}
-            <div className="mt-3">
-              <div className="flex items-center justify-between text-sm text-ink-600 mb-1">
-                <span>原價 {fmtMoney(original)}</span>
+            {/* 降價進度條 */}
+            <div>
+              <div className="flex items-center justify-between text-[13px] mb-2">
+                <span className="text-ink-500">原價 {fmtMoney(original)}</span>
                 <span className="font-bold text-ink-900">{dropped > 0 ? `已降 ${fmtMoney(dropped)}` : '原價即售價'}</span>
               </div>
-              <div className="h-2 rounded-full bg-ink-100 overflow-hidden">
+              <div className="h-2.5 rounded-full bg-ink-100 overflow-hidden p-0.5">
                 <div
-                  className={`h-full rounded-full transition-[width] duration-700 ease-out ${
-                    atFloor ? 'bg-green-500' : 'bg-gradient-to-r from-accent-400 to-accent-600'
-                  }`}
+                  className={`h-full rounded-full transition-[width] duration-700 ease-out ${atFloor ? 'bg-emerald-500' : 'bg-gradient-to-r from-accent-400 to-accent-600'}`}
                   style={{ width: `${dropPct}%` }}
                 />
               </div>
             </div>
-
           </section>
 
-          {/* 庫存 */}
-          <section aria-label="剩餘庫存">
-            <div className="flex items-center justify-between text-base mb-2">
-              <span className="text-ink-600">剩餘庫存</span>
-              <span className={`font-bold tabular-nums ${live.stock <= 3 ? 'text-red-600' : 'text-ink-900'}`}>
+          {/* ─── 庫存卡 — 內嵌式 shadcn ─── */}
+          <section aria-label="剩餘庫存" className="bg-white rounded-[20px] border border-ink-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[15px] font-semibold text-ink-700 flex items-center gap-2">
+                <span className="w-7 h-7 rounded-full bg-ink-50 border border-ink-100 flex items-center justify-center text-sm">📦</span>
+                剩餘庫存
+              </span>
+              <span className={`text-[15px] font-extrabold tabular-nums px-3 py-1 rounded-full border ${live.stock <= 3 ? 'bg-red-50 border-red-200 text-red-600' : 'bg-ink-50 border-ink-200 text-ink-900'}`}>
                 {live.stock} 件
               </span>
             </div>
-            <div className="h-2 rounded-full bg-ink-200 overflow-hidden">
+            <div className="h-2.5 rounded-full bg-ink-100 overflow-hidden p-0.5">
               <div
-                className={`h-full rounded-full transition-[width] duration-700 ease-out ${
-                  live.stock <= 3 ? 'bg-red-500' : 'bg-accent-500'
-                }`}
+                className={`h-full rounded-full transition-[width] duration-700 ease-out ${live.stock <= 3 ? 'bg-red-500' : 'bg-accent-500'}`}
                 style={{ width: `${stockPct}%` }}
               />
             </div>
             {live.stock <= 3 && live.stock > 0 && (
-              <p className="mt-2 text-base font-bold text-red-600">僅剩最後 {live.stock} 件，錯過就沒有了</p>
+              <p className="mt-3 text-[14px] font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl px-3.5 py-2">⚠️ 僅剩最後 {live.stock} 件，錯過就沒有了</p>
+            )}
+            {live.stock <= 0 && (
+              <p className="mt-3 text-[14px] font-bold text-ink-500 bg-ink-50 border border-ink-200 rounded-xl px-3.5 py-2">已完售，敬請期待下一檔</p>
             )}
           </section>
 
-          {/* 底部 CTA 前的單位說明 */}
           {Number(product.items_per_unit) > 1 && (
-            <p className="text-base text-ink-600">
+            <p className="text-[14px] text-ink-600 bg-white border border-ink-100 rounded-2xl px-4 py-3 shadow-sm">
               📦 銷售單位：{product.unit}（1 {product.unit} = {product.items_per_unit} 件）
             </p>
           )}
 
-          {/* 數量選擇 */}
-          <section>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-base font-semibold text-ink-700">
-                購買數量（每人限購 {product.max_per_customer} {product.unit ?? '件'}）
-              </span>
-              <div className="flex items-center gap-3">
+          {/* ─── 數量選擇 — 分段式 stepper（BeUI 膠囊） ─── */}
+          <section className="bg-white rounded-[20px] border border-ink-100 shadow-sm p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-[15px] font-bold text-ink-800">購買數量</div>
+                <div className="text-[13px] text-ink-500 mt-0.5">每人限購 {product.max_per_customer} {product.unit ?? '件'}</div>
+              </div>
+              {/* Segmented stepper */}
+              <div className="inline-flex items-center gap-1 bg-ink-50 border border-ink-200 rounded-full p-1.5 shadow-inner">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   disabled={quantity <= 1}
-                  className="w-11 h-11 rounded-full border-2 border-ink-200 text-ink-700 text-xl disabled:opacity-30"
+                  className="w-10 h-10 rounded-full bg-white border border-ink-200 text-ink-700 text-lg font-bold shadow-sm flex items-center justify-center transition active:scale-90 disabled:opacity-30 disabled:shadow-none hover:border-ink-300 hover:shadow"
                   aria-label="減少數量"
                 >
                   −
                 </button>
-                <span className="w-10 text-center text-lg font-bold tabular-nums">{quantity}</span>
+                <span className="w-12 text-center text-[18px] font-extrabold tabular-nums text-ink-900 select-none">{quantity}</span>
                 <button
-                  onClick={() =>
-                    setQuantity((q) =>
-                      Math.min(product.max_per_customer, live.stock, q + 1),
-                    )
-                  }
-                  disabled={quantity >= Math.min(product.max_per_customer, live.stock)}
-                  className="w-11 h-11 rounded-full border-2 border-ink-200 text-ink-700 text-xl disabled:opacity-30"
+                  onClick={() => setQuantity((q) => Math.min(qtyMax, q + 1))}
+                  disabled={quantity >= qtyMax}
+                  className="w-10 h-10 rounded-full bg-white border border-ink-200 text-ink-700 text-lg font-bold shadow-sm flex items-center justify-center transition active:scale-90 disabled:opacity-30 disabled:shadow-none hover:border-ink-300 hover:shadow"
                   aria-label="增加數量"
                 >
                   +
@@ -629,26 +587,29 @@ export default function ProductPage() {
         </div>
       </main>
 
-      {/* 底部 Sticky CTA */}
+      {/* ─── 底部 Sticky CTA — 懸浮卡片（shadcn + 漸層按鈕） ─── */}
       <div className="fixed bottom-0 inset-x-0 z-20">
-        <div className="max-w-md md:max-w-3xl mx-auto bg-white/95 backdrop-blur border-t border-ink-100 px-4 pt-3 pb-safe">
+        <div className="max-w-md md:max-w-3xl mx-auto bg-white/95 backdrop-blur-xl border-t border-ink-100 shadow-[0_-8px_32px_rgba(0,0,0,0.08)] rounded-t-[20px] md:rounded-t-[24px] px-4 pt-4 pb-4 md:pb-5 pb-safe">
           {buyState.kind === 'cart' && (
             <>
-              <CartCountdown expiresAt={buyState.expiresAt} onExpire={async () => {
-                const rid = buyState.kind === 'cart' ? buyState.reservationId : null
-                setBuyState({ kind: 'idle' })
-                if (rid) try { await supabase.rpc('release_reservation', { p_reservation_id: rid }) } catch {}
-              }} />
-              <div className="grid grid-cols-[1fr_auto] gap-2">
+              <CartCountdown
+                expiresAt={buyState.expiresAt}
+                onExpire={async () => {
+                  const rid = buyState.kind === 'cart' ? buyState.reservationId : null
+                  setBuyState({ kind: 'idle' })
+                  if (rid) try { await supabase.rpc('release_reservation', { p_reservation_id: rid }) } catch {}
+                }}
+              />
+              <div className="grid grid-cols-[1fr_auto] gap-2.5">
                 <button
                   onClick={checkoutCart}
-                  className="h-14 rounded-2xl bg-accent-500 text-white text-base font-bold shadow-lg shadow-accent-500/25 active:scale-[0.98] transition"
+                  className="h-[56px] rounded-full bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-600 text-white text-[16px] font-extrabold tracking-wide shadow-[0_6px_20px_rgba(238,77,45,0.35),0_1px_3px_rgba(0,0,0,0.08)] active:scale-[0.97] transition-all border border-accent-600/20"
                 >
                   ✔ 結帳｜{fmtMoney(buyState.lockedPrice)} × {buyState.quantity}
                 </button>
                 <button
                   onClick={releaseCart}
-                  className="h-14 px-4 rounded-2xl border border-ink-200 text-ink-600 text-base font-semibold active:scale-[0.98] transition"
+                  className="h-[56px] px-6 rounded-full bg-white border border-ink-200 text-ink-600 text-[15px] font-bold shadow-sm hover:bg-ink-50 hover:border-ink-300 active:scale-[0.97] transition-all"
                 >
                   放棄
                 </button>
@@ -656,70 +617,57 @@ export default function ProductPage() {
             </>
           )}
           {notOpenYet && buyState.kind !== 'cart' && product && (
-            <div className="mb-2">
+            <div className="mb-3">
               <FollowButton productId={product.id} saleStartAt={product.sale_start_at} size="detail" />
             </div>
           )}
           {buyState.kind !== 'cart' && (
-          <button
-            onClick={addToCart}
-            disabled={!canBuy}
-            className={`w-full h-14 py-3.5 rounded-2xl text-base font-bold transition
-              ${saleOpen && live.stock > 0
-                ? 'bg-accent-500 text-white active:scale-[0.98] shadow-lg shadow-accent-500/25'
-                : 'bg-ink-200 text-ink-400 cursor-not-allowed'}`}
-          >
-            {buyState.kind === 'buying'
-              ? '處理中…'
-              : notOpenYet
-                ? `⏳ ${formatCountdown(saleRemain)} 後開賣`
-                : !saleOpen
-                  ? '活動未開放'
-                  : live.stock <= 0
+            <button
+              onClick={addToCart}
+              disabled={!canBuy}
+              className={`w-full h-[56px] rounded-full text-[16px] font-extrabold tracking-wide transition-all border active:scale-[0.97]
+                ${saleOpen && live.stock > 0
+                  ? 'bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-600 text-white shadow-[0_6px_20px_rgba(238,77,45,0.35),0_1px_3px_rgba(0,0,0,0.08)] border-accent-600/20'
+                  : 'bg-ink-100 text-ink-400 border-ink-200 cursor-not-allowed shadow-none'}`}
+            >
+              {buyState.kind === 'buying'
+                ? '處理中…'
+                : notOpenYet
+                  ? `⏳ ${formatCountdown(saleRemain)} 後開賣`
+                  : !saleOpen
+                    ? '活動未開放'
+                    : live.stock <= 0
                       ? '已完售'
                       : atFloor
                         ? `🛒 放入購物車｜${fmtMoney(displayPrice)} × ${quantity}`
                         : `🛒 放入購物車｜鎖定價 ${fmtMoney(displayPrice)} × ${quantity}`}
-          </button>
+            </button>
           )}
           {saleOpen && live.stock > 0 && !atFloor && buyState.kind !== 'cart' && (
-            <p className="mt-1.5 text-center text-base text-ink-600">
-              再等等還會降，但庫存有限、不保證有貨
-            </p>
+            <p className="mt-2.5 text-center text-[13px] text-ink-500">再等等還會降，但庫存有限、不保證有貨</p>
           )}
         </div>
       </div>
 
-      {/* 成功 / 失敗 Modal */}
+      {/* ─── 成功 / 失敗 Modal — shadcn Dialog 風格 ─── */}
       {(buyState.kind === 'success' || buyState.kind === 'soldout' || buyState.kind === 'error') && (
         <div className="fixed inset-0 z-30 flex items-center justify-center px-6 bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-xs bg-white rounded-3xl p-7 text-center shadow-xl anim-pop-in">
+          <div className="w-full max-w-sm bg-white rounded-[28px] p-7 md:p-8 text-center shadow-[0_24px_64px_rgba(0,0,0,0.18),0_4px_16px_rgba(0,0,0,0.08)] border border-ink-100 anim-pop-in">
             {buyState.kind === 'success' && (
               <>
-                <div className="text-4xl mb-3">🎉</div>
-                <h2 className="text-lg font-bold text-ink-900 font-display">搶購成功！</h2>
-                <div className="mt-4 space-y-1.5 text-base">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-2xl">🎉</div>
+                <h2 className="text-xl font-extrabold text-ink-900 tracking-tight">搶購成功！</h2>
+                <div className="mt-4 space-y-1.5 text-[15px]">
                   <p className="text-ink-600">{product.name}</p>
-                  <p className="text-ink-900">
-                    成交價格 <span className="font-bold">{fmtMoney(buyState.unitPrice)}</span>
-                    × {buyState.quantity}
-                  </p>
-                  <p className="text-base text-ink-500">訂單編號：{buyState.orderNo}</p>
+                  <p className="text-ink-900">成交價格 <span className="font-extrabold">{fmtMoney(buyState.unitPrice)}</span> × {buyState.quantity}</p>
+                  <p className="text-[13px] text-ink-400 font-mono">訂單編號：{buyState.orderNo}</p>
                 </div>
-                <p className="mt-3 text-base font-semibold text-green-700 bg-green-50 rounded-lg py-2">
-                  商品已為您保留。
-                </p>
-                <div className="mt-5 grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => { setBuyState({ kind: 'idle' }); navigate('/orders') }}
-                    className="h-12 rounded-xl bg-ink-900 text-white text-base font-semibold"
-                  >
+                <p className="mt-4 text-[14px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl py-2.5">商品已為您保留</p>
+                <div className="mt-6 grid grid-cols-2 gap-2.5">
+                  <button onClick={() => { setBuyState({ kind: 'idle' }); navigate('/orders') }} className="h-12 rounded-full bg-ink-900 hover:bg-ink-800 text-white text-[15px] font-bold shadow-md active:scale-[0.97] transition">
                     查看訂單
                   </button>
-                  <button
-                    onClick={() => setBuyState({ kind: 'idle' })}
-                    className="h-12 rounded-xl border border-ink-200 text-base font-medium text-ink-700"
-                  >
+                  <button onClick={() => setBuyState({ kind: 'idle' })} className="h-12 rounded-full bg-white border border-ink-200 text-[15px] font-semibold text-ink-700 hover:bg-ink-50 active:scale-[0.97] transition">
                     繼續逛逛
                   </button>
                 </div>
@@ -727,26 +675,20 @@ export default function ProductPage() {
             )}
             {buyState.kind === 'soldout' && (
               <>
-                <div className="text-4xl mb-3">😢</div>
-                <h2 className="text-lg font-bold text-ink-900">慢了一步</h2>
-                <p className="mt-2 text-base text-ink-500">商品已被其他客戶搶購完畢。</p>
-                <button
-                  onClick={() => setBuyState({ kind: 'idle' })}
-                  className="mt-6 w-full h-12 rounded-xl bg-ink-900 text-white text-base font-semibold"
-                >
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-ink-50 border border-ink-100 flex items-center justify-center text-2xl">😢</div>
+                <h2 className="text-lg font-extrabold text-ink-900">慢了一步</h2>
+                <p className="mt-2 text-[15px] text-ink-500 leading-relaxed">商品已被其他客戶搶購完畢。</p>
+                <button onClick={() => setBuyState({ kind: 'idle' })} className="mt-6 w-full h-12 rounded-full bg-ink-900 hover:bg-ink-800 text-white text-[15px] font-bold active:scale-[0.97] transition">
                   我知道了
                 </button>
               </>
             )}
             {buyState.kind === 'error' && (
               <>
-                <div className="text-4xl mb-3">⚠️</div>
-                <h2 className="text-base font-bold text-ink-900">無法完成購買</h2>
-                <p className="mt-2 text-base text-ink-500">{buyState.message}</p>
-                <button
-                  onClick={() => setBuyState({ kind: 'idle' })}
-                  className="mt-6 w-full h-12 rounded-xl bg-ink-900 text-white text-base font-semibold"
-                >
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-2xl">⚠️</div>
+                <h2 className="text-[16px] font-extrabold text-ink-900">無法完成購買</h2>
+                <p className="mt-2 text-[15px] text-ink-500 leading-relaxed">{buyState.message}</p>
+                <button onClick={() => setBuyState({ kind: 'idle' })} className="mt-6 w-full h-12 rounded-full bg-ink-900 hover:bg-ink-800 text-white text-[15px] font-bold active:scale-[0.97] transition">
                   我知道了
                 </button>
               </>
