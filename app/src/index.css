@@ -4,20 +4,26 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
 }
 
 body {
-  @apply bg-ink-50 text-ink-900 antialiased;
+  @apply bg-ink-50 text-ink-700 antialiased;
   font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans TC',
     'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  line-height: 1.75;
 }
+
+/* UI UX Pro Max · 日系霧藍優化 */
+::selection { background: #C8D9E8; color: #1E3A5F; }
+:focus-visible { outline: 2px solid #5B8DBE; outline-offset: 2px; }
 
 /* 數字用等寬，倒數計時不跳動 */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* ===== 動畫 ===== */
+/* ===== 動畫（尊重 prefers-reduced-motion） ===== */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -30,7 +36,6 @@ body {
   from { background-position: -200% 0; }
   to   { background-position: 200% 0; }
 }
-/* 電商風：價格閃爍動畫（降價時吸睛） */
 @keyframes price-flash {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
@@ -39,27 +44,25 @@ body {
 .anim-fade-up { animation: fade-up 0.35s ease-out both; }
 .anim-pop-in { animation: pop-in 0.25s ease-out both; }
 
-/* 無障礙：使用者偏好減少動態時停用動畫 */
 @media (prefers-reduced-motion: reduce) {
   .anim-fade-up,
-  .anim-pop-in {
-    animation: none;
+  .anim-pop-in,
+  .skeleton {
+    animation: none !important;
   }
 }
 
-/* ===== 骨架屏（載入佔位）：淺灰電商風 ===== */
+/* ===== 骨架屏：霧藍版 ===== */
 .skeleton {
   border-radius: 0.75rem;
-  background: linear-gradient(90deg, #f4f4f5 25%, #fafafa 45%, #f4f4f5 65%);
+  background: linear-gradient(90deg, #E8EFF6 25%, #F0F5F9 45%, #E8EFF6 65%);
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .skeleton {
-    animation: none;
-  }
-}
+/* ===== 卡片柔和陰影（Soft UI Evolution） ===== */
+.card-soft { box-shadow: 0 6px 24px rgba(30,58,95,.08); }
+.card-soft:hover { box-shadow: 0 10px 36px rgba(30,58,95,.12); }
 
-/* ===== iOS 安全區域（底部 sticky 列不被 Home 條遮住） ===== */
+/* ===== iOS 安全區域 ===== */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }

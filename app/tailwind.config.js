@@ -4,32 +4,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        // 奶油韓系：暖奶白背景 + 可可棕文字（韓國咖啡廳感）
+        // 日系霧藍 · UI UX Pro Max 優化版
+        // 靈感：Soft UI Evolution + Hero-Centric + 信任感電商
         ink: {
-          50: '#FFFBF5',  // 奶油背景
-          100: '#FFF5EB', // 淺奶油
-          200: '#E8DDD0', // 燕麥邊框
-          300: '#D6C4B0',
-          400: '#BBA693',
-          500: '#9C8B7A', // muted
-          600: '#7A6B5A',
-          700: '#4A3F35', // 主文字（可可棕黑）
-          800: '#2C2420',
-          900: '#1A1612',
-          950: '#0F0D0A',
+          50: '#F0F5F9',  // 霧藍背景
+          100: '#E8EFF6',
+          200: '#C8D9E8', // 邊框
+          300: '#A8BECF',
+          400: '#8AA0B5',
+          500: '#6B7C8F',
+          600: '#4A5E73',
+          700: '#25364A', // 主文字（對比 7:1）
+          800: '#1E3A5F',
+          900: '#152A45',
+          950: '#0F1F33',
         },
-        // 主色：奶茶棕 → 焦糖（溫暖韓系）
         accent: {
-          50: '#FFF8F0',
-          100: '#F5E6D3',
-          200: '#E8DDD0',
-          300: '#D6BFA8',
-          400: '#C9A87A', // 奶茶
-          500: '#B8935F', // 焦糖主色
-          600: '#A67C52',
-          700: '#8B5E34',
-          800: '#6B4423',
-          900: '#4A2E18',
+          50: '#EFF5FA',
+          100: '#E0ECF5',
+          200: '#C8D9E8',
+          300: '#A8C4DC',
+          400: '#7AA6C8',
+          500: '#5B8DBE', // 晴空藍 CTA
+          600: '#3D6A99',
+          700: '#2A4A6E',
+          800: '#1E3A5F', // 深灰藍 primary
+          900: '#152A45',
         },
       },
       fontFamily: {
@@ -38,9 +38,16 @@ export default {
           '"PingFang TC"', '"Microsoft JhengHei"', 'sans-serif',
         ],
         display: [
-          '-apple-system', 'BlinkMacSystemFont', '"Noto Sans TC"',
-          '"PingFang TC"', '"Microsoft JhengHei"', 'sans-serif',
+          '"Shippori Mincho"', '"Noto Serif TC"', 'serif',
         ],
+      },
+      boxShadow: {
+        'soft': '0 6px 24px rgba(30,58,95,.08)',
+        'soft-lg': '0 10px 36px rgba(30,58,95,.12)',
+      },
+      borderRadius: {
+        '2xl': '16px',
+        '3xl': '20px',
       },
     },
   },
