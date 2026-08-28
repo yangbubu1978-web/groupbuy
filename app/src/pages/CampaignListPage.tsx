@@ -277,15 +277,18 @@ export default function CampaignListPage() {
         {/* 下單規則說明（廣告看板 ↔ 促銷/商品標題之間） */}
         <section className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm anim-fade-up">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-base" aria-hidden="true">🛒</span>
-            <h3 className="text-base font-bold text-ink-900">怎麼買最划算？</h3>
+            <span className="text-base" aria-hidden="true">⚠️</span>
+            <h3 className="text-base font-bold text-ink-900">購買注意事項｜下單前請留意</h3>
           </div>
-          <ul className="space-y-2 text-base text-ink-700 leading-relaxed">
-            <li>・價格會隨時間 <b className="text-ink-900">自動往下調</b>，每件商品依自己的節奏隨機降價，越晚下手越便宜。</li>
-            <li>・<b className="text-ink-900">價格只會越來越低</b>：但庫存有限、先買先贏，錯過就不再回來，猶豫太久會後悔。</li>
-            <li>・看到心動商品，先加入「<b className="text-ink-900">關注</b>」❤️ 結帳時間有限，需要購買時可直接從「<b className="text-ink-900">個人資料</b>」快速找到商品，搶先一步完成結帳。</li>
-          </ul>
-          <p className="mt-2 text-base font-bold text-accent-600">❤️ 心動就下手，別等到最後一秒！</p>
+          <ol className="space-y-2.5 text-[15px] text-ink-700 leading-relaxed list-none">
+            <li><span className="font-bold text-ink-900">1. ⏰ 荷蘭式降價，越晚越便宜、越早越保險</span><br /><span className="text-ink-600">每件商品依自己的節奏隨機往下降，價格只會越來越低，但庫存有限、售完即下架，先搶先贏。</span></li>
+            <li><span className="font-bold text-ink-900">2. 🛒 加入購物車，幫您鎖價 60 秒</span><br /><span className="text-ink-600">放入購物車後價格與庫存立即為您保留 60 秒，倒數結束未結帳，系統會自動釋放給下一位。</span></li>
+            <li><span className="font-bold text-ink-900">3. ✅ 結帳即確認，無法自行取消</span><br /><span className="text-ink-600">按下「結帳」就代表確定要買，訂單會直接變成「已確認」。<b className="text-red-600">本平台無法自行取消訂單</b>，下單前請再次確認品項與數量。</span></li>
+            <li><span className="font-bold text-ink-900">4. ❄️ 單件限量商品，棄單有 3 分鐘冷卻</span><br /><span className="text-ink-600">限量 1 件的商品若 60 秒內未結帳，3 分鐘內無法再次搶同一件，且下次降價會稍微延後。</span></li>
+            <li><span className="font-bold text-ink-900">5. 💳 結帳後請聯繫負責窗口付款</span><br /><span className="text-ink-600">完成結帳後，請主動與您的服務窗口聯繫付款，付款完成後我們會為您備貨。</span></li>
+            <li><span className="font-bold text-ink-900">6. 📦 備貨完成通知您來領貨</span><br /><span className="text-ink-600">備貨完成會通知您，<b className="text-ink-900">到店／取貨完成，訂單才算完成</b>。有問題請直接私訊窗口協助處理。</span></li>
+          </ol>
+          <p className="mt-3 text-[15px] font-bold text-accent-600">❤️ 提醒：心動就別猶豫，但按下結帳前，請給自己 3 秒鐘再確認一次！</p>
         </section>
 
         {loading && (
