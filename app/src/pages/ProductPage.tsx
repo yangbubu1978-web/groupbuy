@@ -449,7 +449,7 @@ export default function ProductPage() {
           >
             {/* 卡片頂部標籤 */}
             <div className="flex items-center gap-2">
-              <span className="h-6 px-3 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-extrabold tracking-wide inline-flex items-center gap-1 shadow-sm shadow-red-500/20"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" aria-hidden="true" />限時降價中</span>
+              <span className="h-6 px-3 rounded-full bg-ink-900 text-white text-xs font-bold tracking-wide inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-500" aria-hidden="true" />限時降價中</span>
               {buyState.kind === 'cart' && (
                 <span className="h-6 px-2.5 rounded-full bg-emerald-500 text-white text-xs font-bold inline-flex items-center gap-1">🔒 已鎖定</span>
               )}
@@ -517,7 +517,7 @@ export default function ProductPage() {
               </div>
               <div className="h-2.5 rounded-full bg-ink-100 overflow-hidden p-0.5">
                 <div
-                  className={`h-full rounded-full transition-[width] duration-700 ease-out ${atFloor ? 'bg-emerald-500' : 'bg-gradient-to-r from-red-400 to-red-600'}`}
+                  className={`h-full rounded-full transition-[width] duration-700 ease-out ${atFloor ? 'bg-emerald-500' : 'bg-gradient-to-r from-accent-400 to-accent-600'}`}
                   style={{ width: `${dropPct}%` }}
                 />
               </div>
