@@ -294,8 +294,8 @@ export default function AdminOrdersPage() {
             className="flex-1 min-w-0 h-10 px-2.5 rounded-xl border border-ink-200 bg-white text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-accent-400" />
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {(['today', 'last7', 'thisMonth', 'lastMonth'] as const).map(([k]) => (
-            <button key={k} onClick={() => applyQuickDate(k as never)}
+          {(['today', 'last7', 'thisMonth', 'lastMonth'] as const).map((k) => (
+            <button key={k} onClick={() => applyQuickDate(k)}
               className="h-8 px-3 rounded-full text-xs font-bold bg-ink-50 border border-ink-200 text-ink-600 hover:bg-white hover:border-ink-300 transition">
               {({ today: '今天', last7: '近 7 天', thisMonth: '本月', lastMonth: '上月' } as Record<string, string>)[k]}
             </button>
