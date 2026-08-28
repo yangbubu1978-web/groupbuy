@@ -179,9 +179,9 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
         <div className="absolute inset-0 bg-gradient-to-t from-black/[0.08] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
         {dropped > 0 && !soldOut && (
           <span className="absolute top-3.5 left-3.5 inline-flex items-center gap-1.5 rounded-full
-                           bg-white/92 backdrop-blur-md text-ink-900
-                           px-3 py-1.5 text-xs font-extrabold shadow-lg border border-ink-100 anim-pop-in tracking-wide">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent-500" /> 已降 {dropPct}%
+                           bg-red-50 backdrop-blur-md text-red-600
+                           px-3 py-1.5 text-xs font-extrabold shadow-lg border border-red-200 anim-pop-in tracking-wide">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> 已降 {dropPct}%
           </span>
         )}
         {soldOut && (
