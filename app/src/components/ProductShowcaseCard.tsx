@@ -98,7 +98,15 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
               {formatCountdown(saleRemain)} 後開賣
             </span>
           </div>
-          <p className="mt-2.5 text-[13px] text-ink-400 font-medium">尚未開賣，敬請期待</p>
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 rounded-full bg-ink-50 border border-ink-100 px-2.5 py-1 text-xs font-bold text-ink-600">📦 限量 {product.initial_stock} 件</span>
+            {followCount > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-pink-50 border border-pink-100 px-2.5 py-1 text-xs font-bold text-pink-600">♥ {followCount} 人已關注</span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-pink-50/60 border border-pink-100 px-2.5 py-1 text-xs font-medium text-pink-500">♥ 等你來關注</span>
+            )}
+          </div>
+          <p className="mt-2 text-[13px] text-ink-400 font-medium">尚未開賣，敬請期待</p>
           <div className="mt-3.5" onClick={(e) => { e.preventDefault(); e.stopPropagation() }}>
             <FollowButton productId={product.id} saleStartAt={product.sale_start_at} size="card" />
           </div>
