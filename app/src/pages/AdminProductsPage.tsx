@@ -104,9 +104,11 @@ export default function AdminProductsPage() {
 
   type StatusFilter = 'all' | Product['status']
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [showSoldout, setShowSoldout] = useState(false)
 
   const visibleProducts = useMemo(() => {
     let list = statusFilter === 'all' ? products : products.filter((x) => x.status === statusFilter)
+    if (!showSoldout) list = list.filter((x) => !(x.status === 'ended' && x.stock <= 0))
     const kw = keyword.trim().toLowerCase()
     if (kw) {
       list = list.filter((p) =>
@@ -116,7 +118,7 @@ export default function AdminProductsPage() {
       )
     }
     return list
-  }, [products, statusFilter, keyword])
+  }, [products, statusFilter, keyword, showSoldout])
 
   useEffect(() => {
     if (!authLoading && !isAdmin) navigate('/', { replace: true })
@@ -614,8 +616,10 @@ export default function AdminProductsPage() {
               ))}
             </div>
             <div className="flex items-center justify-between text-xs text-ink-400">
-              <span>顯示 {visibleProducts.length} / {products.length} 項</span>
-              {keyword && <span className="truncate">關鍵字「{keyword}」</span>}
+              <span>顯示 {visibleProducts.length} / {products.length} 項{!showSoldout && products.some(p=>p.status==='ended'&&p.stock<=0) && ` · 已隱藏 ${products.filter(p=>p.status==='ended'&&p.stock<=0).length} 項已售完`}</span>
+              <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-ink-600">
+                <input type="checkbox" checked={showSoldout} onChange={e=>setShowSoldout(e.target.checked)} className="w-3.5 h-3.5 rounded border-ink-300 accent-ink-900" /> 顯示已售完
+              </label>
             </div>
           </div>
 
