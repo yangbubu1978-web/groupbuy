@@ -70,6 +70,7 @@ export default function ProfilePage() {
   const [emailInput, setEmailInput] = useState('')
   const [emailBusy, setEmailBusy] = useState(false)
   const [emailMsg, setEmailMsg] = useState<string | null>(null)
+  void emailInput; void setEmailInput; void emailBusy; void setEmailBusy; void setEmailMsg
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [removingFollowId, setRemovingFollowId] = useState<string | null>(null)
 
@@ -219,15 +220,13 @@ export default function ProfilePage() {
             </div>
           </dl>
 
-          {/* E-MAIL 補填 — 用於接收上架/降價通知 */}
-          <div className="mt-5 rounded-2xl border border-ink-100 bg-ink-50 p-4 space-y-3">
-            <p className="text-base font-bold text-ink-800">📧 E-MAIL 通知信箱 {userEmail && <span className="text-xs font-normal text-green-600">（已設定）</span>}</p>
-            <p className="text-sm text-ink-600">{userEmail ? `目前：${userEmail}` : '填寫真實信箱，才能同時收到上架/降價 E-MAIL 通知'}</p>
-            <div className="flex gap-2">
-              <input type="email" placeholder="you@example.com" value={emailInput} onChange={e=>setEmailInput(e.target.value)} className="flex-1 h-12 px-4 rounded-xl border border-ink-200 bg-white text-base text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400" />
-              <button onClick={async()=>{setEmailMsg(null); const em=emailInput.trim().toLowerCase(); if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){setEmailMsg('❌ 信箱格式不正確');return} if(em.includes('@phone.groupbuy.local')){setEmailMsg('❌ 請填真實信箱');return} setEmailBusy(true); try{ const { data: sess }=await supabase.auth.getSession(); const token=sess.session?.access_token; const fnBase=import.meta.env.VITE_SUPABASE_URL as string; const anonKey=import.meta.env.VITE_SUPABASE_ANON_KEY as string; const res=await fetch(`${fnBase}/functions/v1/admin`,{method:'POST',headers:{Authorization:`Bearer ${token}`,apikey:anonKey,'Content-Type':'application/json'},body:JSON.stringify({action:'updateOwnEmail',email:em})}); const j=await res.json().catch(()=>null); if(!j?.ok) throw new Error(j?.reason==='exists'?'此信箱已被使用':j?.reason==='invalid_email'?'信箱格式不正確':'儲存失敗'); setEmailMsg('✅ 信箱已更新，之後上架/降價會寄到這裡'); setUserEmail(em)}catch(e){setEmailMsg(`❌ ${e instanceof Error?e.message:'儲存失敗'}`)} finally{setEmailBusy(false)}}} disabled={emailBusy || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())} className="h-12 px-5 rounded-xl bg-accent-500 text-white text-base font-bold disabled:opacity-40 shrink-0">{emailBusy?'儲存中…':'儲存'}</button>
+          {/* E-MAIL 已移至「我的關注」 — 此處保留導流 */}
+          <div className="mt-5 rounded-2xl border border-ink-100 bg-[#FFF8F0] p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-ink-800">💌 E-MAIL 通知信箱</p>
+              <p className="text-xs text-ink-500 mt-1">{userEmail ? `目前：${userEmail}` : '尚未設定 — 至「我的關注」設定'}{emailMsg ? ` · ${emailMsg}` : ''}</p>
             </div>
-            {emailMsg && <p className="text-sm text-center">{emailMsg}</p>}
+            <a href="#/me/follows" className="h-9 px-4 rounded-full bg-[#FF8A65] text-white text-sm font-bold grid place-items-center shrink-0">去設定</a>
           </div>
 
           {/* 方案 A：手機後補 — 未填手機時顯示提醒與補填表單 */}

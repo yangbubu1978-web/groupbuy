@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useFollow } from '../lib/useFollow'
 import { registerPushSubscription } from '../lib/pushClient'
+// 假信箱判斷：@phone/@name/@admin.groupbuy.local 皆為系統佔位
 import type { Product } from '../lib/types'
 import { fmtMoney } from '../lib/types'
 import { formatCountdown } from '../lib/pricing'
@@ -74,6 +75,28 @@ export default function MyFollowsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState<string | null>(null)
+  // E-MAIL 通知信箱（與個人資料共用 admin 直通）
+  const [emailInput, setEmailInput] = useState('')
+  const [emailBusy, setEmailBusy] = useState(false)
+  const [emailMsg, setEmailMsg] = useState<string|null>(null)
+  const [userEmail, setUserEmail] = useState<string|null>(null)
+  const isFake = (e:string)=> e.includes('@phone.groupbuy.local')||e.includes('@name.groupbuy.local')||e.includes('@admin.groupbuy.local')
+  useEffect(()=>{(async()=>{ const sess = await supabase.auth.getSession(); const em=sess.data.session?.user?.email ?? null; setUserEmail(em && !isFake(em) ? em : null); if(em) setEmailInput(isFake(em) ? '' : em)})()},[])
+  const saveEmail = async()=>{
+    setEmailMsg(null); const em=emailInput.trim().toLowerCase()
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){setEmailMsg('❌ 信箱格式不正確');return}
+    if(isFake(em)){setEmailMsg('❌ 請填真實信箱');return}
+    setEmailBusy(true)
+    try{
+      const { data: sess }=await supabase.auth.getSession(); const token=sess.session?.access_token
+      const fnBase=import.meta.env.VITE_SUPABASE_URL as string; const anonKey=import.meta.env.VITE_SUPABASE_ANON_KEY as string
+      const res=await fetch(`${fnBase}/functions/v1/admin`,{method:'POST',headers:{Authorization:`Bearer ${token}`,apikey:anonKey,'Content-Type':'application/json'},body:JSON.stringify({action:'updateOwnEmail',email:em})})
+      const j=await res.json().catch(()=>null)
+      if(!j?.ok) throw new Error(j?.reason==='exists'?'此信箱已被使用':j?.reason==='invalid_email'?'信箱格式不正確':'儲存失敗')
+      setEmailMsg('✅ 信箱已更新，之後上架/降價會寄到這裡'); setUserEmail(em)
+    }catch(e){setEmailMsg(`❌ ${e instanceof Error?e.message:'儲存失敗'}`)}finally{setEmailBusy(false)}
+  }
+
   const [pushState, setPushState] = useState<'idle'|'granted'|'denied'|'unsupported'>(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported' as const
     const p = Notification.permission
@@ -119,6 +142,20 @@ export default function MyFollowsPage() {
         <h1 className="text-base font-bold text-ink-900">我的關注</h1>
         <span className="text-xs text-ink-500">{products.length} 項</span>
       </header>
+      {/* E-MAIL 通知信箱 — 搬來我的關注，方便一次設定 */}
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 pt-3">
+        <div className="rounded-2xl border border-ink-100 bg-[#FFF8F0] p-4 space-y-3">
+          <p className="text-sm font-bold text-ink-800">💌 E-MAIL 通知信箱</p>
+          <p className="text-xs text-ink-500">填寫真實信箱，才能同時收到上架/降價 E-MAIL 通知</p>
+          <div className="flex gap-2">
+            <input type="email" placeholder="you@example.com" value={emailInput} onChange={e=>setEmailInput(e.target.value)} className="flex-1 h-10 px-4 rounded-full border border-ink-200 bg-white text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400" />
+            <button onClick={saveEmail} disabled={emailBusy || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())} className="h-10 px-5 rounded-full bg-[#FF8A65] text-white text-sm font-bold disabled:opacity-40 shrink-0">儲存</button>
+          </div>
+          {emailMsg && <p className="text-xs text-center">{emailMsg}</p>}
+          {userEmail && !emailMsg && <p className="text-xs text-center text-green-600">目前：{userEmail}</p>}
+        </div>
+      </div>
+
       {pushState !== 'granted' && pushState !== 'unsupported' && (
         <div className="max-w-md md:max-w-3xl mx-auto px-4 pt-3">
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 flex items-center gap-2">
