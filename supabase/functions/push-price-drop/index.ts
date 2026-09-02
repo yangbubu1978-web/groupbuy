@@ -9,6 +9,16 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { handleCors, json } from "../_shared/cors.ts";
 import { getVapidConfig, sendPush } from "../_shared/webpush.ts";
 
+async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) return false;
+  if (!to || to.includes("@phone.groupbuy.local")) return false;
+  try {
+    const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: "VIP賣場 <onboarding@resend.dev>", to, subject, html }) });
+    return r.ok;
+  } catch { return false }
+}
+
 declare const Deno: { env: { get(k: string): string | undefined } };
 
 // JS 版 compute_current_price 鏡像（與 migration 20260822 隨機降價版一致）
@@ -91,6 +101,7 @@ Deno.serve(async (req) => {
   if (candidates.length === 0) return json({ ok: true, sent: 0, products: products.length, candidates: 0 });
 
   let sent = 0;
+  let emailSent = 0;
   let skipped = 0;
   let gone = 0;
   const errors: string[] = [];
@@ -124,12 +135,11 @@ Deno.serve(async (req) => {
         .select("user_id, notify_sale, notify_30, notify_50, notify_70")
         .eq("product_id", p.id)
         .limit(1);
-      if (!probe.error && probe.data && probe.data.length > 0 && "notify_price_drop" in (probe.data[0] as Record<string, unknown>)) {
+      if (!probe.error && probe.data && probe.data.length > 0 && "notify_30" in (probe.data[0] as Record<string, unknown>)) {
         const filtered = await admin
           .from("product_follows")
-          .select("user_id, notify_30, notify_50, notify_70")
-          .eq("product_id", p.id)
-          .eq("notify_price_drop", true);
+          .select("user_id, notify_sale, notify_30, notify_50, notify_70")
+          .eq("product_id", p.id);
         if (!filtered.error && filtered.data) follows = filtered.data as Array<{ user_id: string; notify_30?: boolean; notify_50?: boolean; notify_70?: boolean }> ;
       }
     }
@@ -173,6 +183,8 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      let emailOk = false;
+      try { const { data: u } = await admin.auth.admin.getUserById(userId); const email = u?.user?.email; if (email && !email.includes("@phone.groupbuy.local")) { emailOk = await sendEmail(email, `📉 你關注的商品已降 ${th}%！ ${p.name}`, `<p>已降 ${th}%，現價 $${curPrice}（原價 $${p.original_price}）</p><p><a href="https://store-mvp.vercel.app/#/product/${p.id}">立即搶購 →</a></p>`); } } catch {}
       const payload = {
         title: `📉 你關注的商品已降 ${th}%！`, 
         body: `${p.name} 現價 $${curPrice}（原價 $${p.original_price} 已降 ${th}%），庫存剩 ${p.stock} 件`, 
@@ -202,10 +214,11 @@ Deno.serve(async (req) => {
         errors.push(`log:${dedupKey}:${logErr.message}`);
       }
         if (anyOk) sent++;
+        if (emailOk) emailSent++;
         else skipped++;
       }
     }
   }
 
-  return json({ ok: true, sent, skipped, gone, products: products.length, candidates: candidates.length, errors: errors.slice(0, 20) });
+  return json({ ok: true, sent, emailSent, skipped, gone, products: products.length, candidates: candidates.length, errors: errors.slice(0, 20) });
 });

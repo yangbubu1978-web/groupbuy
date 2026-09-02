@@ -8,6 +8,16 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { corsHeaders, handleCors, json } from "../_shared/cors.ts";
 import { getVapidConfig, sendPush } from "../_shared/webpush.ts";
 
+async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) return false;
+  if (!to || to.includes("@phone.groupbuy.local")) return false;
+  try {
+    const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify({ from: "VIP賣場 <onboarding@resend.dev>", to, subject, html }) });
+    return r.ok;
+  } catch { return false }
+}
+
 // Deno global for edge runtime
 declare const Deno: { env: { get(k: string): string | undefined } };
 
@@ -54,6 +64,7 @@ Deno.serve(async (req) => {
   }
 
   let totalSent = 0;
+  let totalEmailSent = 0;
   let totalSkipped = 0;
   let totalGone = 0;
   const errors: string[] = [];
@@ -116,6 +127,16 @@ Deno.serve(async (req) => {
         data: { product_id: p.id, campaign_id: p.campaign_id, url: `/product/${p.id}`, type: "sale_start" },
       };
 
+      // 同時寄 E-MAIL（若有真實信箱）
+      let emailOk = false;
+      try {
+        const { data: u } = await admin.auth.admin.getUserById(userId);
+        const email = u?.user?.email;
+        if (email && !email.includes("@phone.groupbuy.local")) {
+          emailOk = await sendEmail(email, `🔔 你關注的商品開賣了！ ${p.name}`, `<p>雅布大人，您關注的 <b>${p.name}</b> 已開賣！</p><p><a href="https://store-mvp.vercel.app/#/product/${p.id}">立即搶購 →</a></p><p style="color:#888;font-size:12px">不想再收到請到 我的關注 取消勾選</p>`);
+        }
+      } catch {}
+
       let anyOk = false;
       for (const sub of subs) {
         const r = await sendPush(
@@ -149,6 +170,7 @@ Deno.serve(async (req) => {
         }
       }
       if (anyOk) totalSent++;
+      if (emailOk) totalEmailSent++;
       else totalSkipped++;
     }
   }
