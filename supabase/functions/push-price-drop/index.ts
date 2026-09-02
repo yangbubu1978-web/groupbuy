@@ -1,8 +1,8 @@
 // ============================================================
-// Edge Function: push-price-drop — 降價 30% 推播
+// Edge Function: push-price-drop — 降價 30/50/70% 三階段推播
 // 條件: stock>0 且 (original_price - current_price)/original_price >=0.3
 //       且有人關注 (product_follows) 且 notify_price_drop 未關閉
-// 去重鍵: `${user_id}:${product_id}:price_drop_30`
+// 去重鍵: `${user_id}:${product_id}:price_drop_30|50|70`，依 price_drop_mode (once/all) 決定
 // 標題: "📉 你關注的商品已降 30%！"
 // ============================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // 1) 拉候選商品（stock>0 + active + 有原價），在 JS 端算是否已降 30%
+  // 1) 拉候選商品（stock>0 + active + 有原價），在 JS 端算是否已達 30/50/70% 門檻
   const { data: products, error: prodErr } = await admin
     .from("products")
     .select(
@@ -95,11 +95,19 @@ Deno.serve(async (req) => {
   let gone = 0;
   const errors: string[] = [];
 
+  // 三階段門檻
+  const THRESHOLDS = [30, 50, 70] as const;
+
   for (const p of candidates) {
     const curPrice = computeCurrentPrice(p);
+    const dropPct = Math.floor(((Number(p.original_price) - curPrice) / Number(p.original_price)) * 100);
+    // 此商品已達哪幾階段（例如 drop 55% => [30,50]）
+    const reached = THRESHOLDS.filter((th) => dropPct >= th);
+    if (reached.length === 0) continue;
 
     // 2) 查關注者；若表有 notify_price_drop 欄位則過濾，否則全量（相容舊 schema）
-    let follows: Array<{ user_id: string }> | null = null;
+    // 同時讀 price_drop_mode（once=僅30, all=三階段）
+    let follows: Array<{ user_id: string; price_drop_mode?: string }> | null = null;
     {
       const r1 = await admin.from("product_follows").select("user_id").eq("product_id", p.id);
       // 嘗試第二查詢：若欄位存在則過濾 notify_price_drop=true
@@ -113,23 +121,26 @@ Deno.serve(async (req) => {
       // 探測 notify_price_drop 欄位是否存在：嘗試帶該欄位查詢，失敗則忽略
       const probe = await admin
         .from("product_follows")
-        .select("user_id, notify_price_drop")
+        .select("user_id, notify_price_drop, price_drop_mode")
         .eq("product_id", p.id)
         .limit(1);
       if (!probe.error && probe.data && probe.data.length > 0 && "notify_price_drop" in (probe.data[0] as Record<string, unknown>)) {
         const filtered = await admin
           .from("product_follows")
-          .select("user_id")
+          .select("user_id, price_drop_mode")
           .eq("product_id", p.id)
           .eq("notify_price_drop", true);
-        if (!filtered.error && filtered.data) follows = filtered.data as Array<{ user_id: string }>;
+        if (!filtered.error && filtered.data) follows = filtered.data as Array<{ user_id: string; price_drop_mode?: string }> ;
       }
     }
     if (!follows || follows.length === 0) continue;
 
     for (const f of follows) {
       const userId = f.user_id;
-      const dedupKey = `${userId}:${p.id}:price_drop_30`;
+      const mode = (f as { price_drop_mode?: string }).price_drop_mode ?? 'all';
+      const thresholdsForUser = mode === 'once' ? [30] as const : reached as readonly number[];
+      for (const th of thresholdsForUser) {
+        const dedupKey = `${userId}:${p.id}:price_drop_${th}`;
 
       const { data: existed } = await admin
         .from("notification_logs")
@@ -154,7 +165,7 @@ Deno.serve(async (req) => {
         await admin.from("notification_logs").insert({
           user_id: userId,
           product_id: p.id,
-          type: "price_drop",
+          type: `price_drop_${th}`,
           dedup_key: dedupKey,
           push_success: false,
         });
@@ -163,10 +174,10 @@ Deno.serve(async (req) => {
       }
 
       const payload = {
-        title: "📉 你關注的商品已降 30%！",
-        body: `${p.name} 現價 $${curPrice}（原價 $${p.original_price}），庫存剩 ${p.stock} 件`,
+        title: `📉 你關注的商品已降 ${th}%！`, 
+        body: `${p.name} 現價 $${curPrice}（原價 $${p.original_price} 已降 ${th}%），庫存剩 ${p.stock} 件`, 
         icon: p.image_url ?? undefined,
-        data: { product_id: p.id, campaign_id: p.campaign_id, url: `/product/${p.id}`, type: "price_drop", current_price: curPrice },
+        data: { product_id: p.id, campaign_id: p.campaign_id, url: `/product/${p.id}`, type: `price_drop_${th}`, threshold: th, current_price: curPrice },
       };
 
       let anyOk = false;
@@ -183,15 +194,16 @@ Deno.serve(async (req) => {
       const { error: logErr } = await admin.from("notification_logs").insert({
         user_id: userId,
         product_id: p.id,
-        type: "price_drop",
+        type: `price_drop_${th}`,
         dedup_key: dedupKey,
         push_success: anyOk,
       });
       if (logErr && (logErr as { code?: string }).code !== "23505" && !logErr.message.includes("duplicate")) {
         errors.push(`log:${dedupKey}:${logErr.message}`);
       }
-      if (anyOk) sent++;
-      else skipped++;
+        if (anyOk) sent++;
+        else skipped++;
+      }
     }
   }
 

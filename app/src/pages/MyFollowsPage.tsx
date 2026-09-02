@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { useFollow } from '../lib/useFollow'
 import type { Product } from '../lib/types'
 import { fmtMoney } from '../lib/types'
 import { formatCountdown } from '../lib/pricing'
@@ -10,6 +11,19 @@ function FollowCard({ product, onUnfollow }: { product: Product; onUnfollow: (id
   const isUpcoming = !!product.sale_start_at && new Date(product.sale_start_at).getTime() > Date.now()
   const remain = isUpcoming ? Math.max(0, (new Date(product.sale_start_at!).getTime() - Date.now()) / 1000) : 0
   const [tick, setTick] = useState(remain)
+  const { notifyPriceDrop, setNotifyPriceDrop } = useFollow(product.id)
+  const [priceMode, setPriceMode] = useState<'off'|'once'|'all'>(notifyPriceDrop ? 'all' : 'off')
+  useEffect(() => { setPriceMode(notifyPriceDrop ? 'all' : 'off') }, [notifyPriceDrop])
+  const handleModeChange = async (v: 'off'|'once'|'all') => {
+    setPriceMode(v)
+    if (v === 'off') await setNotifyPriceDrop(false)
+    else {
+      await setNotifyPriceDrop(true)
+      // once vs all 暫同為 true，後續可細分欄位 price_drop_mode
+      if (v === 'once') { await supabase.from('product_follows').update({ price_drop_mode: 'once' }).eq('product_id', product.id) }
+      else { await supabase.from('product_follows').update({ price_drop_mode: 'all' }).eq('product_id', product.id) }
+    }
+  }
   useEffect(() => {
     if (!isUpcoming) return
     const id = setInterval(() => setTick(Math.max(0, (new Date(product.sale_start_at!).getTime() - Date.now()) / 1000)), 1000)
@@ -27,7 +41,15 @@ function FollowCard({ product, onUnfollow }: { product: Product; onUnfollow: (id
           {isUpcoming ? <p className="mt-1 text-xs font-bold text-ink-600">⏳ {formatCountdown(tick)} 後開賣</p> : <p className="mt-1 text-xs text-green-600 font-bold">🔓 已開賣</p>}
         </div>
       </Link>
-      <div className="px-3 pb-3">
+      <div className="px-3 pb-3 space-y-2">
+        <label className="flex items-center justify-between bg-ink-50 rounded-xl px-3 py-2">
+          <span className="text-xs font-bold text-ink-700">降價通知</span>
+          <select value={priceMode} onChange={e => handleModeChange(e.target.value as 'off'|'once'|'all')} className="text-xs font-bold bg-white border border-ink-200 rounded-lg px-2 py-1">
+            <option value="off">僅上架</option>
+            <option value="once">上架 + 降30%</option>
+            <option value="all">30% / 50% / 70% 全通知</option>
+          </select>
+        </label>
         <button onClick={() => onUnfollow(product.id)} aria-label="取消商品上架通知" className="w-full h-10 rounded-xl bg-ink-800 text-white text-sm font-bold active:scale-[0.98] transition">🔕 取消關注</button>
       </div>
     </div>
