@@ -39,7 +39,21 @@ Deno.serve(async (req) => {
       return json({ ok: false, reason: 'unauthenticated' }, 401)
     }
 
-    // 驗證呼叫者是否為管理員
+    const body = await req.json().catch(() => null)
+    const action = body?.action
+
+    // 自助更新自己信箱：任何已登入用戶皆可（不需管理員）
+    if (action === 'updateOwnEmail') {
+      const email = String(body.email ?? '').trim().toLowerCase()
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.includes('@phone.groupbuy.local') || email.includes('@name.groupbuy.local') || email.includes('@admin.groupbuy.local')) {
+        return json({ ok: false, reason: 'invalid_email' }, 400)
+      }
+      const { error } = await admin.auth.admin.updateUserById(userData.user.id, { email, email_confirm: true })
+      if (error) return json({ ok: false, reason: error.message.includes('already') ? 'exists' : error.message }, 409)
+      return json({ ok: true })
+    }
+
+    // 其餘動作需管理員權限
     const { data: isAdminRow } = await admin
       .from('admins')
       .select('user_id')
@@ -48,9 +62,6 @@ Deno.serve(async (req) => {
     if (!isAdminRow) {
       return json({ ok: false, reason: 'forbidden' }, 403)
     }
-
-    const body = await req.json().catch(() => null)
-    const action = body?.action
 
     // 手機號碼一律正規化後再使用（25. 手機格式）
     const normalizePhone = (raw: string): string => {
@@ -244,6 +255,19 @@ Deno.serve(async (req) => {
           )
         }
         return json({ ok: true, newPhone: update.email ? String(update.email).split('@')[0] : undefined })
+      }
+
+      case 'updateCustomerEmail': {
+        const email = String(body.email ?? '').trim().toLowerCase()
+        const { customerId } = body
+        if (!customerId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.includes('@phone.groupbuy.local')) {
+          return json({ ok: false, reason: 'invalid_email' }, 400)
+        }
+        const { data: cust } = await admin.from('customers').select('auth_user_id').eq('id', customerId).maybeSingle()
+        if (!cust?.auth_user_id) return json({ ok: false, reason: 'not_found' }, 404)
+        const { error } = await admin.auth.admin.updateUserById(cust.auth_user_id, { email, email_confirm: true })
+        if (error) return json({ ok: false, reason: error.message.includes('already') ? 'exists' : error.message }, 409)
+        return json({ ok: true })
       }
 
       default:
