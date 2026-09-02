@@ -672,17 +672,18 @@ export default function AdminProductsPage() {
                         <div className="flex items-center justify-end gap-1.5 flex-wrap">
                           {/* 主要 */}
                           <div className="inline-flex rounded-xl border border-ink-200 overflow-hidden">
-                            <button onClick={() => toggleStatus(p)} disabled={busy} className={`px-3 py-1.5 text-xs font-bold border-r border-ink-200 disabled:opacity-50 ${p.status==='active'?'bg-orange-50 text-orange-700 hover:bg-orange-100':'bg-white text-ink-700 hover:bg-ink-50'}`}>
-                              {p.status === 'active' ? '📦 下架' : p.status === 'draft' ? '▶ 發布' : p.status === 'ended' || p.status==='paused' ? '🔄 上架' : '▶ 恢復'}
-                            </button>
+                            {(p.status === 'active' || p.status === 'draft') ? (
+                              <button onClick={() => toggleStatus(p)} disabled={busy} className={`px-3 py-1.5 text-xs font-bold border-r border-ink-200 disabled:opacity-50 ${p.status==='active'?'bg-orange-50 text-orange-700 hover:bg-orange-100':'bg-white text-ink-700 hover:bg-ink-50'}`}>
+                                {p.status === 'active' ? '📦 下架' : '▶ 發布'}
+                              </button>
+                            ) : (
+                              <button onClick={() => void relist(p)} disabled={busy} className="px-3 py-1.5 bg-emerald-50 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 border-r border-ink-200">🔄 重新上架</button>
+                            )}
                             <Link to={`/admin/products?id=${p.id}`} className="px-3 py-1.5 bg-white text-xs font-bold text-blue-700 hover:bg-blue-50">編輯</Link>
                           </div>
                           {/* 次要 */}
                           <div className="inline-flex rounded-xl border border-ink-200 overflow-hidden">
                             <button onClick={() => duplicateProduct(p)} disabled={busy} className="px-3 py-1.5 bg-white text-xs font-semibold text-ink-600 hover:bg-ink-50 disabled:opacity-50">複製</button>
-                            {(p.status === 'ended' || p.status === 'paused') && (
-                              <button onClick={() => void relist(p)} disabled={busy} className="px-3 py-1.5 bg-emerald-50 border-l border-ink-200 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50">重新上架</button>
-                            )}
                           </div>
                           <button onClick={() => remove(p)} disabled={busy} className="h-7 px-2.5 rounded-full bg-red-50 text-red-600 border border-red-200 text-xs font-bold hover:bg-red-100 disabled:opacity-50">刪除</button>
                         </div>
@@ -734,16 +735,17 @@ export default function AdminProductsPage() {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {/* 主要操作 */}
                   <div className="inline-flex rounded-xl overflow-hidden border border-ink-200">
-                    <button onClick={() => toggleStatus(p)} disabled={busy} className={`px-3.5 py-2 text-sm font-bold disabled:opacity-50 ${p.status==='active'?'bg-orange-50 text-orange-700':'bg-white text-ink-700'}`}>
-                      {p.status === 'active' ? '📦 下架' : p.status === 'draft' ? '▶ 發布' : p.status === 'ended' || p.status==='paused' ? '🔄 上架' : '▶ 恢復'}
-                    </button>
+                    {(p.status === 'active' || p.status === 'draft') ? (
+                      <button onClick={() => toggleStatus(p)} disabled={busy} className={`px-3.5 py-2 text-sm font-bold disabled:opacity-50 ${p.status==='active'?'bg-orange-50 text-orange-700':'bg-white text-ink-700'}`}>
+                        {p.status === 'active' ? '📦 下架' : '▶ 發布'}
+                      </button>
+                    ) : (
+                      <button onClick={() => void relist(p)} disabled={busy} className="px-3.5 py-2 bg-emerald-50 text-sm font-bold text-emerald-700 disabled:opacity-50">🔄 重新上架</button>
+                    )}
                     <Link to={`/admin/products?id=${p.id}`} className="px-3.5 py-2 bg-white border-l border-ink-200 text-sm font-bold text-blue-700 hover:bg-blue-50">✏️ 編輯</Link>
                   </div>
                   <div className="inline-flex rounded-xl overflow-hidden border border-ink-200">
                     <button onClick={() => duplicateProduct(p)} disabled={busy} className="px-3.5 py-2 bg-white text-sm font-semibold text-ink-700 hover:bg-ink-50 disabled:opacity-50">⧉ 複製</button>
-                    {(p.status === 'ended' || p.status === 'paused') && (
-                      <button onClick={() => void relist(p)} disabled={busy} className="px-3.5 py-2 bg-emerald-50 border-l border-emerald-200 text-sm font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50">🔄 上架</button>
-                    )}
                   </div>
                   <button onClick={() => remove(p)} disabled={busy} className="px-3.5 py-2 rounded-xl bg-red-50 text-red-600 border border-red-200 text-sm font-bold hover:bg-red-100 disabled:opacity-50">🗑</button>
                 </div>
