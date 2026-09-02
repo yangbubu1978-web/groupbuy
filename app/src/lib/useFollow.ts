@@ -13,9 +13,11 @@ export function isValidUUID(v: string | null | undefined): boolean {
 
 export interface UseFollowReturn {
   followed: boolean
+  notifyPriceDrop: boolean
   loading: boolean
   toggling: boolean
   toggleFollow: () => Promise<{ ok: boolean; reason?: string }>
+  setNotifyPriceDrop: (v: boolean) => Promise<{ ok: boolean; reason?: string }>
   refresh: () => Promise<void>
 }
 
@@ -27,6 +29,7 @@ export interface UseFollowReturn {
 export function useFollow(productId: string | null): UseFollowReturn {
   const { userId } = useAuth()
   const [followed, setFollowed] = useState(false)
+  const [notifyPriceDrop, _setNotifyPriceDrop] = useState(false)
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState(false)
 
@@ -45,7 +48,7 @@ export function useFollow(productId: string | null): UseFollowReturn {
     try {
       const { data, error } = await supabase
         .from('product_follows')
-        .select('product_id')
+        .select('product_id, notify_price_drop')
         .eq('user_id', userId)
         .eq('product_id', productId)
         .maybeSingle()
@@ -58,6 +61,7 @@ export function useFollow(productId: string | null): UseFollowReturn {
         setFollowed(false)
       } else {
         setFollowed(!!data)
+        _setNotifyPriceDrop(!!(data as { notify_price_drop?: boolean } | null)?.notify_price_drop)
       }
     } catch (err) {
       console.warn('[useFollow] refresh exception', err)
@@ -126,5 +130,15 @@ export function useFollow(productId: string | null): UseFollowReturn {
     }
   }, [productId, userId, followed, toggling])
 
-  return { followed, loading, toggling, toggleFollow, refresh }
+  const setNotifyPriceDrop = useCallback(async (v: boolean): Promise<{ ok: boolean; reason?: string }> => {
+    if (!productId || !isValidUUID(productId) || !userId) return { ok: false, reason: 'not_logged_in' }
+    if (!followed) return { ok: false, reason: 'not_followed' }
+    const prev = notifyPriceDrop
+    _setNotifyPriceDrop(v)
+    const { error } = await supabase.from('product_follows').update({ notify_price_drop: v }).eq('user_id', userId).eq('product_id', productId)
+    if (error) { _setNotifyPriceDrop(prev); return { ok: false, reason: 'server_error' } }
+    return { ok: true }
+  }, [productId, userId, followed, notifyPriceDrop])
+
+  return { followed, notifyPriceDrop, loading, toggling, toggleFollow, setNotifyPriceDrop, refresh }
 }

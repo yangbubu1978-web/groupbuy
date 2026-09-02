@@ -19,7 +19,7 @@ export default function FollowButton({
   stock,
 }: FollowButtonProps) {
   const navigate = useNavigate()
-  const { followed, loading, toggling, toggleFollow } = useFollow(productId)
+  const { followed, notifyPriceDrop, loading, toggling, toggleFollow, setNotifyPriceDrop } = useFollow(productId)
   const [msg, setMsg] = useState<string | null>(null)
   const [msgKind, setMsgKind] = useState<'ok' | 'error'>('ok')
 
@@ -129,6 +129,12 @@ export default function FollowButton({
         >
           {msg}
         </span>
+      )}
+      {followed && !disabledByState && (
+        <label className="inline-flex items-center gap-1.5 text-xs text-ink-600 cursor-pointer select-none mt-1">
+          <input type="checkbox" checked={notifyPriceDrop} onChange={e => setNotifyPriceDrop(e.target.checked)} className="w-3.5 h-3.5 rounded border-ink-300 accent-ink-900" />
+          也通知降價 30%
+        </label>
       )}
     </span>
   )
