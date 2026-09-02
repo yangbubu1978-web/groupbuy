@@ -42,15 +42,21 @@ function FollowCard({ product, onUnfollow }: { product: Product; onUnfollow: (id
         </div>
       </Link>
       <div className="px-3 pb-3 space-y-2">
-        <label className="flex items-center justify-between bg-ink-50 rounded-xl px-3 py-2">
-          <span className="text-xs font-bold text-ink-700">降價通知</span>
-          <select value={priceMode} onChange={e => handleModeChange(e.target.value as 'off'|'once'|'all')} className="text-xs font-bold bg-white border border-ink-200 rounded-lg px-2 py-1">
-            <option value="off">僅上架</option>
-            <option value="once">上架 + 降30%</option>
-            <option value="all">30% / 50% / 70% 全通知</option>
-          </select>
-        </label>
-        <button onClick={() => onUnfollow(product.id)} aria-label="取消商品上架通知" className="w-full h-10 rounded-xl bg-ink-800 text-white text-sm font-bold active:scale-[0.98] transition">🔕 取消關注</button>
+        <div className="bg-ink-50 rounded-xl px-3 py-2.5 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-bold text-green-700 bg-white border border-green-200 rounded-lg px-2.5 py-1.5">
+            <span>🔔 上架通知</span><span className="ml-auto text-green-600">已開啟（同時關注）</span>
+          </div>
+          <label className="flex items-center justify-between">
+            <span className="text-xs font-bold text-ink-700">📉 降價通知</span>
+            <select value={priceMode} onChange={e => handleModeChange(e.target.value as 'off'|'once'|'all')} className="text-xs font-bold bg-white border border-ink-200 rounded-lg px-2 py-1">
+              <option value="off">不通知</option>
+              <option value="once">只通知降30%一次</option>
+              <option value="all">30% / 50% / 70% 每次都通知</option>
+            </select>
+          </label>
+          <p className="text-[11px] text-ink-500 leading-relaxed">上架一定通知；降價可選不通知或三階段疊加，可同時關注</p>
+        </div>
+        <button onClick={() => onUnfollow(product.id)} aria-label="取消商品上架通知" className="w-full h-10 rounded-xl bg-ink-800 text-white text-sm font-bold active:scale-[0.98] transition">🔕 取消關注（上架+降價一起取消）</button>
       </div>
     </div>
   )
