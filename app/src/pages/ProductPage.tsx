@@ -72,11 +72,6 @@ function ProductGallery({ product }: { product: Product }) {
   const [idx, setIdx] = useState(0)
   const touchX = useRef<number | null>(null)
   const go = (n: number) => setIdx(((n % gallery.length) + gallery.length) % gallery.length)
-  useEffect(() => {
-    if (gallery.length <= 1) return
-    const t = setInterval(() => setIdx((i) => (i + 1) % gallery.length), 3000)
-    return () => clearInterval(t)
-  }, [gallery.length])
   useEffect(() => { if (idx >= gallery.length) setIdx(0) }, [gallery.length, idx])
   if (gallery.length === 0) return <div className="mx-3 mt-3 md:mx-0 md:mt-4 bg-white rounded-[24px] border border-ink-100 shadow-sm overflow-hidden"><div className="aspect-square grid place-items-center bg-gradient-to-b from-ink-50/50 to-white"><span className="text-6xl opacity-15">🎁</span></div></div>
   return (
