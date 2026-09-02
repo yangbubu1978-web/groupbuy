@@ -381,16 +381,8 @@ export default function ProductPage() {
       </header>
 
       <main className="max-w-md md:max-w-3xl mx-auto">
-        {/* ─── 商品圖 — 圓角卡片化 ─── */}
-        <div className="mx-3 mt-3 md:mx-0 md:mt-4 bg-white rounded-[24px] border border-ink-100 shadow-[0_4px_24px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
-          <div className="aspect-square flex items-center justify-center overflow-hidden bg-gradient-to-b from-ink-50/50 to-white">
-            {product.image_url ? (
-              <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-6xl opacity-15">🎁</span>
-            )}
-          </div>
-        </div>
+        {/* ─── 商品圖 — 三圖輪播（自動3秒 + 手指滑動 + 點點） ─── */}
+        {(()=>{ const gallery=[product.image_url, (product as unknown as {image_url_2?:string}).image_url_2, (product as unknown as {image_url_3?:string}).image_url_3].filter(Boolean) as string[]; const [idx,setIdx]=useState(0); const touchX=useRef<number|null>(null); const go=(n:number)=> setIdx(((n%gallery.length)+gallery.length)%gallery.length); useEffect(()=>{ if(gallery.length<=1) return; const t=setInterval(()=> setIdx(i=> (i+1)%gallery.length),3000); return ()=> clearInterval(t) },[gallery.length]); if(gallery.length===0) return <div className="mx-3 mt-3 md:mx-0 md:mt-4 bg-white rounded-[24px] border border-ink-100 shadow-sm overflow-hidden"><div className="aspect-square grid place-items-center bg-gradient-to-b from-ink-50/50 to-white"><span className="text-6xl opacity-15">🎁</span></div></div>; return <div className="mx-3 mt-3 md:mx-0 md:mt-4 bg-white rounded-[24px] border border-ink-100 shadow-[0_4px_24px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden relative select-none" onTouchStart={e=>{touchX.current=e.touches[0].clientX}} onTouchEnd={e=>{ if(touchX.current==null) return; const dx=e.changedTouches[0].clientX - touchX.current; touchX.current=null; if(Math.abs(dx)>40) go(idx + (dx<0?1:-1)) }}> <div className="aspect-square flex items-center justify-center overflow-hidden bg-gradient-to-b from-ink-50/50 to-white"> <img src={gallery[idx]} alt={`${product.name} ${idx+1}/${gallery.length}`} className="w-full h-full object-cover transition-opacity duration-300" draggable={false} /> </div> {gallery.length>1 && <><button aria-label="上一張" onClick={()=>go(idx-1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/45 text-white grid place-items-center backdrop-blur-sm active:scale-95">‹</button><button aria-label="下一張" onClick={()=>go(idx+1)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/45 text-white grid place-items-center backdrop-blur-sm active:scale-95">›</button><div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/35 backdrop-blur-sm rounded-full px-2.5 py-1.5">{gallery.map((_,i)=><button key={i} aria-label={`第${i+1}張`} onClick={()=> setIdx(i)} className={`w-2 h-2 rounded-full transition-all ${i===idx?'bg-white w-5':'bg-white/60'}`} />)}</div><span className="absolute top-2 right-2 bg-black/45 text-white text-[11px] font-bold px-2 py-1 rounded-full backdrop-blur-sm">{idx+1}/{gallery.length}</span></> } </div>})()}
 
         <div className="px-4 md:px-0 pt-6 space-y-6">
           {/* ─── 名稱與描述 — 加大行距、長輩友善 ─── */}

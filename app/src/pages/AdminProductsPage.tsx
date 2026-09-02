@@ -35,6 +35,8 @@ export default function AdminProductsPage() {
   const { isAdmin, loading: authLoading, userId } = useAuth()
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const fileRef2 = useRef<HTMLInputElement>(null)
+  const fileRef3 = useRef<HTMLInputElement>(null)
   const isAdminUser = useRef(false)
   const ask = useConfirm()
 
@@ -54,19 +56,7 @@ export default function AdminProductsPage() {
     return data.publicUrl
   }
 
-  const onPickFile = async (file: File | undefined) => {
-    if (!file) return
-    setUploading(true); setMsg(null)
-    try {
-      const url = await uploadImage(file)
-      setForm((f) => ({ ...f, image_url: url }))
-      setMsg('✅ 圖片已上傳，記得按儲存')
-    } catch (e) {
-      setMsg(`❌ ${e instanceof Error ? e.message : '上傳失敗'}`)
-    } finally {
-      setUploading(false)
-    }
-  }
+  // 舊單圖上傳保留相容，三圖改用各 slot 內 onPick
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [duplicateMode, setDuplicateMode] = useState(false)
@@ -84,7 +74,7 @@ export default function AdminProductsPage() {
   const [keyword, setKeyword] = useState('')
 
   const emptyForm = {
-    campaign_id: '', name: '', description: '', image_url: '', sku: '',
+    campaign_id: '', name: '', description: '', image_url: '', image_url_2: '', image_url_3: '', sku: '',
     item_no: '',
     original_price: '1500', minimum_price: '900',
     price_interval_seconds: '7200', price_decrease: '1', price_decrease_max: '20',
@@ -171,6 +161,8 @@ export default function AdminProductsPage() {
           name: p.name,
           description: p.description ?? '',
           image_url: p.image_url ?? '',
+          image_url_2: (p as unknown as { image_url_2?: string }).image_url_2 ?? '',
+          image_url_3: (p as unknown as { image_url_3?: string }).image_url_3 ?? '',
           sku: p.sku,
           item_no: (p as unknown as { item_no?: string }).item_no ?? '',
           original_price: String(p.original_price),
@@ -231,7 +223,7 @@ export default function AdminProductsPage() {
         if (newStock < newInitial - sold) throw new Error(`庫存不可低於已售數量（已售 ${sold} 件）`)
         const { error } = await supabase.from('products').update({
           campaign_id: campaignId, name: form.name, description: form.description || null,
-          image_url: form.image_url || null, sku: form.sku, item_no: form.item_no.trim() || null,
+          image_url: form.image_url || null, image_url_2: (form as unknown as { image_url_2?: string }).image_url_2 || null, image_url_3: (form as unknown as { image_url_3?: string }).image_url_3 || null, sku: form.sku, item_no: form.item_no.trim() || null,
           original_price: Number(form.original_price), minimum_price: Number(form.minimum_price),
           price_interval_seconds: Number(form.price_interval_seconds),
           price_decrease: Number(form.price_decrease),
@@ -252,7 +244,7 @@ export default function AdminProductsPage() {
       } else {
         const { error: insertErr } = await supabase.from('products').insert({
           campaign_id: campaignId, name: form.name, description: form.description || null,
-          image_url: form.image_url || null, sku: form.sku, item_no: form.item_no.trim() || null,
+          image_url: form.image_url || null, image_url_2: (form as unknown as { image_url_2?: string }).image_url_2 || null, image_url_3: (form as unknown as { image_url_3?: string }).image_url_3 || null, sku: form.sku, item_no: form.item_no.trim() || null,
           original_price: Number(form.original_price), minimum_price: Number(form.minimum_price),
           price_interval_seconds: Number(form.price_interval_seconds),
           price_decrease: Number(form.price_decrease),
@@ -338,7 +330,7 @@ export default function AdminProductsPage() {
     navigate('/admin/products', { replace: true })
     setForm({
       campaign_id: p.campaign_id, name: `${p.name}（副本）`, description: p.description ?? '',
-      image_url: p.image_url ?? '', sku: `${p.sku}-COPY`, item_no: (p as unknown as { item_no?: string }).item_no ?? '',
+      image_url: p.image_url ?? '', image_url_2: (p as unknown as { image_url_2?: string }).image_url_2 ?? '', image_url_3: (p as unknown as { image_url_3?: string }).image_url_3 ?? '', sku: `${p.sku}-COPY`, item_no: (p as unknown as { item_no?: string }).item_no ?? '',
       original_price: String(p.original_price), minimum_price: String(p.minimum_price),
       price_interval_seconds: String(p.price_interval_seconds), price_decrease: String(p.price_decrease),
       price_decrease_max: p.price_decrease_max != null ? String(p.price_decrease_max) : '',
@@ -433,19 +425,32 @@ export default function AdminProductsPage() {
             <textarea placeholder="商品描述（選填）" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputCls} h-20 py-2.5`} />
           </div>
 
-          {/* 圖片 */}
-          <div className="rounded-2xl border border-ink-200 bg-ink-50/60 p-4 space-y-3">
-            <p className={labelCls}>商品圖片</p>
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-                className="flex-1 h-10 rounded-xl bg-white border border-ink-200 text-sm font-semibold text-ink-700 hover:bg-ink-50 disabled:opacity-50 transition">
-                {uploading ? '⏳ 上傳中…' : '📷 上傳商品照片'}
-              </button>
-              {form.image_url && <button type="button" onClick={() => setForm({ ...form, image_url: '' })} className="text-xs text-ink-400 underline">清除</button>}
-            </div>
-            <input type="file" accept="image/*" ref={fileRef} className="hidden" onChange={(e) => { onPickFile(e.target.files?.[0]); e.target.value = '' }} />
-            {form.image_url && <img src={form.image_url} alt="商品圖預覽" className="w-full aspect-[4/3] max-h-72 object-cover rounded-xl border border-ink-200" />}
-            <input placeholder="或貼圖片 URL（選填）" value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} className={inputCls} />
+          {/* 圖片 — 三張輪播 */}
+          <div className="rounded-2xl border border-ink-200 bg-ink-50/60 p-4 space-y-4">
+            <p className={labelCls}>商品圖片（最多 3 張，第 1 張為封面）</p>
+            {[0,1,2].map((idx)=>{
+              const key = idx===0?'image_url':`image_url_${idx+1}` as keyof typeof form
+              const url = (form as unknown as Record<string,string>)[key] || ''
+              const ref = idx===0?fileRef: idx===1?fileRef2: fileRef3
+              const onPick = async (f: File|undefined)=>{
+                if(!f) return; setUploading(true); setMsg(null)
+                try{ const u=await uploadImage(f); setForm(prev=>({ ...prev, [key]: u } as typeof form)); setMsg(`✅ 圖${idx+1} 已上傳，記得按儲存`) }catch(e){ setMsg(`❌ ${e instanceof Error?e.message:'上傳失敗'}`) }finally{ setUploading(false) }
+              }
+              return (
+                <div key={idx} className="rounded-xl border border-ink-200 bg-white p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-ink-700">圖 {idx+1} {idx===0 && <span className="text-[11px] font-normal text-ink-400">（封面）</span>}</span>
+                    {url && <button type="button" onClick={()=> setForm(prev=>({ ...prev, [key]: '' } as typeof form))} className="text-xs text-red-500 hover:text-red-600">✕ 清除</button>}
+                  </div>
+                  {url ? <img src={url} alt={`圖${idx+1}`} className="w-full aspect-[4/3] max-h-60 object-cover rounded-xl border border-ink-200" /> : <div className="w-full aspect-[4/3] max-h-40 grid place-items-center rounded-xl border border-dashed border-ink-200 bg-ink-50 text-xs text-ink-400">尚未上傳</div>}
+                  <div className="flex gap-2">
+                    <button type="button" onClick={()=> ref.current?.click()} disabled={uploading} className="flex-1 h-9 rounded-xl bg-ink-900 text-white text-xs font-bold disabled:opacity-50">{uploading?'⏳ 上傳中…':'📷 上傳'}</button>
+                    <input type="file" accept="image/*" ref={ref} className="hidden" onChange={e=>{ onPick(e.target.files?.[0]); e.target.value='' }} />
+                  </div>
+                  <input placeholder="或貼圖片 URL" value={url} onChange={e=> setForm(prev=>({ ...prev, [key]: e.target.value } as typeof form))} className={inputCls + ' h-9 text-sm'} />
+                </div>
+              )
+            })}
           </div>
 
           {/* 價格與庫存 */}

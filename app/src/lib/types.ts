@@ -61,6 +61,8 @@ export interface Product {
   name: string
   description: string | null
   image_url: string | null
+  image_url_2?: string | null
+  image_url_3?: string | null
   sku: string
   item_no?: string | null
   original_price: number
