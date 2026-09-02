@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useFollow } from '../lib/useFollow'
+import { registerPushSubscription } from '../lib/pushClient'
 import type { Product } from '../lib/types'
 import { fmtMoney } from '../lib/types'
 import { formatCountdown } from '../lib/pricing'
@@ -73,6 +74,19 @@ export default function MyFollowsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [msg, setMsg] = useState<string | null>(null)
+  const [pushState, setPushState] = useState<'idle'|'granted'|'denied'|'unsupported'>(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported' as const
+    const p = Notification.permission
+    if (p === 'granted') return 'granted' as const
+    if (p === 'denied') return 'denied' as const
+    return 'idle' as const
+  })
+  const enablePush = async () => {
+    const sub = await registerPushSubscription()
+    if (sub) { setPushState('granted'); setMsg('✅ 推播已開啟，關掉網頁也能收到通知'); setTimeout(()=>setMsg(null),3000) }
+    else if (typeof Notification !== 'undefined' && Notification.permission === 'denied') { setPushState('denied'); setMsg('❌ 通知被封鎖，請到瀏覽器設定開啟') }
+    else setMsg('推播開啟失敗，請確認是 HTTPS 並已登入')
+  }
 
   const load = async () => {
     if (!userId) return
@@ -105,6 +119,15 @@ export default function MyFollowsPage() {
         <h1 className="text-base font-bold text-ink-900">我的關注</h1>
         <span className="text-xs text-ink-500">{products.length} 項</span>
       </header>
+      {pushState !== 'granted' && pushState !== 'unsupported' && (
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 pt-3">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 flex items-center gap-2">
+            <span className="text-sm">{pushState==='denied' ? '🔕 通知被封鎖' : '🔔 開啟推播'}</span>
+            <span className="text-xs text-ink-500 flex-1">{pushState==='denied' ? '請到瀏覽器設定允許通知' : '關掉網頁也能收到上架/降價通知'}</span>
+            <button onClick={enablePush} className="h-8 px-3 rounded-full bg-accent-500 text-white text-xs font-bold active:scale-[0.98]">{pushState==='denied' ? '重試' : '開啟'}</button>
+          </div>
+        </div>
+      )}
       <main className="max-w-md md:max-w-3xl mx-auto px-4 py-4">
         {msg && <p className="mb-3 text-center text-sm bg-white border border-ink-100 rounded-xl py-2">{msg}</p>}
         {products.length === 0 ? (
