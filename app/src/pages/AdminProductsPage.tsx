@@ -14,7 +14,7 @@ function toLocalInputValue(iso: string): string {
 }
 
 /* ───────── status meta ───────── */
-const STATUS_META: Record<Product['status'], { label: string; dot: string; badge: string }> = {
+const STATUS_META: Record<Product['status'], { label: string; dot: string; badge: string }> = { // paused 已整合至 ended，保留僅為相容舊資料
   active: { label: '銷售中', dot: 'bg-emerald-500', badge: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
   draft: { label: '草稿', dot: 'bg-amber-400', badge: 'bg-amber-50 text-amber-700 ring-amber-200' },
   paused: { label: '已暫停', dot: 'bg-zinc-400', badge: 'bg-zinc-100 text-zinc-600 ring-zinc-200' },
@@ -298,7 +298,7 @@ export default function AdminProductsPage() {
     setBusy(true); setMsg(null)
     try {
       const { error } = await supabase.from('products').delete().eq('id', p.id)
-      if (error) throw new Error(error.message.includes('foreign key') ? `「${p.name}」已有訂單紀錄，為保護對帳憑證無法刪除。可改用下方「改為已暫停」。` : error.message)
+      if (error) throw new Error(error.message.includes('foreign key') ? `「${p.name}」已有訂單紀錄，為保護對帳憑證無法刪除。可改用下方「改為已下架」。` : error.message)
       await reloadProducts()
     } catch (e) { setMsg(`❌ ${e instanceof Error ? e.message : '刪除失敗'}`) } finally { setBusy(false) }
   }
@@ -306,15 +306,15 @@ export default function AdminProductsPage() {
   const doPause = async (p: Product) => {
     setBusy(true); setMsg(null)
     try {
-      const { error } = await supabase.from('products').update({ status: 'paused' }).eq('id', p.id)
+      const { error } = await supabase.from('products').update({ status: 'ended' }).eq('id', p.id)
       if (error) throw error
-      setMsg(`⏸ 已將「${p.name}」改為已暫停——前台不再顯示，訂單紀錄完整保留`)
+      setMsg(`📦 已將「${p.name}」改為已下架——前台不再顯示，訂單紀錄完整保留`)
       await reloadProducts()
     } catch (e) { setMsg(`❌ ${e instanceof Error ? e.message : '操作失敗'}`) } finally { setBusy(false) }
   }
   const toggleStatus = async (p: Product) => {
     setBusy(true)
-    await supabase.from('products').update({ status: p.status === 'active' ? 'paused' : 'active' }).eq('id', p.id)
+    await supabase.from('products').update({ status: p.status === 'active' ? 'ended' : 'active' }).eq('id', p.id)
     await reloadProducts()
     setBusy(false)
   }
@@ -507,10 +507,10 @@ export default function AdminProductsPage() {
           <div>
             <p className={`${labelCls} mb-2`}>商品狀態</p>
             <div className="grid grid-cols-3 gap-2">
-              {(['active', 'paused', 'draft'] as const).map((s) => (
+              {(['active', 'draft'] as const).map((s) => (
                 <button key={s} onClick={() => setForm({ ...form, status: s })}
                   className={`h-11 rounded-xl text-sm font-bold ring-1 ring-inset transition ${form.status === s ? STATUS_META[s].badge : 'bg-white text-ink-500 ring-ink-200 hover:bg-ink-50'}`}>
-                  {s === 'active' ? '販售中' : s === 'paused' ? '已暫停' : '草稿'}
+                  {s === 'active' ? '販售中' : '草稿'}
                 </button>
               ))}
             </div>
@@ -604,7 +604,7 @@ export default function AdminProductsPage() {
             </div>
             {/* chips */}
             <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
-              {(Object.entries({ all: '全部', active: '銷售中', draft: '草稿', paused: '已暫停', ended: '已下架' }) as [StatusFilter, string][]).map(([key, label]) => (
+              {(Object.entries({ all: '全部', active: '銷售中', draft: '草稿', ended: '已下架' }) as [StatusFilter, string][]).map(([key, label]) => (
                 <button
                   key={key}
                   onClick={() => setStatusFilter(key)}
