@@ -81,7 +81,17 @@ export default function MyFollowsPage() {
   const [emailMsg, setEmailMsg] = useState<string|null>(null)
   const [userEmail, setUserEmail] = useState<string|null>(null)
   const isFake = (e:string)=> e.includes('@phone.groupbuy.local')||e.includes('@name.groupbuy.local')||e.includes('@admin.groupbuy.local')
-  useEffect(()=>{(async()=>{ const sess = await supabase.auth.getSession(); const em=sess.data.session?.user?.email ?? null; setUserEmail(em && !isFake(em) ? em : null); if(em) setEmailInput(isFake(em) ? '' : em)})()},[])
+  const loadEmail = async()=>{
+    try{
+      const { data } = await supabase.auth.getUser()
+      const em = data.user?.email ?? (await supabase.auth.getSession()).data.session?.user?.email ?? null
+      setUserEmail(em && !isFake(em) ? em : null)
+      if(em && !isFake(em)) setEmailInput(em)
+      else if(em && isFake(em)) setEmailInput('')
+    }catch{ /* ignore */ }
+  }
+  useEffect(()=>{ loadEmail() },[userId])
+  useEffect(()=>{ const { data: sub } = supabase.auth.onAuthStateChange(()=> loadEmail()); return ()=> sub.subscription.unsubscribe() },[])
   const saveEmail = async()=>{
     setEmailMsg(null); const em=emailInput.trim().toLowerCase()
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){setEmailMsg('❌ 信箱格式不正確');return}
@@ -93,7 +103,9 @@ export default function MyFollowsPage() {
       const res=await fetch(`${fnBase}/functions/v1/admin`,{method:'POST',headers:{Authorization:`Bearer ${token}`,apikey:anonKey,'Content-Type':'application/json'},body:JSON.stringify({action:'updateOwnEmail',email:em})})
       const j=await res.json().catch(()=>null)
       if(!j?.ok) throw new Error(j?.reason==='exists'?'此信箱已被使用':j?.reason==='invalid_email'?'信箱格式不正確':'儲存失敗')
-      setEmailMsg('✅ 信箱已更新，之後上架/降價會寄到這裡'); setUserEmail(em)
+      try{ await supabase.auth.refreshSession(); }catch{ /* ignore */ }
+      await loadEmail()
+      setEmailMsg('✅ 信箱已更新，之後上架/降價會寄到這裡'); setUserEmail(em); setEmailInput(em)
     }catch(e){setEmailMsg(`❌ ${e instanceof Error?e.message:'儲存失敗'}`)}finally{setEmailBusy(false)}
   }
 
@@ -145,14 +157,13 @@ export default function MyFollowsPage() {
       {/* E-MAIL 通知信箱 — 搬來我的關注，方便一次設定 */}
       <div className="max-w-md md:max-w-3xl mx-auto px-4 pt-3">
         <div className="rounded-2xl border border-ink-100 bg-[#FFF8F0] p-4 space-y-3">
-          <p className="text-sm font-bold text-ink-800">💌 E-MAIL 通知信箱</p>
+          <p className="text-sm font-bold text-ink-800">💌 E-MAIL 通知信箱 {userEmail && <span className="text-xs font-normal text-green-600">（已設定：{userEmail}）</span>}</p>
           <p className="text-xs text-ink-500">填寫真實信箱，才能同時收到上架/降價 E-MAIL 通知</p>
           <div className="flex gap-2">
             <input type="email" placeholder="you@example.com" value={emailInput} onChange={e=>setEmailInput(e.target.value)} className="flex-1 h-10 px-4 rounded-full border border-ink-200 bg-white text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400" />
             <button onClick={saveEmail} disabled={emailBusy || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())} className="h-10 px-5 rounded-full bg-[#FF8A65] text-white text-sm font-bold disabled:opacity-40 shrink-0">儲存</button>
           </div>
           {emailMsg && <p className="text-xs text-center">{emailMsg}</p>}
-          {userEmail && !emailMsg && <p className="text-xs text-center text-green-600">目前：{userEmail}</p>}
         </div>
       </div>
 
