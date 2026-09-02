@@ -507,10 +507,10 @@ export default function AdminProductsPage() {
           <div>
             <p className={`${labelCls} mb-2`}>商品狀態</p>
             <div className="grid grid-cols-3 gap-2">
-              {(['active', 'draft'] as const).map((s) => (
+              {(['active', 'draft', 'ended'] as const).map((s) => (
                 <button key={s} onClick={() => setForm({ ...form, status: s })}
                   className={`h-11 rounded-xl text-sm font-bold ring-1 ring-inset transition ${form.status === s ? STATUS_META[s].badge : 'bg-white text-ink-500 ring-ink-200 hover:bg-ink-50'}`}>
-                  {s === 'active' ? '販售中' : '草稿'}
+                  {s === 'active' ? '販售中' : s==='ended' ? '已下架' : '草稿'}
                 </button>
               ))}
             </div>
@@ -672,10 +672,10 @@ export default function AdminProductsPage() {
                         <div className="flex items-center justify-end gap-1.5 flex-wrap">
                           {/* 主要 */}
                           <div className="inline-flex rounded-xl border border-ink-200 overflow-hidden">
-                            <button onClick={() => toggleStatus(p)} disabled={busy} className="px-3 py-1.5 bg-white text-xs font-bold text-ink-700 hover:bg-ink-50 disabled:opacity-50">
-                              {p.status === 'active' ? '暫停' : p.status === 'draft' ? '發布' : '恢復'}
+                            <button onClick={() => toggleStatus(p)} disabled={busy} className={`px-3 py-1.5 text-xs font-bold border-r border-ink-200 disabled:opacity-50 ${p.status==='active'?'bg-orange-50 text-orange-700 hover:bg-orange-100':'bg-white text-ink-700 hover:bg-ink-50'}`}>
+                              {p.status === 'active' ? '📦 下架' : p.status === 'draft' ? '▶ 發布' : p.status === 'ended' || p.status==='paused' ? '🔄 上架' : '▶ 恢復'}
                             </button>
-                            <Link to={`/admin/products?id=${p.id}`} className="px-3 py-1.5 bg-white border-l border-ink-200 text-xs font-bold text-blue-700 hover:bg-blue-50">編輯</Link>
+                            <Link to={`/admin/products?id=${p.id}`} className="px-3 py-1.5 bg-white text-xs font-bold text-blue-700 hover:bg-blue-50">編輯</Link>
                           </div>
                           {/* 次要 */}
                           <div className="inline-flex rounded-xl border border-ink-200 overflow-hidden">
@@ -734,8 +734,8 @@ export default function AdminProductsPage() {
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {/* 主要操作 */}
                   <div className="inline-flex rounded-xl overflow-hidden border border-ink-200">
-                    <button onClick={() => toggleStatus(p)} disabled={busy} className="px-3.5 py-2 bg-white text-sm font-bold text-ink-700 hover:bg-ink-50 disabled:opacity-50">
-                      {p.status === 'active' ? '⏸ 暫停' : p.status === 'draft' ? '▶ 發布' : '▶ 恢復'}
+                    <button onClick={() => toggleStatus(p)} disabled={busy} className={`px-3.5 py-2 text-sm font-bold disabled:opacity-50 ${p.status==='active'?'bg-orange-50 text-orange-700':'bg-white text-ink-700'}`}>
+                      {p.status === 'active' ? '📦 下架' : p.status === 'draft' ? '▶ 發布' : p.status === 'ended' || p.status==='paused' ? '🔄 上架' : '▶ 恢復'}
                     </button>
                     <Link to={`/admin/products?id=${p.id}`} className="px-3.5 py-2 bg-white border-l border-ink-200 text-sm font-bold text-blue-700 hover:bg-blue-50">✏️ 編輯</Link>
                   </div>
