@@ -13,11 +13,16 @@ export function isValidUUID(v: string | null | undefined): boolean {
 
 export interface UseFollowReturn {
   followed: boolean
+  notifySale: boolean
+  notify30: boolean
+  notify50: boolean
+  notify70: boolean
   notifyPriceDrop: boolean
   loading: boolean
   toggling: boolean
   toggleFollow: () => Promise<{ ok: boolean; reason?: string }>
   setNotifyPriceDrop: (v: boolean) => Promise<{ ok: boolean; reason?: string }>
+  setThresholds: (p: { sale?: boolean; t30?: boolean; t50?: boolean; t70?: boolean }) => Promise<{ ok: boolean; reason?: string }>
   refresh: () => Promise<void>
 }
 
@@ -29,6 +34,10 @@ export interface UseFollowReturn {
 export function useFollow(productId: string | null): UseFollowReturn {
   const { userId } = useAuth()
   const [followed, setFollowed] = useState(false)
+  const [notifySale, _setNotifySale] = useState(true)
+  const [notify30, _setNotify30] = useState(false)
+  const [notify50, _setNotify50] = useState(false)
+  const [notify70, _setNotify70] = useState(false)
   const [notifyPriceDrop, _setNotifyPriceDrop] = useState(false)
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState(false)
@@ -48,7 +57,7 @@ export function useFollow(productId: string | null): UseFollowReturn {
     try {
       const { data, error } = await supabase
         .from('product_follows')
-        .select('product_id, notify_price_drop')
+        .select('product_id, notify_price_drop, notify_sale, notify_30, notify_50, notify_70')
         .eq('user_id', userId)
         .eq('product_id', productId)
         .maybeSingle()
@@ -61,7 +70,12 @@ export function useFollow(productId: string | null): UseFollowReturn {
         setFollowed(false)
       } else {
         setFollowed(!!data)
-        _setNotifyPriceDrop(!!(data as { notify_price_drop?: boolean } | null)?.notify_price_drop)
+        const d = data as { notify_price_drop?: boolean; notify_sale?: boolean; notify_30?: boolean; notify_50?: boolean; notify_70?: boolean } | null
+        _setNotifyPriceDrop(!!d?.notify_price_drop)
+        _setNotifySale(d?.notify_sale ?? true)
+        _setNotify30(!!d?.notify_30)
+        _setNotify50(!!d?.notify_50)
+        _setNotify70(!!d?.notify_70)
       }
     } catch (err) {
       console.warn('[useFollow] refresh exception', err)
@@ -140,5 +154,23 @@ export function useFollow(productId: string | null): UseFollowReturn {
     return { ok: true }
   }, [productId, userId, followed, notifyPriceDrop])
 
-  return { followed, notifyPriceDrop, loading, toggling, toggleFollow, setNotifyPriceDrop, refresh }
+  const setThresholds = useCallback(async (p: { sale?: boolean; t30?: boolean; t50?: boolean; t70?: boolean }): Promise<{ ok: boolean; reason?: string }> => {
+    if (!productId || !isValidUUID(productId) || !userId) return { ok: false, reason: 'not_logged_in' }
+    if (!followed) return { ok: false, reason: 'not_followed' }
+    const patch: Record<string, boolean> = {}
+    if (p.sale !== undefined) patch.notify_sale = p.sale
+    if (p.t30 !== undefined) patch.notify_30 = p.t30
+    if (p.t50 !== undefined) patch.notify_50 = p.t50
+    if (p.t70 !== undefined) patch.notify_70 = p.t70
+    const prev = { sale: notifySale, t30: notify30, t50: notify50, t70: notify70 }
+    if (p.sale !== undefined) _setNotifySale(p.sale)
+    if (p.t30 !== undefined) _setNotify30(p.t30)
+    if (p.t50 !== undefined) _setNotify50(p.t50)
+    if (p.t70 !== undefined) _setNotify70(p.t70)
+    const { error } = await supabase.from('product_follows').update(patch).eq('user_id', userId).eq('product_id', productId)
+    if (error) { _setNotifySale(prev.sale); _setNotify30(prev.t30); _setNotify50(prev.t50); _setNotify70(prev.t70); return { ok: false, reason: 'server_error' } }
+    return { ok: true }
+  }, [productId, userId, followed, notifySale, notify30, notify50, notify70])
+
+  return { followed, notifySale, notify30, notify50, notify70, notifyPriceDrop, loading, toggling, toggleFollow, setNotifyPriceDrop, setThresholds, refresh }
 }

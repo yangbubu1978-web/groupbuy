@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
 
     // 2) 查關注者；若表有 notify_price_drop 欄位則過濾，否則全量（相容舊 schema）
     // 同時讀 price_drop_mode（once=僅30, all=三階段）
-    let follows: Array<{ user_id: string; price_drop_mode?: string }> | null = null;
+    let follows: Array<{ user_id: string; notify_30?: boolean; notify_50?: boolean; notify_70?: boolean }> | null = null;
     {
       const r1 = await admin.from("product_follows").select("user_id").eq("product_id", p.id);
       // 嘗試第二查詢：若欄位存在則過濾 notify_price_drop=true
@@ -121,24 +121,24 @@ Deno.serve(async (req) => {
       // 探測 notify_price_drop 欄位是否存在：嘗試帶該欄位查詢，失敗則忽略
       const probe = await admin
         .from("product_follows")
-        .select("user_id, notify_price_drop, price_drop_mode")
+        .select("user_id, notify_sale, notify_30, notify_50, notify_70")
         .eq("product_id", p.id)
         .limit(1);
       if (!probe.error && probe.data && probe.data.length > 0 && "notify_price_drop" in (probe.data[0] as Record<string, unknown>)) {
         const filtered = await admin
           .from("product_follows")
-          .select("user_id, price_drop_mode")
+          .select("user_id, notify_30, notify_50, notify_70")
           .eq("product_id", p.id)
           .eq("notify_price_drop", true);
-        if (!filtered.error && filtered.data) follows = filtered.data as Array<{ user_id: string; price_drop_mode?: string }> ;
+        if (!filtered.error && filtered.data) follows = filtered.data as Array<{ user_id: string; notify_30?: boolean; notify_50?: boolean; notify_70?: boolean }> ;
       }
     }
     if (!follows || follows.length === 0) continue;
 
     for (const f of follows) {
       const userId = f.user_id;
-      const mode = (f as { price_drop_mode?: string }).price_drop_mode ?? 'all';
-      const thresholdsForUser = mode === 'once' ? [30] as const : reached as readonly number[];
+      const thresholds: Record<number, boolean> = { 30: !!(f as any).notify_30, 50: !!(f as any).notify_50, 70: !!(f as any).notify_70 };
+      const thresholdsForUser = reached.filter(th => thresholds[th]);
       for (const th of thresholdsForUser) {
         const dedupKey = `${userId}:${p.id}:price_drop_${th}`;
 

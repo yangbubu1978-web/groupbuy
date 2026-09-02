@@ -11,18 +11,10 @@ function FollowCard({ product, onUnfollow }: { product: Product; onUnfollow: (id
   const isUpcoming = !!product.sale_start_at && new Date(product.sale_start_at).getTime() > Date.now()
   const remain = isUpcoming ? Math.max(0, (new Date(product.sale_start_at!).getTime() - Date.now()) / 1000) : 0
   const [tick, setTick] = useState(remain)
-  const { notifyPriceDrop, setNotifyPriceDrop } = useFollow(product.id)
-  const [priceMode, setPriceMode] = useState<'off'|'once'|'all'>(notifyPriceDrop ? 'all' : 'off')
-  useEffect(() => { setPriceMode(notifyPriceDrop ? 'all' : 'off') }, [notifyPriceDrop])
-  const handleModeChange = async (v: 'off'|'once'|'all') => {
-    setPriceMode(v)
-    if (v === 'off') await setNotifyPriceDrop(false)
-    else {
-      await setNotifyPriceDrop(true)
-      // once vs all 暫同為 true，後續可細分欄位 price_drop_mode
-      if (v === 'once') { await supabase.from('product_follows').update({ price_drop_mode: 'once' }).eq('product_id', product.id) }
-      else { await supabase.from('product_follows').update({ price_drop_mode: 'all' }).eq('product_id', product.id) }
-    }
+  const { notifySale, notify30, notify50, notify70, setThresholds } = useFollow(product.id)
+  const allChecked = notify30 && notify50 && notify70
+  const toggleAll = async (checked: boolean) => {
+    await setThresholds({ t30: checked, t50: checked, t70: checked })
   }
   useEffect(() => {
     if (!isUpcoming) return
@@ -41,19 +33,35 @@ function FollowCard({ product, onUnfollow }: { product: Product; onUnfollow: (id
           {isUpcoming ? <p className="mt-1 text-xs font-bold text-ink-600">⏳ {formatCountdown(tick)} 後開賣</p> : <p className="mt-1 text-xs text-green-600 font-bold">🔓 已開賣</p>}
         </div>
       </Link>
-      <div className="px-3 pb-3 space-y-2.5">
-        <div className="flex items-center gap-2 text-[12px]">
-          <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 border border-green-200 rounded-full px-2.5 py-1 font-bold">🔔 上架已關注</span>
-          <span className="text-ink-400 text-[11px]">開賣一定通知</span>
-          <button onClick={() => onUnfollow(product.id)} aria-label="取消關注" className="ml-auto text-[12px] text-ink-400 hover:text-red-600 font-medium px-2 py-1">✕ 取消</button>
+      <div className="px-3 pb-3 space-y-2">
+        <div className="flex items-center justify-between bg-ink-50 rounded-xl px-3 py-2">
+          <span className="text-xs font-bold text-ink-800">商品已關注</span>
+          <button onClick={() => onUnfollow(product.id)} aria-label="取消關注" className="text-xs text-ink-500 hover:text-red-600 font-medium">✕ 取消關注</button>
         </div>
-        <div className="bg-ink-50 rounded-xl px-2.5 py-2.5">
-          <p className="text-[11px] font-bold text-ink-600 mb-1.5">📉 降價通知（可與上架同時）</p>
-          <div role="group" aria-label="降價通知設定" className="grid grid-cols-3 gap-1.5">
-            <button type="button" aria-pressed={priceMode==='off'} onClick={() => handleModeChange('off')} className={`h-8 rounded-full text-xs font-bold border transition ${priceMode==='off' ? 'bg-ink-800 text-white border-ink-800' : 'bg-white text-ink-600 border-ink-200 active:bg-ink-100'}`}>不通知</button>
-            <button type="button" aria-pressed={priceMode==='once'} onClick={() => handleModeChange('once')} className={`h-8 rounded-full text-xs font-bold border transition ${priceMode==='once' ? 'bg-ink-800 text-white border-ink-800' : 'bg-white text-ink-600 border-ink-200 active:bg-ink-100'}`}>只通知30%</button>
-            <button type="button" aria-pressed={priceMode==='all'} onClick={() => handleModeChange('all')} className={`h-8 rounded-full text-xs font-bold border transition ${priceMode==='all' ? 'bg-ink-800 text-white border-ink-800' : 'bg-white text-ink-600 border-ink-200 active:bg-ink-100'}`}>30/50/70</button>
+        <div className="bg-ink-50 rounded-xl px-3 py-2.5 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex items-center gap-2 bg-white border border-ink-200 rounded-xl px-2.5 py-2 cursor-pointer active:bg-ink-50">
+              <input type="checkbox" checked={notifySale} onChange={e => setThresholds({ sale: e.target.checked })} className="w-4 h-4 rounded border-ink-300 accent-ink-900" />
+              <span className="text-xs font-bold text-ink-700">上架通知</span>
+            </label>
+            <label className="flex items-center gap-2 bg-white border border-ink-200 rounded-xl px-2.5 py-2 cursor-pointer active:bg-ink-50">
+              <input type="checkbox" checked={notify30} onChange={e => setThresholds({ t30: e.target.checked })} className="w-4 h-4 rounded border-ink-300 accent-ink-900" />
+              <span className="text-xs font-bold text-ink-700">降30%</span>
+            </label>
+            <label className="flex items-center gap-2 bg-white border border-ink-200 rounded-xl px-2.5 py-2 cursor-pointer active:bg-ink-50">
+              <input type="checkbox" checked={notify50} onChange={e => setThresholds({ t50: e.target.checked })} className="w-4 h-4 rounded border-ink-300 accent-ink-900" />
+              <span className="text-xs font-bold text-ink-700">降50%</span>
+            </label>
+            <label className="flex items-center gap-2 bg-white border border-ink-200 rounded-xl px-2.5 py-2 cursor-pointer active:bg-ink-50">
+              <input type="checkbox" checked={notify70} onChange={e => setThresholds({ t70: e.target.checked })} className="w-4 h-4 rounded border-ink-300 accent-ink-900" />
+              <span className="text-xs font-bold text-ink-700">降70%</span>
+            </label>
           </div>
+          <label className="flex items-center gap-2 bg-white border-2 border-accent-200 rounded-xl px-3 py-2 cursor-pointer active:bg-accent-50">
+            <input type="checkbox" checked={allChecked} onChange={e => toggleAll(e.target.checked)} className="w-4 h-4 rounded border-ink-300 accent-accent-600" />
+            <span className="text-xs font-bold text-accent-700">□ 全部通知（上架+30/50/70）</span>
+          </label>
+          <p className="text-[11px] text-ink-500 text-center">勾選即可同時關注多種通知</p>
         </div>
       </div>
     </div>
