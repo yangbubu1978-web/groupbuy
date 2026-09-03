@@ -84,6 +84,11 @@ export default function ProductPage() {
   const { productId } = useParams<{ productId: string }>()
   const navigate = useNavigate()
   const { userId } = useAuth()
+  const clock = useSharedClock()
+  const clockRef = useRef(clock)
+  useEffect(() => {
+    clockRef.current = clock
+  }, [clock])
   const [product, setProduct] = useState<Product | null>(null)
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [loading, setLoading] = useState(true)
@@ -149,7 +154,7 @@ export default function ProductPage() {
         .eq('user_id', userId).eq('product_id', productId).eq('status', 'active').maybeSingle()
       if (!alive || !data) return
       const exp = new Date(String((data as unknown as { expires_at: string }).expires_at)).getTime()
-      if (exp <= Date.now()) {
+      if (exp <= clockRef.current.nowMs + clockRef.current.offsetMs) {
         try { await supabase.rpc('release_reservation', { p_reservation_id: (data as unknown as { id: string }).id }) } catch {}
         return
       }
@@ -236,7 +241,7 @@ export default function ProductPage() {
     prevPrice.current = live.price
   }, [live.price])
 
-  const now = Date.now()
+  const now = clock.nowMs + clock.offsetMs
   const saleStartMs = product?.sale_start_at ? new Date(product.sale_start_at).getTime() : 0
   const notOpenYet = saleStartMs > now
   const saleRemain = notOpenYet ? Math.max(0, (saleStartMs - now) / 1000) : 0
