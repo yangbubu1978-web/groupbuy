@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useConfirm } from '../components/ConfirmDialog'
+import { useSharedClock } from '../lib/sharedClock'
 
 type Promo = {
   id: string
@@ -17,8 +18,8 @@ type Promo = {
 }
 
 /** 活動狀態：未開始／進行中／已結束 */
-function promoPhase(p: { starts_at: string; ends_at: string }): 'upcoming' | 'running' | 'ended' {
-  const now = Date.now()
+function promoPhase(p: { starts_at: string; ends_at: string }, nowMs: number): 'upcoming' | 'running' | 'ended' {
+  const now = nowMs
   if (new Date(p.starts_at).getTime() > now) return 'upcoming'
   if (new Date(p.ends_at).getTime() < now) return 'ended'
   return 'running'
@@ -43,6 +44,8 @@ function toLocalInputValue(iso: string): string {
 
 export default function AdminPromotionsPage() {
   const { isAdmin, loading: authLoading } = useAuth()
+  const clock = useSharedClock()
+  const nowMs = clock.nowMs + clock.offsetMs
   const navigate = useNavigate()
   const ask = useConfirm()
   const [promos, setPromos] = useState<Promo[]>([])
@@ -55,7 +58,7 @@ export default function AdminPromotionsPage() {
     name: '', description: '', kind: 'flash',
     icon: '', sort_order: '0',
     starts_at: toLocalInputValue(new Date().toISOString()),
-    ends_at: toLocalInputValue(new Date(Date.now() + 7 * 86400_000).toISOString()),
+    ends_at: toLocalInputValue(new Date(nowMs + 7 * 86400_000).toISOString()),
     product_ids: [] as string[],
     asDraft: true,
   }
@@ -293,7 +296,7 @@ export default function AdminPromotionsPage() {
           </div>
         )}
         {promos.map((p, i) => {
-          const phase = promoPhase(p)
+          const phase = promoPhase(p, nowMs)
           const itemCount = p.items?.length ?? 0
           return (
             <div key={p.id} className="bg-white rounded-2xl border border-ink-100 p-4 shadow-sm anim-fade-up"
