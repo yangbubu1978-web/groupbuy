@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useSharedClock } from '../lib/sharedClock'
 import FollowButton from './FollowButton'
 import type { Product } from '../lib/types'
 import { fmtMoney } from '../lib/types'
@@ -42,19 +42,12 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
   const primaryPromo = promos[0] ?? null
   const extraCount = Math.max(0, promos.length - 1)
   const live = useLivePrice(product)
+  const clock = useSharedClock()
   const original = Number(product.original_price)
   const isUpcoming = upcoming === true
-  const [saleRemain, setSaleRemain] = useState(isUpcoming && product.sale_start_at
-    ? Math.max(0, (new Date(product.sale_start_at).getTime() - Date.now()) / 1000)
-    : 0)
-  useEffect(() => {
-    if (!isUpcoming || !product.sale_start_at) return
-    const id = setInterval(
-      () => setSaleRemain(Math.max(0, (new Date(product.sale_start_at!).getTime() - Date.now()) / 1000)),
-      1000,
-    )
-    return () => clearInterval(id)
-  }, [isUpcoming, product.sale_start_at])
+  const saleRemain = isUpcoming && product.sale_start_at
+    ? Math.max(0, (new Date(product.sale_start_at).getTime() - (clock.nowMs + clock.offsetMs)) / 1000)
+    : 0
 
   if (isUpcoming) {
     return (
