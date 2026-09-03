@@ -88,7 +88,10 @@ export default function MyFollowsPage() {
       else if(em && isFake(em)) setEmailInput('')
     }catch{ /* ignore */ }
   }
-  useEffect(()=>{ loadEmail() },[userId])
+  useEffect(()=>{
+    // eslint-disable-next-line react/set-state-in-effect -- 外部信箱資料同步，需等伺服器回應後才能更新
+    void loadEmail()
+  },[userId])
   useEffect(()=>{ const { data: sub } = supabase.auth.onAuthStateChange(()=> loadEmail()); return ()=> sub.subscription.unsubscribe() },[])
   const saveEmail = async()=>{
     setEmailMsg(null); const em=emailInput.trim().toLowerCase()
@@ -132,7 +135,10 @@ export default function MyFollowsPage() {
     setProducts((prods as Product[]) ?? [])
     setLoading(false)
   }, [userId])
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect -- 外部關注清單同步，需等伺服器回應後才能更新
+    void load()
+  }, [load])
 
   const unfollow = async (productId: string) => {
     if (!userId) return
