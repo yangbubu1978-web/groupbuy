@@ -5,6 +5,7 @@ import type { Product } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
 import BannerCarousel from '../components/BannerCarousel'
 import ProductShowcaseCard, { type PromoTag } from '../components/ProductShowcaseCard'
+import { useSharedClock } from '../lib/sharedClock'
 
 /** 載入中的骨架屏 */
 function CardSkeleton() {
@@ -66,6 +67,11 @@ export default function CampaignListPage() {
   const [noticeOpen, setNoticeOpen] = useState(false)
   const productsRef = useRef<Product[]>([])
   const refreshInFlightRef = useRef(false)
+  const clock = useSharedClock()
+  const clockRef = useRef(clock)
+  useEffect(() => {
+    clockRef.current = clock
+  }, [clock])
 
   // 直接載入所有可販售商品（不再分活動層級）
   useEffect(() => {
@@ -88,7 +94,8 @@ export default function CampaignListPage() {
         .order('created_at', { ascending: false })
 
       // 全部 active 商品都陳列；進行中促銷商品 →「限時促銷」專區，其餘 → 一般區
-      const nowIso2 = Date.now()
+      // 使用共用伺服器校準時間，避免各裝置手機時間不一致。
+      const nowIso2 = clockRef.current.nowMs + clockRef.current.offsetMs
       // 已完售（庫存歸零）直接隱藏，不展示「已完售」卡片
       const all = ((data ?? []) as Product[]).filter(
         (p) => p.stock > 0 && (!p.forced_delist_at || new Date(p.forced_delist_at).getTime() > nowIso2),
@@ -110,7 +117,7 @@ export default function CampaignListPage() {
       for (const k of Object.keys(promoInfoMap)) {
         promoInfoMap[k].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
       }
-      const nowMs = Date.now()
+      const nowMs = clockRef.current.nowMs + clockRef.current.offsetMs
       const isUpcoming = (p: Product) => !!p.sale_start_at && new Date(p.sale_start_at).getTime() > nowMs
       // 各商品追蹤人數（RPC：product_follower_counts）
       const { data: fc } = await supabase.rpc('product_follower_counts')
@@ -142,7 +149,7 @@ export default function CampaignListPage() {
         // 若此商品剛開賣（sale_start_at 變成已過）且用戶有關注，發本地通知
         try {
           const saleAt = n.sale_start_at ? new Date(n.sale_start_at).getTime() : 0
-          if (saleAt && saleAt <= Date.now()) {
+          if (saleAt && saleAt <= clockRef.current.nowMs + clockRef.current.offsetMs) {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) return
             const { data: f } = await supabase.from('product_follows').select('product_id').eq('user_id', user.id).eq('product_id', n.id).maybeSingle()
@@ -177,7 +184,7 @@ export default function CampaignListPage() {
             .eq('status', 'active'),
         ])
         if (!data) return
-        const nowMs = Date.now()
+        const nowMs = clockRef.current.nowMs + clockRef.current.offsetMs
         const fresh = data as { id: string; status: string; stock: number; forced_delist_at: string | null; sale_start_at: string | null }[]
         const aliveIds = new Set(fresh.filter((x) => x.status === 'active' && x.stock > 0 && (!x.forced_delist_at || new Date(x.forced_delist_at).getTime() > nowMs)).map((x) => x.id))
         const livePromoIds = new Set<string>()
@@ -208,8 +215,8 @@ export default function CampaignListPage() {
     return () => clearInterval(id)
   }, [])
 
-  // 問候語：依時段變化
-  const hour = new Date().getHours()
+  // 問候語：依時段變化（使用共用時鐘）
+  const hour = new Date(clock.nowMs + clock.offsetMs).getHours()
   const greeting =
     hour < 11 ? '早安' : hour < 14 ? '午安' : hour < 22 ? '晚安' : '夜深了'
 
