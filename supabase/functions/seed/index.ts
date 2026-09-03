@@ -19,13 +19,42 @@ const DEMO_USERS = [
   { phone: '0912000003', name: '陳大同', password: 'demo1234' },
 ]
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
   try {
     const admin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { autoRefreshToken: false, persistSession: false } },
     )
+
+    // 只有管理員能呼叫：驗 JWT 身份再查 admins 表（之前零驗證，任何人可建帳號）
+    const authHeader = req.headers.get('Authorization') ?? ''
+    const userClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } },
+    )
+    const { data: userData, error: userErr } = await userClient.auth.getUser()
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ ok: false, reason: 'unauthenticated' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const { data: isAdminRow } = await admin
+      .from('admins')
+      .select('user_id')
+      .eq('user_id', userData.user.id)
+      .maybeSingle()
+    if (!isAdminRow) {
+      return new Response(JSON.stringify({ ok: false, reason: 'forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     const results: Array<Record<string, unknown>> = []
     for (const u of DEMO_USERS) {
