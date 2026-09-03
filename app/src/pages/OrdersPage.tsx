@@ -60,6 +60,7 @@ export default function OrdersPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect -- 外部訂單資料同步，需等伺服器回應後才能更新
     void reloadOrders()
   }, [reloadOrders])
 
