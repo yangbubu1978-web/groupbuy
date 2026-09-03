@@ -37,17 +37,24 @@ Deno.serve(async (req) => {
       return json({ ok: false, reason: 'bad_request' }, 400)
     }
 
-    // 核心搶購：資料庫函式內完成「驗證→計價→扣庫存→建庫存→建單」單一交易
-    const { data, error } = await supabase.rpc('purchase_product', {
+    // 唯一交易路徑：先建立 60 秒鎖價，再以同一 Reservation 結帳。
+    const { data: reservation, error: reserveError } = await supabase.rpc('reserve_product', {
       p_product_id: productId,
       p_quantity: quantity,
     })
-    if (error) {
+    if (reserveError) {
       return json({ ok: false, reason: 'server_error' }, 500)
     }
-    // FOMO：檔次已超時自動結束（DB 端判定）
-    if (data && !data.ok && data.reason === 'offer_ended') {
-      return json({ ok: false, reason: 'offer_ended' }, 410)
+    if (!reservation?.ok) {
+      return json(reservation, reservation?.reason === 'offer_ended' ? 410 : 409)
+    }
+
+    const { data, error } = await supabase.rpc('checkout_reservation', {
+      p_reservation_id: reservation.reservation_id,
+    })
+    if (error) {
+      // 不在 Edge Function 內自行補庫存；DB transaction / cleanup 負責一致性。
+      return json({ ok: false, reason: 'server_error' }, 500)
     }
     return json(data, data?.ok ? 200 : 409)
   } catch (_e) {
