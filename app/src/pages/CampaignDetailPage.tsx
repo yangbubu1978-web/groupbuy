@@ -7,38 +7,9 @@ import { formatCountdown } from '../lib/pricing'
 import { useLivePrice } from '../lib/useLivePrice'
 
 /** 活動內的商品卡片（各自訂閱即時價格＋關注數） */
-function ProductCard({ product }: { product: Product }) {
+function ProductCard({ product, followers = 0 }: { product: Product; followers?: number }) {
   const live = useLivePrice(product)
   const paused = product.status !== 'active'
-  const [followers, setFollowers] = useState(0)
-
-  // 載入關注數並即時訂閱
-  useEffect(() => {
-    let alive = true
-    supabase
-      .rpc('product_follower_count', { p_product_id: product.id })
-      .then(({ data }) => {
-        if (alive && data !== null) setFollowers(Number(data))
-      })
-    const channel = supabase
-      .channel(`card-follows-${product.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'product_follows', filter: `product_id=eq.${product.id}` },
-        () => {
-          supabase
-            .rpc('product_follower_count', { p_product_id: product.id })
-            .then(({ data }) => {
-              if (alive && data !== null) setFollowers(Number(data))
-            })
-        },
-      )
-      .subscribe()
-    return () => {
-      alive = false
-      supabase.removeChannel(channel)
-    }
-  }, [product.id])
 
   return (
     <Link
@@ -112,6 +83,7 @@ export default function CampaignDetailPage() {
   const navigate = useNavigate()
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [products, setProducts] = useState<Product[]>([])
+  const [followMap, setFollowMap] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -130,7 +102,18 @@ export default function CampaignDetailPage() {
           .select('*')
           .eq('campaign_id', campaignId ?? '')
           .order('created_at', { ascending: true })
-        if (alive && ps) setProducts((ps as Product[]).filter((p: Product) => p.stock > 0))
+        if (alive && ps) {
+          const list = (ps as Product[]).filter((p: Product) => p.stock > 0)
+          setProducts(list)
+          const { data: counts } = await supabase.rpc('product_follower_counts')
+          if (alive) {
+            const map: Record<string, number> = {}
+            for (const row of (counts ?? []) as { product_id: string; follower_count: number }[]) {
+              map[row.product_id] = Number(row.follower_count)
+            }
+            setFollowMap(map)
+          }
+        }
       }
       if (alive) setLoading(false)
     })()
@@ -226,7 +209,7 @@ export default function CampaignDetailPage() {
 
         {/* 商品列表 */}
         <section className="space-y-4">
-          {products.map((p) => <ProductCard key={p.id} product={p} />)}
+          {products.map((p) => <ProductCard key={p.id} product={p} followers={followMap[p.id] ?? 0} />)}
           {products.length === 0 && (
             <p className="text-center text-sm text-ink-400 py-12">
               此活動尚無商品
