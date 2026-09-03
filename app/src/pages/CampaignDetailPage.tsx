@@ -5,6 +5,7 @@ import type { Campaign, Product } from '../lib/types'
 import { fmtMoney } from '../lib/types'
 import { formatCountdown } from '../lib/pricing'
 import { useLivePrice } from '../lib/useLivePrice'
+import { useSharedClock } from '../lib/sharedClock'
 
 /** 活動內的商品卡片（各自訂閱即時價格＋關注數） */
 function ProductCard({ product, followers = 0 }: { product: Product; followers?: number }) {
@@ -121,12 +122,9 @@ export default function CampaignDetailPage() {
   }, [campaignId])
 
   // Hooks 必須在所有條件式 return 之前呼叫，避免載入完成後順序改變。
-  const [nowMs, setNowMs] = useState(Date.now())
-  useEffect(() => {
-    if (campaign?.status !== 'active') return
-    const id = setInterval(() => setNowMs(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [campaign?.status])
+  // 活動倒數使用共用時鐘，不再自己每秒數秒。
+  const clock = useSharedClock()
+  const nowMs = clock.nowMs + clock.offsetMs
 
   if (loading) {
     return (
