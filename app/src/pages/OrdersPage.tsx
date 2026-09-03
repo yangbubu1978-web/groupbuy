@@ -34,8 +34,8 @@ function PendingCountdown({ purchasedAt, onExpire }: { purchasedAt: string; onEx
         ? 'bg-red-50 text-red-700 border-red-200 animate-pulse'
         : 'bg-accent-50 text-accent-700 border-accent-200'}`}
       role="timer"
-      aria-label={`訂單確認剩餘 ${left} 秒`}>
-      <span>⏳ 請在 {left} 秒內確認訂單</span>
+      aria-label={`下單確認剩餘 ${left} 秒，逾時自動取消`}>
+      <span>⏳ 下單確認：{left} 秒內按「確認訂單」，逾時自動取消</span>
       <span className="text-base tabular-nums">{left}s</span>
     </div>
   )

@@ -203,13 +203,13 @@ export default function CartPage() {
     }
   }, [])
 
-  // 手動取消
+  // 手動取消（按之前就講清楚：單件棄單有 3 分鐘冷卻、下次降價會延後）
   const cancelItem = async (rid: string) => {
     setBusyId(rid)
     try {
       await supabase.rpc('release_reservation', { p_reservation_id: rid })
       setItems((prev) => prev.filter((x) => x.id !== rid))
-      setNotice('✅ 已取消，庫存已釋回')
+      setNotice('✅ 已取消，庫存已釋回。提醒：單件商品棄單有 3 分鐘冷卻，下次降價會延後。')
     } finally {
       setBusyId(null)
     }
@@ -428,8 +428,9 @@ export default function CartPage() {
                       <button
                         onClick={() => cancelItem(item.id)}
                         disabled={busyId === item.id}
+                        title="取消後庫存釋回，單件商品棄單有 3 分鐘冷卻、下次降價會延後"
                         className="h-14 px-6 rounded-full border-2 border-ink-200 bg-white text-ink-700 text-[15px] font-extrabold hover:bg-red-50 hover:text-red-600 hover:border-red-200 active:scale-[0.97] transition disabled:opacity-50"
-                        aria-label={`取消 ${item.products?.name ?? '商品'}`}
+                        aria-label={`取消 ${item.products?.name ?? '商品'}（單件棄單有3分鐘冷卻）`}
                       >
                         取消
                       </button>

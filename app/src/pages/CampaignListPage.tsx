@@ -64,6 +64,8 @@ export default function CampaignListPage() {
   const [promoInfo, setPromoInfo] = useState<Record<string, PromoTag[]>>({})
   const [followMap, setFollowMap] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
+  // 剛完售提示：輪詢時有人買走，顯示一句，不要靜默消失讓客人以為眼花
+  const [soldOutNotice, setSoldOutNotice] = useState<string | null>(null)
   // 購買注意事項：第一次來自動展開，看過關掉後就記住不再打擾
   const [noticeOpen, setNoticeOpen] = useState(() => {
     try { return localStorage.getItem('gb_notice_closed') !== '1' } catch { return true }
@@ -201,6 +203,12 @@ export default function CampaignListPage() {
           for (const item of promo.promotion_items ?? []) livePromoIds.add(item.product_id)
         }
         const freshMap = new Map(fresh.map((p) => [p.id, p]))
+        // 剛完售偵測：上一輪還在、這一輪沒了，就是被人買走或下架
+        const removed = productsRef.current.filter((p) => !aliveIds.has(p.id))
+        if (removed.length > 0) {
+          const first = removed[0].name ?? '商品'
+          setSoldOutNotice(removed.length === 1 ? `「${first}」剛被買走了，下手要快` : `「${first}」等 ${removed.length} 件商品剛被買走，下手要快`)
+        }
         const update = (prev: Product[]): Product[] => prev
           .filter((p) => aliveIds.has(p.id))
           .map((p) => ({ ...p, ...(freshMap.get(p.id) ?? {}) } as Product))
@@ -324,6 +332,11 @@ export default function CampaignListPage() {
         )}
         {!loading && (promoProducts.length + regularProducts.length + upcomingProducts.length) > 0 && (
           <>
+            {soldOutNotice && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] font-bold text-amber-800 anim-fade-up" role="status" aria-live="polite">
+                🔥 {soldOutNotice}
+              </div>
+            )}
             {/* 限時促銷專區（置頂，突顯促銷商品） */}
             {promoProducts.length > 0 && (
               <section className="space-y-4">
