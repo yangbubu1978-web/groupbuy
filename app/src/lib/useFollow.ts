@@ -86,7 +86,8 @@ export function useFollow(productId: string | null): UseFollowReturn {
   }, [productId, userId])
 
   useEffect(() => {
-    refresh()
+    // eslint-disable-next-line react/set-state-in-effect -- 外部關注資料同步，需等伺服器回應後才能更新
+    void refresh()
   }, [refresh])
 
   const toggleFollow = useCallback(async (): Promise<{ ok: boolean; reason?: string }> => {
