@@ -697,8 +697,11 @@ export default function ProductPage() {
                         : `🛒 放入購物車｜鎖定價 ${fmtMoney(displayPrice)} × ${quantity}`}
             </button>
           )}
-          {saleOpen && live.stock > 0 && !atFloor && buyState.kind !== 'cart' && (
-            <p className="mt-2.5 text-center text-[13px] text-ink-500">再等等還會降，但庫存有限、不保證有貨</p>
+          {saleOpen && live.stock > 0 && buyState.kind !== 'cart' && (
+            <div className="mt-2.5 text-center text-[13px] text-ink-500 space-y-1">
+              {!atFloor && <p>再等等還會降，但庫存有限、不保證有貨</p>}
+              <p>放入購物車鎖價 60 秒，結帳即成立訂單、無法自行取消</p>
+            </div>
           )}
         </div>
       </div>

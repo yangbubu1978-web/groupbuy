@@ -64,7 +64,16 @@ export default function CampaignListPage() {
   const [promoInfo, setPromoInfo] = useState<Record<string, PromoTag[]>>({})
   const [followMap, setFollowMap] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
-  const [noticeOpen, setNoticeOpen] = useState(false)
+  // 購買注意事項：第一次來自動展開，看過關掉後就記住不再打擾
+  const [noticeOpen, setNoticeOpen] = useState(() => {
+    try { return localStorage.getItem('gb_notice_closed') !== '1' } catch { return true }
+  })
+  const toggleNotice = () => {
+    setNoticeOpen((v) => {
+      try { localStorage.setItem('gb_notice_closed', v ? '1' : '0') } catch { /* ignore */ }
+      return !v
+    })
+  }
   const productsRef = useRef<Product[]>([])
   const refreshInFlightRef = useRef(false)
   const clock = useSharedClock()
@@ -282,7 +291,7 @@ export default function CampaignListPage() {
 
         {/* 下單規則說明 — 摺疊式（省 70% 高度，點開看 6 點） */}
         <section className="bg-white rounded-[16px] border border-ink-200 shadow-sm anim-fade-up overflow-hidden">
-          <button type="button" onClick={() => setNoticeOpen(v => !v)} aria-expanded={noticeOpen} className="w-full flex items-center gap-2.5 px-4 py-3 text-left cursor-pointer hover:bg-ink-50/60 transition">
+          <button type="button" onClick={toggleNotice} aria-expanded={noticeOpen} className="w-full flex items-center gap-2.5 px-4 py-3 text-left cursor-pointer hover:bg-ink-50/60 transition">
             <span className="shrink-0 w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-[13px]" aria-hidden="true">⚠️</span>
             <span className="flex-1 text-[14px] font-extrabold tracking-tight text-ink-900">購買注意事項｜下單前請留意</span>
             <span className={`shrink-0 text-ink-400 text-xs transition-transform ${noticeOpen ? 'rotate-90' : ''}`} aria-hidden="true">▸</span>

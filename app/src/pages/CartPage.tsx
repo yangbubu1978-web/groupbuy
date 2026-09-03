@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { fmtMoney } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
@@ -160,6 +160,7 @@ function CountdownBar({ expiresAt, onExpire }: { expiresAt: string; onExpire: (i
 /** 購物車頁：每件商品獨立 1 分鐘倒數，逾時自動取消釋回庫存 */
 export default function CartPage() {
   const { userId } = useAuth()
+  const navigate = useNavigate()
   const clock = useSharedClock()
   const [items, setItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -221,6 +222,14 @@ export default function CartPage() {
     try {
       const result = await checkoutWithRetry(rid)
       const res = result.data ?? {}
+      const terr = result.error as { status?: number; code?: string; message?: string } | null
+      const tmsg = terr ? `${terr.code ?? ''} ${terr.message ?? ''}` : ''
+      if ((terr && (terr.status === 401 || /jwt|expired|unauthorized|PGRST301/i.test(tmsg))) || res.reason === 'unauthenticated') {
+        // 登入掉了：帶回登入頁，登回來再結帳
+        setNotice(null)
+        navigate('/login', { replace: true })
+        return
+      }
       if (result.error || !res.ok) {
         setNotice(res.reason === 'reservation_expired' || res.reason === 'reservation_inactive'
           ? '⌛ 此商品保留時間已過，請重新放入購物車'
