@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { fmtMoney } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
+import { checkoutWithRetry } from '../lib/checkout'
 
 /** 購物車項目（cart_reservations + products embed） */
 interface CartItem {
@@ -211,21 +212,23 @@ export default function CartPage() {
     }
   }
 
-  // 結帳（鎖定價開單）
+  // 結帳（鎖定價開單；網路異常時安全重試一次）
   const checkoutItem = async (rid: string) => {
     setBusyId(rid)
+    setNotice('正在確認訂單，請不要重複按下…')
     try {
-      const { data, error } = await supabase.rpc('checkout_reservation', { p_reservation_id: rid })
-      const res = (data ?? {}) as { ok?: boolean; order_no?: string; reason?: string }
-      if (error || !res.ok) {
+      const result = await checkoutWithRetry(rid)
+      const res = result.data ?? {}
+      if (result.error || !res.ok) {
         setNotice(res.reason === 'reservation_expired' || res.reason === 'reservation_inactive'
           ? '⌛ 此商品保留時間已過，請重新放入購物車'
-          : '⚠️ 結帳失敗，請稍後再試')
+          : '⚠️ 目前無法確認結帳結果，請稍後到「我的訂單」查看，先不要重複購買')
         await load()
         return
       }
       setItems((prev) => prev.filter((x) => x.id !== rid))
-      if (res.order_no) setDoneOrders((prev) => [...prev, res.order_no!])
+      if (res.order_no) setDoneOrders((prev) => prev.includes(res.order_no!) ? prev : [...prev, res.order_no!])
+      setNotice(null)
     } finally {
       setBusyId(null)
     }

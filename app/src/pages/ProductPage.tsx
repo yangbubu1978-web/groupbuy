@@ -8,6 +8,7 @@ import { useLivePrice } from '../lib/useLivePrice'
 import type { PromoTag } from '../components/ProductShowcaseCard'
 import { useAuth } from '../context/AuthContext'
 import FollowButton from '../components/FollowButton'
+import { checkoutWithRetry } from '../lib/checkout'
 
 type BuyState =
   | { kind: 'idle' }
@@ -91,6 +92,7 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [buyState, setBuyState] = useState<BuyState>({ kind: 'idle' })
+  const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null)
   const [priceFlash, setPriceFlash] = useState(false)
   const [activePromos, setActivePromos] = useState<PromoTag[]>([])
 
@@ -294,15 +296,24 @@ export default function ProductPage() {
 
   const checkoutCart = async () => {
     if (buyState.kind !== 'cart') return
+    const reservation = buyState
+    setBuyState({ kind: 'buying' })
+    setCheckoutNotice('正在確認訂單，請不要關閉頁面或重複按下。')
     try {
-      const res = await rpc('checkout_reservation', { p_reservation_id: buyState.reservationId })
-      if (res.ok) {
-        setBuyState({ kind: 'success', orderNo: String(res.order_no), unitPrice: Number(res.unit_price), quantity: Number(res.quantity) })
-      } else {
-        setBuyState({ kind: 'error', message: REASON_TEXT[res.reason ?? ''] ?? '結帳失敗，請重新嘗試。' })
+      const result = await checkoutWithRetry(reservation.reservationId)
+      const res = result.data ?? {}
+      if (result.error || !res.ok) {
+        setBuyState({ kind: 'error', message: res.reason === 'reservation_expired' || res.reason === 'reservation_inactive'
+          ? REASON_TEXT.reservation_expired
+          : '目前無法確認結帳結果，請到「我的訂單」查看，先不要重複購買。' })
+        setCheckoutNotice(null)
+        return
       }
+      setCheckoutNotice(null)
+      setBuyState({ kind: 'success', orderNo: String(res.order_no), unitPrice: Number(res.unit_price), quantity: Number(res.quantity) })
     } catch {
-      setBuyState({ kind: 'error', message: '網路異常，請確認連線後再試。' })
+      setCheckoutNotice(null)
+      setBuyState({ kind: 'error', message: '目前無法確認結帳結果，請到「我的訂單」查看，先不要重複購買。' })
     }
   }
 
@@ -596,6 +607,11 @@ export default function ProductPage() {
       {/* ─── 底部 Sticky CTA — 懸浮卡片（shadcn + 漸層按鈕） ─── */}
       <div className="fixed bottom-0 inset-x-0 z-20">
         <div className="max-w-md md:max-w-3xl mx-auto bg-white/95 backdrop-blur-xl border-t border-ink-100 shadow-[0_-8px_32px_rgba(0,0,0,0.08)] rounded-t-[20px] md:rounded-t-[24px] px-4 pt-4 pb-4 md:pb-5 pb-safe">
+          {checkoutNotice && (
+            <div className="mb-3 rounded-2xl border-2 border-blue-200 bg-blue-50 px-4 py-3 text-center text-[14px] font-bold text-blue-800" role="status" aria-live="polite">
+              ⏳ {checkoutNotice}
+            </div>
+          )}
           {buyState.kind === 'cart' && (
             <>
               <CartCountdown
@@ -692,11 +708,16 @@ export default function ProductPage() {
             {buyState.kind === 'error' && (
               <>
                 <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-2xl">⚠️</div>
-                <h2 className="text-[16px] font-extrabold text-ink-900">無法完成購買</h2>
+                <h2 className="text-[16px] font-extrabold text-ink-900">需要確認訂單狀態</h2>
                 <p className="mt-2 text-[15px] text-ink-500 leading-relaxed">{buyState.message}</p>
-                <button onClick={() => setBuyState({ kind: 'idle' })} className="mt-6 w-full h-12 rounded-full bg-ink-900 hover:bg-ink-800 text-white text-[15px] font-bold active:scale-[0.97] transition">
-                  我知道了
-                </button>
+                <div className="mt-6 grid grid-cols-2 gap-2.5">
+                  <button onClick={() => navigate('/orders')} className="h-12 rounded-full bg-ink-900 hover:bg-ink-800 text-white text-[15px] font-bold active:scale-[0.97] transition">
+                    查看訂單
+                  </button>
+                  <button onClick={() => setBuyState({ kind: 'idle' })} className="h-12 rounded-full bg-white border border-ink-200 text-[15px] font-semibold text-ink-700 hover:bg-ink-50 active:scale-[0.97] transition">
+                    我知道了
+                  </button>
+                </div>
               </>
             )}
           </div>
