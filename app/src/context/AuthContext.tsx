@@ -131,6 +131,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
+    // 登出前先釋放此帳號的保留單，避免庫存被卡到過期別人才買得到
+    try {
+      const { data: sess } = await supabase.auth.getSession()
+      const uid = sess.session?.user?.id ?? userId
+      if (uid) {
+        const { data: actives } = await supabase
+          .from('cart_reservations')
+          .select('id')
+          .eq('user_id', uid)
+          .eq('status', 'active')
+        for (const r of (actives ?? []) as { id: string }[]) {
+          try { await supabase.rpc('release_reservation', { p_reservation_id: r.id }) } catch { /* 單筆失敗不擋登出 */ }
+        }
+      }
+    } catch { /* 釋放失敗不擋登出 */ }
     await supabase.auth.signOut()
     setUserId(null)
     setCustomer(null)
