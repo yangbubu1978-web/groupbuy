@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { useFollow } from '../lib/useFollow'
+import { useSharedClock } from '../lib/sharedClock'
 import { registerPushSubscription } from '../lib/pushClient'
 // 假信箱判斷：@phone/@name/@admin.groupbuy.local 皆為系統佔位
 import type { Product } from '../lib/types'
@@ -10,19 +11,16 @@ import { fmtMoney } from '../lib/types'
 import { formatCountdown } from '../lib/pricing'
 
 function FollowCard({ product, onUnfollow }: { product: Product; onUnfollow: (id: string) => void }) {
-  const isUpcoming = !!product.sale_start_at && new Date(product.sale_start_at).getTime() > Date.now()
-  const remain = isUpcoming ? Math.max(0, (new Date(product.sale_start_at!).getTime() - Date.now()) / 1000) : 0
-  const [tick, setTick] = useState(remain)
+  const clock = useSharedClock()
+  const nowMs = clock.nowMs + clock.offsetMs
+  const saleStartMs = product.sale_start_at ? new Date(product.sale_start_at).getTime() : 0
+  const isUpcoming = saleStartMs > nowMs
+  const tick = isUpcoming ? Math.max(0, (saleStartMs - nowMs) / 1000) : 0
   const { notifySale, notify30, notify50, notify70, setThresholds } = useFollow(product.id)
   const allChecked = notify30 && notify50 && notify70
   const toggleAll = async (checked: boolean) => {
     await setThresholds({ t30: checked, t50: checked, t70: checked })
   }
-  useEffect(() => {
-    if (!isUpcoming) return
-    const id = setInterval(() => setTick(Math.max(0, (new Date(product.sale_start_at!).getTime() - Date.now()) / 1000)), 1000)
-    return () => clearInterval(id)
-  }, [isUpcoming, product.sale_start_at])
   return (
     <div className="bg-white rounded-2xl border border-ink-100 overflow-hidden">
       <Link to={`/product/${product.id}`} className="flex gap-3 p-3">
