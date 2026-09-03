@@ -364,7 +364,7 @@ export default function CartPage() {
                     <div className="flex gap-4">
                       <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-ink-50 border border-ink-100 overflow-hidden shrink-0 flex items-center justify-center">
                         {item.products?.image_url ? (
-                          <img src={item.products.image_url} alt={item.products.name} className="w-full h-full object-cover" />
+                          <img src={item.products.image_url} alt={item.products.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-3xl opacity-30" aria-hidden>🎁</span>
                         )}

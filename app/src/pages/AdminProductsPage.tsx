@@ -650,7 +650,7 @@ export default function AdminProductsPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3 min-w-0">
                           {p.image_url ? (
-                            <img src={p.image_url} alt="" className="h-11 w-11 rounded-xl object-cover border border-ink-100 shrink-0" />
+                            <img src={p.image_url} alt="" loading="lazy" decoding="async" className="h-11 w-11 rounded-xl object-cover border border-ink-100 shrink-0" />
                           ) : (
                             <div className="h-11 w-11 rounded-xl bg-ink-100 border border-ink-200 shrink-0 grid place-items-center text-ink-400">—</div>
                           )}
@@ -711,7 +711,7 @@ export default function AdminProductsPage() {
               <div key={p.id} className="bg-white rounded-2xl border border-ink-200 p-4 shadow-sm hover:shadow-md hover:border-ink-300 transition">
                 <div className="flex items-start gap-3">
                   {p.image_url ? (
-                    <img src={p.image_url} alt="" className="h-14 w-14 rounded-xl object-cover border border-ink-100 shrink-0" />
+                    <img src={p.image_url} alt="" loading="lazy" decoding="async" className="h-14 w-14 rounded-xl object-cover border border-ink-100 shrink-0" />
                   ) : (
                     <div className="h-14 w-14 rounded-xl bg-ink-100 border border-ink-200 shrink-0 grid place-items-center text-ink-400 text-xs">無圖</div>
                   )}

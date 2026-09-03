@@ -37,7 +37,7 @@ export default function BannerCarousel() {
   const b = banners[Math.min(idx, banners.length - 1)]
   const inner = (
     <div className="relative overflow-hidden rounded-2xl border border-ink-100 shadow-sm anim-fade-up">
-      <img src={b.image_url} alt={b.title ?? 'banner'} className="w-full aspect-square object-cover" />
+      <img src={b.image_url} alt={b.title ?? 'banner'} decoding="async" fetchPriority="high" className="w-full aspect-square object-cover" />
       {b.title && (
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent
                         px-4 pt-6 pb-3">

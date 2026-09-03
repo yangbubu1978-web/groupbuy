@@ -25,7 +25,7 @@ function FollowCard({ product, onUnfollow }: { product: Product; onUnfollow: (id
     <div className="bg-white rounded-2xl border border-ink-100 overflow-hidden">
       <Link to={`/product/${product.id}`} className="flex gap-3 p-3">
         <div className="w-20 h-20 rounded-xl bg-ink-100 overflow-hidden shrink-0 flex items-center justify-center">
-          {product.image_url ? <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" /> : <span className="text-2xl opacity-20">🎁</span>}
+          {product.image_url ? <img src={product.image_url} alt={product.name} loading="lazy" decoding="async" className="w-full h-full object-cover" /> : <span className="text-2xl opacity-20">🎁</span>}
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-ink-900 line-clamp-2 leading-snug">{product.name}</h3>

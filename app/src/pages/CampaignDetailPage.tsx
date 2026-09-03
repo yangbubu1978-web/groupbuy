@@ -21,7 +21,7 @@ function ProductCard({ product, followers = 0 }: { product: Product; followers?:
       {/* 圖片 */}
       <div className="aspect-square bg-ink-100 flex items-center justify-center overflow-hidden relative">
         {product.image_url ? (
-          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+          <img src={product.image_url} alt={product.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
         ) : (
           <span className="text-4xl opacity-20">🎁</span>
         )}
