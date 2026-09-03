@@ -261,7 +261,15 @@ export default function ProductPage() {
 
   const rpc = async (fn: string, args: Record<string, unknown>) => {
     const { data, error } = await supabase.rpc(fn, args)
-    if (error) return { ok: false, reason: 'server_error' }
+    if (error) {
+      // 登入過期：不要吞成泛錯，交給呼叫端帶去登入頁
+      const e = error as { status?: number; code?: string; message?: string }
+      const msg = `${e.code ?? ''} ${e.message ?? ''}`
+      if (e.status === 401 || /jwt|expired|unauthorized|PGRST301/i.test(msg)) {
+        return { ok: false, reason: 'session_expired' }
+      }
+      return { ok: false, reason: 'server_error' }
+    }
     return data as { ok: boolean; reason?: string; [k: string]: unknown }
   }
 
@@ -279,6 +287,10 @@ export default function ProductPage() {
           quantity: Number(res.quantity ?? quantity),
           expiresAt: new Date(String(res.expires_at)).getTime(),
         })
+      } else if (res.reason === 'session_expired') {
+        // 登入掉了：帶回登入頁，登回來再買，不要讓客人對著錯誤發呆
+        setBuyState({ kind: 'idle' })
+        navigate('/login', { replace: true })
       } else if (res.reason === 'sold_out') {
         setBuyState({ kind: 'soldout' })
       } else if (res.reason === 'already_reserved') {
@@ -312,6 +324,14 @@ export default function ProductPage() {
     try {
       const result = await checkoutWithRetry(reservation.reservationId)
       const res = result.data ?? {}
+      const terr = result.error as { status?: number; code?: string; message?: string } | null
+      const tmsg = terr ? `${terr.code ?? ''} ${terr.message ?? ''}` : ''
+      if ((terr && (terr.status === 401 || /jwt|expired|unauthorized|PGRST301/i.test(tmsg))) || res.reason === 'unauthenticated') {
+        setCheckoutNotice(null)
+        setBuyState({ kind: 'idle' })
+        navigate('/login', { replace: true })
+        return
+      }
       if (result.error || !res.ok) {
         setBuyState({ kind: 'error', message: res.reason === 'reservation_expired' || res.reason === 'reservation_inactive'
           ? REASON_TEXT.reservation_expired
