@@ -95,6 +95,8 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [buyState, setBuyState] = useState<BuyState>({ kind: 'idle' })
+  // 購買冪等鍵：一次購買意圖一個 UUID，重送同一意圖時後端回傳原預約不生新單
+  const intentKey = useRef<string | null>(null)
   const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null)
   const [priceFlash, setPriceFlash] = useState(false)
   const [activePromos, setActivePromos] = useState<PromoTag[]>([])
@@ -267,7 +269,8 @@ export default function ProductPage() {
     if (buyState.kind === 'buying') return
     setBuyState({ kind: 'buying' })
     try {
-      const res = await rpc('reserve_product', { p_product_id: product!.id, p_quantity: quantity })
+      if (!intentKey.current) intentKey.current = crypto.randomUUID()
+      const res = await rpc('reserve_product', { p_product_id: product!.id, p_quantity: quantity, p_idempotency_key: intentKey.current })
       if (res.ok) {
         setBuyState({
           kind: 'cart',
@@ -279,6 +282,7 @@ export default function ProductPage() {
       } else if (res.reason === 'sold_out') {
         setBuyState({ kind: 'soldout' })
       } else if (res.reason === 'already_reserved') {
+        intentKey.current = null
         setBuyState({
           kind: 'cart',
           reservationId: String(res.reservation_id),
@@ -286,6 +290,9 @@ export default function ProductPage() {
           quantity: Number(quantity),
           expiresAt: new Date(String(res.expires_at)).getTime(),
         })
+      } else if (res.reason === 'idempotency_key_mismatch') {
+        intentKey.current = null
+        setBuyState({ kind: 'error', message: '購買意圖不一致，請重新再試一次。' })
       } else if (res.reason === 'cooldown') {
         const secs = Number((res as unknown as { retry_after?: number }).retry_after ?? 180)
         setBuyState({ kind: 'error', message: `您剛棄單，此商品需冷卻 ${Math.ceil(secs/60)} 分鐘後才能再搶。` })
@@ -313,6 +320,7 @@ export default function ProductPage() {
         return
       }
       setCheckoutNotice(null)
+      intentKey.current = null
       setBuyState({ kind: 'success', orderNo: String(res.order_no), unitPrice: Number(res.unit_price), quantity: Number(res.quantity) })
     } catch {
       setCheckoutNotice(null)
@@ -323,6 +331,7 @@ export default function ProductPage() {
   const releaseCart = async () => {
     if (buyState.kind !== 'cart') return
     const rid = buyState.reservationId
+    intentKey.current = null
     setBuyState({ kind: 'idle' })
     try {
       const r = await rpc('release_reservation', { p_reservation_id: rid }) as unknown as { penalty_secs?: number }
