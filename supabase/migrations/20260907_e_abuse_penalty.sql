@@ -137,7 +137,7 @@ begin
     return jsonb_build_object('ok', false, 'reason', 'sold_out');
   end if;
 
-  -- 鎖定當下價格，3 分鐘效期
+  -- 鎖定當下價格，1 分鐘效期（2026-08-26 起 3分→1分，舊註解修正）
   v_price := public.compute_current_price(v_product);
   insert into public.cart_reservations
     (user_id, product_id, quantity, locked_unit_price, reserved_at, expires_at, status)

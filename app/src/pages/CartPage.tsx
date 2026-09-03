@@ -24,12 +24,13 @@ interface CartItem {
 
 const RESERVE_MS = 1 * 60 * 1000
 
-/* ───────── 步驟指示（長輩友善：大字＋高對比＋清楚序號）───────── */
+/* ───────── 購物車步驟指示（長輩友善：大字＋高對比＋清楚序號）─────────
+   用語與訂單進度對齊：下單→結帳→付款（訂單頁另有出貨→完成） */
 function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
   const steps = [
-    { n: 1, label: '確認商品' },
+    { n: 1, label: '下單' },
     { n: 2, label: '結帳' },
-    { n: 3, label: '付款／取貨' },
+    { n: 3, label: '付款' },
   ] as const
   return (
     <div
@@ -443,7 +444,7 @@ export default function CartPage() {
               </div>
               <p className="text-[13px] leading-relaxed text-ink-500 bg-ink-50 rounded-2xl px-4 py-3 border border-ink-100">
                 <span className="font-bold text-ink-700">ℹ️ 安心結帳：</span>
-                以「鎖定價」成交，不受之後降價影響；逾時未結帳的商品會自動取消，商品以當前降價價格繼續販售（價格只會更低，不會回漲）。
+                以「鎖定價」成交，不受之後降價影響；逾時未結帳的商品會自動取消，回到架上繼續降價（大方向只降不漲，但有人棄單會讓下次降價晚一點）。
               </p>
             </div>
           </>
