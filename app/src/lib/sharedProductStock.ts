@@ -59,8 +59,9 @@ function getSnapshot(product: Product | null) {
 
 export function useSharedProductStock(product: Product | null) {
   useEffect(() => {
-    if (product) stocks.set(product.id, product.stock)
-  }, [product?.id, product?.stock])
+    if (!product) return
+    stocks.set(product.id, product.stock)
+  }, [product])
 
   return useSyncExternalStore(
     (listener) => product ? subscribe(product.id, listener) : () => {},
