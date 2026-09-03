@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { supabase } from './supabase'
 import {
   computeCurrentPrice,
   secondsToNextDrop,
 } from './pricing'
 import type { Product } from './types'
 import { useSharedClock } from './sharedClock'
+import { useSharedProductStock } from './sharedProductStock'
 
 export interface LivePriceState {
   price: number
@@ -16,20 +16,16 @@ export interface LivePriceState {
 /**
  * 即時價格 Hook
  * - 所有商品共用一個 server clock 與每秒 ticker
- * - 訂閱 products Realtime → 庫存變動即時更新
+ * - 所有商品共用一個 products Realtime channel
  */
 export function useLivePrice(product: Product | null) {
   const clock = useSharedClock()
+  const sharedStock = useSharedProductStock(product)
   const [state, setState] = useState<LivePriceState>(() => ({
     price: product ? Number(product.original_price) : 0,
     nextDropIn: product?.price_interval_seconds ?? 0,
     serverOffsetMs: 0,
   }))
-  const [stock, setStock] = useState<number>(product?.stock ?? 0)
-
-  useEffect(() => {
-    if (product && typeof product.stock === 'number') setStock(product.stock)
-  }, [product])
 
   useEffect(() => {
     if (!product) return
@@ -57,21 +53,5 @@ export function useLivePrice(product: Product | null) {
     })
   }, [product, clock.nowMs, clock.offsetMs])
 
-  useEffect(() => {
-    if (!product) return
-    const channel = supabase
-      .channel(`product-${product.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'products', filter: `id=eq.${product.id}` },
-        (payload) => {
-          const fresh = payload.new as Partial<Product>
-          if (typeof fresh.stock === 'number') setStock(fresh.stock)
-        },
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [product?.id])
-
-  return { ...state, stock }
+  return { ...state, stock: sharedStock }
 }
