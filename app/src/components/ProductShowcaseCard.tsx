@@ -43,6 +43,7 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
   const extraCount = Math.max(0, promos.length - 1)
   const live = useLivePrice(product)
   const clock = useSharedClock()
+  const nowMs = clock.nowMs + clock.offsetMs
   const original = Number(product.original_price)
   const isUpcoming = upcoming === true
   const saleRemain = isUpcoming && product.sale_start_at
@@ -113,7 +114,7 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
   const stockPct = Math.max(0, Math.min(100, (live.stock / Math.max(1, product.initial_stock)) * 100))
   const soldOut = live.stock <= 0
   const endingSoon =
-    !!product.forced_delist_at && new Date(product.forced_delist_at).getTime() > Date.now()
+    !!product.forced_delist_at && new Date(product.forced_delist_at).getTime() > nowMs
 
   return (
     <Link
@@ -159,7 +160,7 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> 即將結束
           </span>
           <span className="relative shrink-0 text-xs font-bold tabular-nums bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 border border-white/15">
-            {formatCountdown(Math.max(0, (new Date(product.forced_delist_at!).getTime() - Date.now()) / 1000))} 後下架
+            {formatCountdown(Math.max(0, (new Date(product.forced_delist_at!).getTime() - nowMs) / 1000))} 後下架
           </span>
         </div>
       )}
