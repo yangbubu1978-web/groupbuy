@@ -9,6 +9,7 @@ import type { PromoTag } from '../components/ProductShowcaseCard'
 import { useAuth } from '../context/AuthContext'
 import FollowButton from '../components/FollowButton'
 import { checkoutWithRetry } from '../lib/checkout'
+import { useSharedClock } from '../lib/sharedClock'
 
 type BuyState =
   | { kind: 'idle' }
@@ -37,18 +38,14 @@ const REASON_TEXT: Record<string, string> = {
 
 /** 購物車倒數 — shadcn Card 風格膠囊條，BeUI 柔和警示 */
 function CartCountdown({ expiresAt, onExpire }: { expiresAt: number; onExpire: () => void }) {
-  const [left, setLeft] = useState(Math.max(0, Math.floor((expiresAt - Date.now()) / 1000)))
+  const clock = useSharedClock()
+  const left = Math.max(0, Math.floor((expiresAt - clock.nowMs - clock.offsetMs) / 1000))
+  const fired = useRef(false)
   useEffect(() => {
-    const id = setInterval(() => {
-      const s = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000))
-      setLeft(s)
-      if (s <= 0) {
-        clearInterval(id)
-        onExpire()
-      }
-    }, 250)
-    return () => clearInterval(id)
-  }, [expiresAt, onExpire])
+    if (left > 0 || fired.current) return
+    fired.current = true
+    onExpire()
+  }, [left, onExpire])
   const urgent = left <= 60
   return (
     <div

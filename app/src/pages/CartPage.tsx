@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { fmtMoney } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
 import { checkoutWithRetry } from '../lib/checkout'
+import { useSharedClock } from '../lib/sharedClock'
 
 /** 購物車項目（cart_reservations + products embed） */
 interface CartItem {
@@ -81,24 +82,16 @@ function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
 
 /** 單一商品倒數 — 長輩友善加大版：大字＋高對比色＋加粗進度條 */
 function CountdownBar({ expiresAt, onExpire }: { expiresAt: string; onExpire: (id?: string) => void }) {
+  const clock = useSharedClock()
   const target = new Date(expiresAt).getTime()
-  const [left, setLeft] = useState(Math.max(0, target - Date.now()))
+  const left = Math.max(0, target - clock.nowMs - clock.offsetMs)
   const fired = useRef(false)
 
   useEffect(() => {
-    fired.current = false
-    const id = setInterval(() => {
-      const ms = Math.max(0, target - Date.now())
-      setLeft(ms)
-      if (ms <= 0 && !fired.current) {
-        fired.current = true
-        clearInterval(id)
-        onExpire()
-      }
-    }, 250)
-    return () => clearInterval(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target])
+    if (left > 0 || fired.current) return
+    fired.current = true
+    onExpire()
+  }, [left, onExpire])
 
   const totalSec = Math.ceil(left / 1000)
   const mm = Math.floor(totalSec / 60)
@@ -166,6 +159,7 @@ function CountdownBar({ expiresAt, onExpire }: { expiresAt: string; onExpire: (i
 /** 購物車頁：每件商品獨立 1 分鐘倒數，逾時自動取消釋回庫存 */
 export default function CartPage() {
   const { userId } = useAuth()
+  const clock = useSharedClock()
   const [items, setItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -189,7 +183,7 @@ export default function CartPage() {
 
   // 逾時自動取消：釋回庫存（伺服器端 release_reservation）
   const expireItem = useCallback(async (rid?: string) => {
-    const id = rid ?? itemsRef.current.find((x) => new Date(x.expires_at).getTime() <= Date.now())?.id
+    const id = rid ?? itemsRef.current.find((x) => new Date(x.expires_at).getTime() <= clock.nowMs + clock.offsetMs)?.id
     if (!id) return
     setItems((prev) => prev.filter((x) => x.id !== id))
     setNotice('⌛ 有商品超過 1 分鐘未結帳，已自動取消並釋回庫存')
@@ -198,7 +192,7 @@ export default function CartPage() {
     } catch {
       // 伺服器 cron 也會兜底回收，前端靜默即可
     }
-  }, [])
+  }, [clock.nowMs, clock.offsetMs])
 
   // 手動取消
   const cancelItem = async (rid: string) => {
