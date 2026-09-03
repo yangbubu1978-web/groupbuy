@@ -166,7 +166,13 @@ export default function CartPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [doneOrders, setDoneOrders] = useState<string[]>([])
   const itemsRef = useRef(items)
-  itemsRef.current = items
+  useEffect(() => {
+    itemsRef.current = items
+  }, [items])
+  const clockRef = useRef(clock)
+  useEffect(() => {
+    clockRef.current = clock
+  }, [clock])
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -183,7 +189,7 @@ export default function CartPage() {
 
   // 逾時自動取消：釋回庫存（伺服器端 release_reservation）
   const expireItem = useCallback(async (rid?: string) => {
-    const id = rid ?? itemsRef.current.find((x) => new Date(x.expires_at).getTime() <= clock.nowMs + clock.offsetMs)?.id
+    const id = rid ?? itemsRef.current.find((x) => new Date(x.expires_at).getTime() <= clockRef.current.nowMs + clockRef.current.offsetMs)?.id
     if (!id) return
     setItems((prev) => prev.filter((x) => x.id !== id))
     setNotice('⌛ 有商品超過 1 分鐘未結帳，已自動取消並釋回庫存')
@@ -192,7 +198,7 @@ export default function CartPage() {
     } catch {
       // 伺服器 cron 也會兜底回收，前端靜默即可
     }
-  }, [clock.nowMs, clock.offsetMs])
+  }, [])
 
   // 手動取消
   const cancelItem = async (rid: string) => {
