@@ -137,6 +137,14 @@ export default function CampaignDetailPage() {
     return () => { alive = false }
   }, [campaignId])
 
+  // Hooks 必須在所有條件式 return 之前呼叫，避免載入完成後順序改變。
+  const [nowMs, setNowMs] = useState(Date.now())
+  useEffect(() => {
+    if (campaign?.status !== 'active') return
+    const id = setInterval(() => setNowMs(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [campaign?.status])
+
   if (loading) {
     return (
       <div className="min-h-dvh bg-ink-50 flex items-center justify-center">
@@ -157,12 +165,6 @@ export default function CampaignDetailPage() {
   const isActive = campaign.status === 'active'
 
   // 距活動結束的即時倒數（每秒更新）
-  const [nowMs, setNowMs] = useState(Date.now())
-  useEffect(() => {
-    if (!isActive) return
-    const id = setInterval(() => setNowMs(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [isActive])
   const msLeft = new Date(campaign.end_at).getTime() - nowMs
   const endedYet = msLeft <= 0
   const dLeft = Math.floor(msLeft / 86400000)
