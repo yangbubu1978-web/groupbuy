@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -121,7 +121,7 @@ export default function MyFollowsPage() {
     else setMsg('推播開啟失敗，請確認是 HTTPS 並已登入')
   }
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!userId) return
     setLoading(true)
     const { data: follows, error } = await supabase.from('product_follows').select('product_id').eq('user_id', userId)
@@ -131,8 +131,8 @@ export default function MyFollowsPage() {
     const { data: prods } = await supabase.from('products').select('*').in('id', ids)
     setProducts((prods as Product[]) ?? [])
     setLoading(false)
-  }
-  useEffect(() => { load() }, [userId])
+  }, [userId])
+  useEffect(() => { load() }, [load])
 
   const unfollow = async (productId: string) => {
     if (!userId) return
