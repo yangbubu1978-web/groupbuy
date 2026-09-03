@@ -7,6 +7,7 @@ let snapshot: ClockSnapshot = { nowMs: Date.now(), offsetMs: 0 }
 let timer: ReturnType<typeof setInterval> | null = null
 let syncTimer: ReturnType<typeof setInterval> | null = null
 let syncing = false
+let visHandler: (() => void) | null = null
 const listeners = new Set<() => void>()
 
 function notify() {
@@ -38,6 +39,16 @@ function start() {
   timer = setInterval(notify, 1000)
   syncTimer = setInterval(syncServerClock, 5 * 60 * 1000)
   void syncServerClock()
+  // 手機切背景回來：計時器在背景會被節流，回到前景立刻校準一次
+  if (!visHandler && typeof document !== 'undefined') {
+    visHandler = () => {
+      if (document.visibilityState === 'visible') {
+        notify()
+        void syncServerClock()
+      }
+    }
+    document.addEventListener('visibilitychange', visHandler)
+  }
 }
 
 function stop() {
@@ -46,6 +57,10 @@ function stop() {
   if (syncTimer) clearInterval(syncTimer)
   timer = null
   syncTimer = null
+  if (visHandler && typeof document !== 'undefined') {
+    document.removeEventListener('visibilitychange', visHandler)
+    visHandler = null
+  }
 }
 
 function subscribe(listener: () => void) {

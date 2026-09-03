@@ -295,11 +295,14 @@ export default function ProductPage() {
         setBuyState({ kind: 'soldout' })
       } else if (res.reason === 'already_reserved') {
         intentKey.current = null
+        // 多分頁同搶：以後端回傳的鎖定價為準，不要用本地原價回填
+        const fallbackPrice = buyState.kind === 'cart' ? buyState.lockedPrice : Number(product!.original_price)
+        const locked = Number(res.locked_unit_price ?? fallbackPrice)
         setBuyState({
           kind: 'cart',
           reservationId: String(res.reservation_id),
-          lockedPrice: buyState.kind === 'cart' ? buyState.lockedPrice : Number(product!.original_price),
-          quantity: Number(quantity),
+          lockedPrice: Number.isFinite(locked) ? locked : fallbackPrice,
+          quantity: Number((res.quantity as number | undefined) ?? quantity),
           expiresAt: new Date(String(res.expires_at)).getTime(),
         })
       } else if (res.reason === 'idempotency_key_mismatch') {
