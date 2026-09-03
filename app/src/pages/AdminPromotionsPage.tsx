@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -69,15 +69,18 @@ export default function AdminPromotionsPage() {
     if (!authLoading && !isAdmin) navigate('/login', { replace: true })
   }, [authLoading, isAdmin, navigate])
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const [{ data: promos }, { data: products }] = await Promise.all([
       supabase.from('promotions').select('*, promotion_items(product_id, products(name, sku))').order('created_at', { ascending: false }),
       supabase.from('products').select('id, name, sku').eq('status', 'active').order('created_at', { ascending: false }),
     ])
     if (promos) setPromos(promos as Promo[])
     if (products) setProducts(products as { id: string; name: string; sku: string }[])
-  }
-  useEffect(() => { load() }, [])
+  }, [])
+  useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect -- 外部活動資料同步，需等伺服器回應後才能更新
+    void load()
+  }, [load])
 
   const submit = async () => {
     setBusy(true); setMsg(null)
