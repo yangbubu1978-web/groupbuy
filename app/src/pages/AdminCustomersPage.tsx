@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Company, Customer, CustomerGroup } from '../lib/types'
@@ -66,7 +66,7 @@ export default function AdminCustomersPage() {
     if (!authLoading && !isAdmin) navigate('/', { replace: true })
   }, [authLoading, isAdmin, navigate])
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const [{ data: cs }, { data: cos }, { data: gs }, { data: admins }] = await Promise.all([
       supabase.from('customers').select('*').order('created_at', { ascending: false }),
       supabase.from('companies').select('*'),
@@ -80,8 +80,11 @@ export default function AdminCustomersPage() {
       const ids = new Set(admins.map((a: { user_id: string }) => a.user_id))
       setAdminIds(ids)
     }
-  }
-  useEffect(() => { load() }, [])
+  }, [])
+  useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect -- 外部客戶資料同步，需等伺服器回應後才能更新
+    void load()
+  }, [load])
 
   // ---------- 新增 ----------
   const submit = async () => {
