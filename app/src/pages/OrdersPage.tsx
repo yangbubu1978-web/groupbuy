@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { Order } from '../lib/types'
 import { fmtMoney, fmtDateTime } from '../lib/types'
 import { useAuth } from '../context/AuthContext'
+import { useSharedClock } from '../lib/sharedClock'
 
 // 狀態文案/樣式/圖示：共用字典單一真相來源（P19）
 import { ORDER_STATUS_LABEL as STATUS_LABEL, ORDER_STATUS_STYLE as STATUS_STYLE, ORDER_STATUS_ICON as STATUS_ICON } from '../lib/orderStatus'
@@ -20,19 +21,13 @@ type Tab = 'active' | 'done'
 
 /** P29c：待確認訂單倒數（1 分鐘自動過期；歸零即刷新列表由 cron 收走） */
 function PendingCountdown({ purchasedAt, onExpire }: { purchasedAt: string; onExpire: () => void }) {
+  const clock = useSharedClock()
   const expiresAt = new Date(new Date(purchasedAt).getTime() + 60_000).getTime()
-  const [left, setLeft] = useState(Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)))
+  const left = Math.max(0, Math.ceil((expiresAt - clock.nowMs - clock.offsetMs) / 1000))
   useEffect(() => {
-    const id = setInterval(() => {
-      const s = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000))
-      setLeft(s)
-      if (s <= 0) {
-        clearInterval(id)
-        onExpire()
-      }
-    }, 250)
-    return () => clearInterval(id)
-  }, [expiresAt])
+    if (left > 0) return
+    onExpire()
+  }, [left, onExpire])
   return (
     <div className={`mt-2 rounded-xl px-4 py-2.5 text-sm font-bold flex items-center justify-between border
       ${left <= 20
