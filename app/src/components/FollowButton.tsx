@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useSharedClock } from '../lib/sharedClock'
 import { useFollow, isValidUUID } from '../lib/useFollow'
 
 export interface FollowButtonProps {
@@ -20,6 +21,7 @@ export default function FollowButton({
 }: FollowButtonProps) {
   const navigate = useNavigate()
   const { followed, loading, toggling, toggleFollow } = useFollow(productId)
+  const clock = useSharedClock()
   const [msg, setMsg] = useState<string | null>(null)
   const [msgKind, setMsgKind] = useState<'ok' | 'error'>('ok')
 
@@ -35,7 +37,7 @@ export default function FollowButton({
     if (!saleStartAt) return false
     const t = new Date(saleStartAt).getTime()
     if (Number.isNaN(t)) return false
-    return t <= Date.now()
+    return t <= clock.nowMs + clock.offsetMs
   })()
   const soldOut = typeof stock === 'number' && stock <= 0
   const disabledByState = isOnSale || soldOut || invalidId
