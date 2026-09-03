@@ -79,7 +79,7 @@ export default function FollowButton({
     'inline-flex items-center justify-center gap-1.5 font-bold rounded-xl border-2 ' +
     'transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ' +
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ' +
-    (isDetail ? 'h-12 px-6 text-base min-w-[140px]' : 'h-10 px-4 text-sm min-w-[112px]')
+    (isDetail ? 'h-12 px-6 text-base min-w-[140px]' : 'h-11 px-4 text-sm min-w-[112px]')
 
   let variant = ''
   if (disabledByState) {

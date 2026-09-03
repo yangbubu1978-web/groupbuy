@@ -410,18 +410,18 @@ export default function CartPage() {
                     </div>
 
                     {/* 操作按鈕 — h-14 pill 漸層＋高對比邊框，充足間距防誤觸 */}
-                    <div className="mt-4 grid grid-cols-[1fr_auto] gap-3">
+                    <div className="mt-4 grid grid-cols-[1fr_auto] gap-3 min-w-0">
                       <button
                         onClick={() => checkoutItem(item.id)}
                         disabled={busyId === item.id}
-                        className="h-14 rounded-full bg-gradient-to-r from-accent-500 to-accent-600 text-white text-[16px] font-black shadow-lg shadow-accent-500/25 active:scale-[0.98] transition disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-1.5"
+                        className="h-14 min-w-0 rounded-full bg-gradient-to-r from-accent-500 to-accent-600 text-white text-[16px] font-black shadow-lg shadow-accent-500/25 active:scale-[0.98] transition disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-1.5 px-4"
                         aria-label={`結帳 ${item.products?.name ?? '商品'}，金額 ${fmtMoney(lineTotal)}`}
                       >
                         {busyId === item.id ? (
                           '處理中…'
                         ) : (
                           <>
-                            <span aria-hidden>✔</span> 結帳 {fmtMoney(lineTotal)}
+                            <span aria-hidden className="shrink-0">✔</span><span className="truncate">結帳 {fmtMoney(lineTotal)}</span>
                           </>
                         )}
                       </button>

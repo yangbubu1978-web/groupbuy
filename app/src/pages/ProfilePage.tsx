@@ -224,7 +224,7 @@ export default function ProfilePage() {
           <div className="mt-5 rounded-2xl border border-ink-100 bg-[#FFF8F0] p-4 flex items-center justify-between">
             <div>
               <p className="text-sm font-bold text-ink-800">💌 E-MAIL 通知信箱</p>
-              <p className="text-xs text-ink-500 mt-1">{userEmail ? `目前：${userEmail}` : '尚未設定 — 至「我的關注」設定'}{emailMsg ? ` · ${emailMsg}` : ''}</p>
+              <p className="text-xs text-ink-500 mt-1 break-all">{userEmail ? `目前：${userEmail}` : '尚未設定 — 至「我的關注」設定'}{emailMsg ? ` · ${emailMsg}` : ''}</p>
             </div>
             <a href="#/me/follows" className="h-9 px-4 rounded-full bg-[#FF8A65] text-white text-sm font-bold grid place-items-center shrink-0">去設定</a>
           </div>

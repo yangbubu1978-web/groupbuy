@@ -161,7 +161,7 @@ export default function MyFollowsPage() {
       {/* E-MAIL 通知信箱 — 搬來我的關注，方便一次設定 */}
       <div className="max-w-md md:max-w-3xl mx-auto px-4 pt-3">
         <div className="rounded-2xl border border-ink-100 bg-[#FFF8F0] p-4 space-y-3">
-          <p className="text-sm font-bold text-ink-800">💌 E-MAIL 通知信箱 {userEmail && <span className="text-xs font-normal text-green-600">（已設定：{userEmail}）</span>}</p>
+          <p className="text-sm font-bold text-ink-800">💌 E-MAIL 通知信箱 {userEmail && <span className="text-xs font-normal text-green-600 break-all">（已設定：{userEmail}）</span>}</p>
           <p className="text-xs text-ink-500">填寫真實信箱，才能同時收到上架/降價 E-MAIL 通知</p>
           <div className="flex gap-2">
             <input type="email" placeholder="you@example.com" value={emailInput} onChange={e=>setEmailInput(e.target.value)} className="flex-1 h-10 px-4 rounded-full border border-ink-200 bg-white text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400" />
