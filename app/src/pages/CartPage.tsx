@@ -185,7 +185,8 @@ export default function CartPage() {
     setLoading(false)
   }, [userId])
 
-  useEffect(() => { if (userId) load() }, [userId, load])
+  useEffect(() => { if (userId) { // eslint-disable-next-line react/set-state-in-effect -- 外部購物車資料同步，需等伺服器回應後才能更新
+    void load() } }, [userId, load])
 
   // 逾時自動取消：釋回庫存（伺服器端 release_reservation）
   const expireItem = useCallback(async (rid?: string) => {
