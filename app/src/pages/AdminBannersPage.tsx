@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Banner } from '../lib/types'
@@ -27,14 +27,17 @@ export default function AdminBannersPage() {
     if (!authLoading && !isAdmin) navigate('/', { replace: true })
   }, [authLoading, isAdmin, navigate])
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const { data } = await supabase
       .from('banners')
       .select('*')
       .order('sort_order', { ascending: true })
     if (data) setBanners(data as Banner[])
-  }
-  useEffect(() => { load() }, [])
+  }, [])
+  useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect -- 外部橫幅資料同步，需等伺服器回應後才能更新
+    void load()
+  }, [load])
 
   const uploadImage = async (file: File): Promise<string> => {
     // 管理員驗證（RLS 政策需要 admins 表有此 user）

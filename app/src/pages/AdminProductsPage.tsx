@@ -136,6 +136,7 @@ export default function AdminProductsPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect -- 表單顯示需跟網址編輯狀態同步，屬外部路由狀態
     if (!editId && !duplicateMode) setShowForm(false)
   }, [editId, duplicateMode])
   useEffect(() => {
@@ -150,6 +151,7 @@ export default function AdminProductsPage() {
   }, [duplicateMode, navigate])
 
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect -- 外部商品資料同步，需等伺服器回應後才能更新
     if (!editId) { setLoaded(true); return }
     setShowForm(true)
     ;(async () => {

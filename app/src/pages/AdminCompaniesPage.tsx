@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Company } from '../lib/types'
@@ -23,14 +23,17 @@ export default function AdminCompaniesPage() {
     if (!authLoading && !isAdmin) navigate('/', { replace: true })
   }, [authLoading, isAdmin, navigate])
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const { data } = await supabase
       .from('companies')
       .select('*')
       .order('created_at', { ascending: true })
     if (data) setCompanies(data as Company[])
-  }
-  useEffect(() => { load() }, [])
+  }, [])
+  useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect -- 外部公司資料同步，需等伺服器回應後才能更新
+    void load()
+  }, [load])
 
   const openCreate = () => {
     setEditingId(null)

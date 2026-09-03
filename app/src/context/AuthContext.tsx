@@ -55,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect -- 登入狀態需跟外部驗證系統同步，初次進入與狀態變化時更新
     refresh()
     const { data: sub } = supabase.auth.onAuthStateChange(() => {
       refresh()
