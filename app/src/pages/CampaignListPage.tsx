@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Product } from '../lib/types'
@@ -64,6 +64,8 @@ export default function CampaignListPage() {
   const [followMap, setFollowMap] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [noticeOpen, setNoticeOpen] = useState(false)
+  const productsRef = useRef<Product[]>([])
+  const refreshInFlightRef = useRef(false)
 
   // 直接載入所有可販售商品（不再分活動層級）
   useEffect(() => {
@@ -120,6 +122,7 @@ export default function CampaignListPage() {
         setPromoProducts(all.filter((p) => promoIds.has(p.id)))
         setUpcomingProducts(all.filter((p) => !promoIds.has(p.id) && isUpcoming(p)))
         setRegularProducts(all.filter((p) => !promoIds.has(p.id) && !isUpcoming(p)))
+        productsRef.current = all
         setPromoInfo(promoInfoMap)
         setFollowMap(fm)
         setLoading(false)
@@ -154,61 +157,56 @@ export default function CampaignListPage() {
     return () => { supabase.removeChannel(ch) }
   }, [])
 
-  // 每 30 秒輕量輪詢：商品被 cron 下架/完售時自動從畫面消失；活動到期時商品降級到一般區
+  // 每 30 秒同步狀態：使用 ref 讀取最新商品，避免 effect 因 state 改變反覆重建計時器。
   useEffect(() => {
-    const id = setInterval(async () => {
-      const ids = [
-        ...promoProducts.map((p) => p.id),
-        ...regularProducts.map((p) => p.id),
-        ...upcomingProducts.map((p) => p.id),
-      ]
+    const refresh = async () => {
+      if (refreshInFlightRef.current) return
+      const ids = productsRef.current.map((p) => p.id)
       if (ids.length === 0) return
-      const nowIso = new Date().toISOString()
-      const [{ data }, { data: stillRunning }] = await Promise.all([
-        supabase.from('products').select('id, status, stock, forced_delist_at').in('id', ids),
-        supabase
-          .from('promotions')
-          .select('id, promotion_items(product_id)')
-          .lte('starts_at', nowIso)
-          .gte('ends_at', nowIso)
-          .eq('is_active', true)
-          .eq('status', 'active'),
-      ])
-      if (!data) return
-      const nowMs = Date.now()
-      const aliveIds = new Set(
-        (data as { id: string; status: string; stock: number; forced_delist_at: string | null }[])
-          .filter((x) => x.status === 'active'
-            && x.stock > 0
-            && (!x.forced_delist_at || new Date(x.forced_delist_at).getTime() > nowMs))
-          .map((x) => x.id),
-      )
-      // 仍在進行中活動的商品集合（活動到期 → 自動降級到一般區）
-      const livePromoIds = new Set<string>()
-      for (const promo of (stillRunning ?? []) as { promotion_items?: { product_id: string }[] }[]) {
-        for (const item of promo.promotion_items ?? []) livePromoIds.add(item.product_id)
+      refreshInFlightRef.current = true
+      try {
+        const nowIso = new Date().toISOString()
+        const [{ data }, { data: stillRunning }] = await Promise.all([
+          supabase.from('products').select('id, status, stock, forced_delist_at, sale_start_at').in('id', ids),
+          supabase
+            .from('promotions')
+            .select('id, promotion_items(product_id)')
+            .lte('starts_at', nowIso)
+            .gte('ends_at', nowIso)
+            .eq('is_active', true)
+            .eq('status', 'active'),
+        ])
+        if (!data) return
+        const nowMs = Date.now()
+        const fresh = data as { id: string; status: string; stock: number; forced_delist_at: string | null; sale_start_at: string | null }[]
+        const aliveIds = new Set(fresh.filter((x) => x.status === 'active' && x.stock > 0 && (!x.forced_delist_at || new Date(x.forced_delist_at).getTime() > nowMs)).map((x) => x.id))
+        const livePromoIds = new Set<string>()
+        for (const promo of (stillRunning ?? []) as { promotion_items?: { product_id: string }[] }[]) {
+          for (const item of promo.promotion_items ?? []) livePromoIds.add(item.product_id)
+        }
+        const freshMap = new Map(fresh.map((p) => [p.id, p]))
+        const update = (prev: Product[]): Product[] => prev
+          .filter((p) => aliveIds.has(p.id))
+          .map((p) => ({ ...p, ...(freshMap.get(p.id) ?? {}) } as Product))
+        setPromoProducts((prev): Product[] => update(prev).filter((p) => livePromoIds.has(p.id)))
+        setUpcomingProducts((prev): Product[] => update(prev))
+        setRegularProducts((prev): Product[] => {
+          const current = update(prev)
+          const moved = productsRef.current
+            .filter((p) => aliveIds.has(p.id) && !livePromoIds.has(p.id) && !current.some((q) => q.id === p.id))
+            .map((p) => ({ ...p, ...(freshMap.get(p.id) ?? {}) } as Product))
+          return [...current, ...moved]
+        })
+        productsRef.current = productsRef.current
+          .map((p) => ({ ...p, ...(freshMap.get(p.id) ?? {}) } as Product))
+          .filter((p) => aliveIds.has(p.id))
+      } finally {
+        refreshInFlightRef.current = false
       }
-      // 只在真的有變化時才更新（避免無謂重渲染）
-      const prune = (prev: Product[]) => {
-        const next = prev.filter((p) => aliveIds.has(p.id))
-        return next.length === prev.length ? prev : next
-      }
-      setPromoProducts((prev) => {
-        const kept = prev.filter((p) => aliveIds.has(p.id) && livePromoIds.has(p.id))
-        return kept.length === prev.length ? prev : kept
-      })
-      setRegularProducts((prev) => {
-        const demoted = promoProducts.filter(
-          (p) => aliveIds.has(p.id) && !livePromoIds.has(p.id) && !prev.some((q) => q.id === p.id),
-        )
-        const kept = prev.filter((p) => aliveIds.has(p.id))
-        const next = [...kept, ...demoted]
-        return next.length === prev.length && demoted.length === 0 ? prev : next
-      })
-      setUpcomingProducts((prev) => prune(prev))
-    }, 30_000)
+    }
+    const id = setInterval(() => { void refresh() }, 30_000)
     return () => clearInterval(id)
-  }, [promoProducts, regularProducts, upcomingProducts])
+  }, [])
 
   // 問候語：依時段變化
   const hour = new Date().getHours()
