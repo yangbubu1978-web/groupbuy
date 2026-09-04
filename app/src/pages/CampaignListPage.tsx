@@ -155,10 +155,19 @@ export default function CampaignListPage() {
 
   // Realtime：單件棄單罰則會推 sale_start_at，首頁需即時反映倒數變長
   // + 關注商品開賣時本地通知（Mobile First：關站推播由 pg_cron/Edge 補強）
+  // 過濾：只聽畫面上有陳列的商品，別人動別的商品不往這裡廣播。
+  // 陳列清單變動由本地過濾處理（訂閱只建一次，回呼按畫面商品過濾）。
   useEffect(() => {
+    const visibleIdsRef = new Set<string>()
+    const syncVisible = () => {
+      visibleIdsRef.clear()
+      for (const p of productsRef.current) visibleIdsRef.add(p.id)
+    }
+    syncVisible()
     const ch = supabase.channel('products-penalty')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'products' }, async (payload) => {
         const n = payload.new as unknown as { id: string; sale_start_at: string | null; name?: string }
+        if (!visibleIdsRef.has(n.id)) return
         const patchOne = (prev: Product[]) => prev.map((p) => p.id === n.id ? { ...p, sale_start_at: n.sale_start_at } as Product : p)
         setPromoProducts(patchOne); setRegularProducts(patchOne); setUpcomingProducts(patchOne)
         // 若此商品剛開賣（sale_start_at 變成已過）且用戶有關注，發本地通知
@@ -176,7 +185,12 @@ export default function CampaignListPage() {
         } catch {}
       })
       .subscribe()
-    return () => { supabase.removeChannel(ch) }
+    // 商品清單載入或刷新後同步一次，讓過濾清單保持最新
+    const syncTimer = setInterval(syncVisible, 31_500)
+    return () => {
+      clearInterval(syncTimer)
+      supabase.removeChannel(ch)
+    }
   }, [])
 
   // Realtime：有人關注或退追時，一次批次重抓人數（防抖 1 秒，不逐件查詢）
