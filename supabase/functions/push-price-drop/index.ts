@@ -54,15 +54,15 @@ Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
   if (req.method !== "POST") {
-    return json({ ok: false, reason: "method_not_allowed" }, 405);
+    return json({ ok: false, reason: "method_not_allowed" }, req, 405);
   }
 
   const vapid = getVapidConfig();
-  if (!vapid) return json({ ok: false, reason: "missing_vapid_keys" }, 500);
+  if (!vapid) return json({ ok: false, reason: "missing_vapid_keys" }, req, 500);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  if (!supabaseUrl || !serviceKey) return json({ ok: false, reason: "missing_supabase_env" }, 500);
+  if (!supabaseUrl || !serviceKey) return json({ ok: false, reason: "missing_supabase_env" }, req, 500);
 
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
   // 驗證呼叫身分：排程密鑰或管理員二選一，未通過直接拒絕
   const auth = await authorizePush(req, admin);
   if (!auth.ok) {
-    return json({ ok: false, reason: auth.reason }, auth.status);
+    return json({ ok: false, reason: auth.reason }, req, auth.status);
   }
 
   // 1) 拉候選商品（stock>0 + active + 有原價），在 JS 端算是否已達 30/50/70% 門檻
@@ -85,9 +85,9 @@ Deno.serve(async (req) => {
 
   if (prodErr) {
     console.error("push-price-drop query_products_failed");
-    return json({ ok: false, reason: "query_products_failed" }, 500);
+    return json({ ok: false, reason: "query_products_failed" }, req, 500);
   }
-  if (!products || products.length === 0) return json({ ok: true, sent: 0, products: 0 });
+  if (!products || products.length === 0) return json({ ok: true, sent: 0, products: 0 }, req);
 
   const candidates = (products as unknown as Array<{
     id: string;
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
     return drop >= 0.3;
   });
 
-  if (candidates.length === 0) return json({ ok: true, sent: 0, products: products.length, candidates: 0 });
+  if (candidates.length === 0) return json({ ok: true, sent: 0, products: products.length, candidates: 0 }, req);
 
   let sent = 0;
   let emailSent = 0;
@@ -230,5 +230,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ ok: true, sent, emailSent, skipped, gone, products: products.length, candidates: candidates.length, errors: errors.slice(0, 20) });
+  return json({ ok: true, sent, emailSent, skipped, gone, products: products.length, candidates: candidates.length, errors: errors.slice(0, 20) }, req);
 });

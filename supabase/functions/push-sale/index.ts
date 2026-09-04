@@ -5,7 +5,7 @@
 // 環境: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT
 // ============================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { corsHeaders, handleCors, json } from "../_shared/cors.ts";
+import { handleCors, json } from "../_shared/cors.ts";
 import { authorizePush } from "../_shared/push_auth.ts";
 import { getVapidConfig, sendPush } from "../_shared/webpush.ts";
 
@@ -28,18 +28,18 @@ Deno.serve(async (req) => {
 
   // 僅允許 POST（排程與後台手動觸發皆用 POST；GET 不再開放）
   if (req.method !== "POST") {
-    return json({ ok: false, reason: "method_not_allowed" }, 405);
+    return json({ ok: false, reason: "method_not_allowed" }, req, 405);
   }
 
   const vapid = getVapidConfig();
   if (!vapid) {
-    return json({ ok: false, reason: "missing_vapid_keys" }, 500);
+    return json({ ok: false, reason: "missing_vapid_keys" }, req, 500);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   if (!supabaseUrl || !serviceKey) {
-    return json({ ok: false, reason: "missing_supabase_env" }, 500);
+    return json({ ok: false, reason: "missing_supabase_env" }, req, 500);
   }
 
   const admin = createClient(supabaseUrl, serviceKey, {
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
   // 驗證呼叫身分：排程密鑰或管理員二選一，未通過直接拒絕
   const auth = await authorizePush(req, admin);
   if (!auth.ok) {
-    return json({ ok: false, reason: auth.reason }, auth.status);
+    return json({ ok: false, reason: auth.reason }, req, auth.status);
   }
 
   const now = new Date();
@@ -65,10 +65,10 @@ Deno.serve(async (req) => {
 
   if (prodErr) {
     console.error("push-sale query_products_failed");
-    return json({ ok: false, reason: "query_products_failed" }, 500);
+    return json({ ok: false, reason: "query_products_failed" }, req, 500);
   }
   if (!products || products.length === 0) {
-    return json({ ok: true, sent: 0, products: 0, reason: "no_new_sales" });
+    return json({ ok: true, sent: 0, products: 0, reason: "no_new_sales" }, req);
   }
 
   let totalSent = 0;
@@ -185,6 +185,7 @@ Deno.serve(async (req) => {
 
   return json(
     { ok: true, sent: totalSent, skipped: totalSkipped, gone: totalGone, products: products.length, errors: errors.slice(0, 20) },
+    req,
     200,
   );
 });
