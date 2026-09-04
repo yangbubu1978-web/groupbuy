@@ -5,6 +5,7 @@
 // 部署: supabase functions deploy purchase
 // ============================================================
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { rateLimit, rateLimitKeyFrom } from '../_shared/rate_limit.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,6 +38,17 @@ Deno.serve(async (req) => {
       return json({ ok: false, reason: 'bad_request' }, 400)
     }
 
+    // 限流：每個使用者每分鐘最多 12 次下單意圖（正常人按不出這麼多次）
+    const uid = userData.user.id
+    const rl = rateLimit(rateLimitKeyFrom(uid, req), 12, 60)
+    if (!rl.allowed) {
+      return json(
+        { ok: false, reason: 'rate_limited', retry_after: rl.retryAfterSeconds },
+        429,
+        { 'Retry-After': String(rl.retryAfterSeconds) },
+      )
+    }
+
     // 唯一交易路徑：先建立 60 秒鎖價，再以同一 Reservation 結帳。
     const { data: reservation, error: reserveError } = await supabase.rpc('reserve_product', {
       p_product_id: productId,
@@ -62,9 +74,9 @@ Deno.serve(async (req) => {
   }
 })
 
-function json(payload: unknown, status: number): Response {
+function json(payload: unknown, status: number, extraHeaders: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(payload), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json', ...extraHeaders },
   })
 }
