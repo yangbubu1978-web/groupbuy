@@ -100,19 +100,22 @@ export default function CampaignDetailPage() {
         setCampaign(c as Campaign)
         const { data: ps } = await supabase
           .from('products')
-          .select('*')
+          .select('id, campaign_id, name, image_url, sku, original_price, minimum_price, price_interval_seconds, price_decrease, price_decrease_max, initial_stock, stock, max_per_customer, status, sale_start_at, forced_delist_at, created_at')
           .eq('campaign_id', campaignId ?? '')
           .order('created_at', { ascending: true })
         if (alive && ps) {
           const list = (ps as Product[]).filter((p: Product) => p.stock > 0)
           setProducts(list)
-          const { data: counts } = await supabase.rpc('product_follower_counts')
-          if (alive) {
-            const map: Record<string, number> = {}
-            for (const row of (counts ?? []) as { product_id: string; follower_count: number }[]) {
-              map[row.product_id] = Number(row.follower_count)
+          const ids = list.map((p: Product) => p.id)
+          if (alive && ids.length > 0) {
+            const { data: counts } = await supabase.rpc('product_follower_counts_by_ids', { p_ids: ids })
+            if (alive) {
+              const map: Record<string, number> = {}
+              for (const row of (counts ?? []) as { product_id: string; follower_count: number }[]) {
+                map[row.product_id] = Number(row.follower_count)
+              }
+              setFollowMap(map)
             }
-            setFollowMap(map)
           }
         }
       }

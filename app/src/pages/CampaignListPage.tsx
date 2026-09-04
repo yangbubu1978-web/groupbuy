@@ -130,11 +130,14 @@ export default function CampaignListPage() {
       }
       const nowMs = clockRef.current.nowMs + clockRef.current.offsetMs
       const isUpcoming = (p: Product) => !!p.sale_start_at && new Date(p.sale_start_at).getTime() > nowMs
-      // 各商品追蹤人數（RPC：product_follower_counts）
-      const { data: fc } = await supabase.rpc('product_follower_counts')
+      // 各商品追蹤人數（批次 RPC：只算畫面上這些商品，不掃全表）
+      const visibleIds = all.map((p) => p.id)
       const fm: Record<string, number> = {}
-      for (const r of (fc ?? []) as { product_id: string; follower_count: number }[]) {
-        fm[r.product_id] = Number(r.follower_count)
+      if (visibleIds.length > 0) {
+        const { data: fc } = await supabase.rpc('product_follower_counts_by_ids', { p_ids: visibleIds })
+        for (const r of (fc ?? []) as { product_id: string; follower_count: number }[]) {
+          fm[r.product_id] = Number(r.follower_count)
+        }
       }
       if (alive) {
         setPromoProducts(all.filter((p) => promoIds.has(p.id)))
@@ -224,6 +227,15 @@ export default function CampaignListPage() {
         productsRef.current = productsRef.current
           .map((p) => ({ ...p, ...(freshMap.get(p.id) ?? {}) } as Product))
           .filter((p) => aliveIds.has(p.id))
+        // 關注人數跟著同一輪刷新：一次批次查詢，不逐件打擾資料庫
+        try {
+          const { data: fc } = await supabase.rpc('product_follower_counts')
+          const fm: Record<string, number> = {}
+          for (const r of (fc ?? []) as { product_id: string; follower_count: number }[]) {
+            fm[r.product_id] = Number(r.follower_count)
+          }
+          setFollowMap(fm)
+        } catch { /* ignore */ }
       } finally {
         refreshInFlightRef.current = false
       }
