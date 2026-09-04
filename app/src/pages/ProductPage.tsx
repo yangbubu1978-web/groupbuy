@@ -76,7 +76,13 @@ function ProductGallery({ product }: { product: Product }) {
   return (
     <div className="mx-3 mt-3 md:mx-0 md:mt-4 bg-white rounded-[24px] border border-ink-100 shadow-[0_4px_24px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden relative select-none" onTouchStart={(e) => { touchX.current = e.touches[0].clientX }} onTouchEnd={(e) => { if (touchX.current == null) return; const dx = e.changedTouches[0].clientX - touchX.current; touchX.current = null; if (Math.abs(dx) > 40) go(safeIdx + (dx < 0 ? 1 : -1)) }}>
       <div className="aspect-square flex items-center justify-center overflow-hidden bg-gradient-to-b from-ink-50/50 to-white"><img src={gallery[safeIdx]} alt={`${product.name} ${safeIdx + 1}/${gallery.length}`} className="w-full h-full object-cover transition-opacity duration-300" draggable={false} /></div>
-      {gallery.length > 1 && <><button aria-label="上一張" onClick={() => go(safeIdx - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/45 text-white grid place-items-center backdrop-blur-sm active:scale-95">‹</button><button aria-label="下一張" onClick={() => go(safeIdx + 1)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/45 text-white grid place-items-center backdrop-blur-sm active:scale-95">›</button><div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/35 backdrop-blur-sm rounded-full px-2.5 py-1.5">{gallery.map((_, i) => <button key={i} aria-label={`第${i + 1}張`} onClick={() => setIdx(i)} className={`w-2 h-2 rounded-full transition-all ${i === safeIdx ? 'bg-white w-5' : 'bg-white/60'}`} />)}</div><span className="absolute top-2 right-2 bg-black/45 text-white text-[11px] font-bold px-2 py-1 rounded-full backdrop-blur-sm">{safeIdx + 1}/{gallery.length}</span></>}
+      {gallery.length > 1 && (
+        <div className="flex items-center justify-center gap-4 py-3 border-t border-ink-100">
+          <button aria-label="上一張" onClick={() => go(safeIdx - 1)} className="w-11 h-11 rounded-full border-2 border-ink-200 bg-white text-ink-700 grid place-items-center text-xl font-bold shadow-sm active:scale-95 hover:bg-ink-50 hover:border-ink-300 transition">‹</button>
+          <span className="text-sm font-bold text-ink-500 tabular-nums min-w-[3em] text-center">{safeIdx + 1} / {gallery.length}</span>
+          <button aria-label="下一張" onClick={() => go(safeIdx + 1)} className="w-11 h-11 rounded-full border-2 border-ink-200 bg-white text-ink-700 grid place-items-center text-xl font-bold shadow-sm active:scale-95 hover:bg-ink-50 hover:border-ink-300 transition">›</button>
+        </div>
+      )}
     </div>
   )
 }
