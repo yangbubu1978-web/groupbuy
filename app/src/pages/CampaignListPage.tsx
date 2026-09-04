@@ -178,6 +178,29 @@ export default function CampaignListPage() {
     return () => { supabase.removeChannel(ch) }
   }, [])
 
+  // Realtime：有人關注或退追時，一次批次重抓人數（防抖 1 秒，不逐件查詢）
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const ch = supabase.channel('follows-counts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'product_follows' }, () => {
+        if (timer) clearTimeout(timer)
+        timer = setTimeout(() => {
+          void (async () => {
+            try {
+              const { data: fc } = await supabase.rpc('product_follower_counts')
+              const fm: Record<string, number> = {}
+              for (const r of (fc ?? []) as { product_id: string; follower_count: number }[]) {
+                fm[r.product_id] = Number(r.follower_count)
+              }
+              setFollowMap(fm)
+            } catch { /* ignore */ }
+          })()
+        }, 1000)
+      })
+      .subscribe()
+    return () => { if (timer) clearTimeout(timer); supabase.removeChannel(ch) }
+  }, [])
+
   // 每 30 秒同步狀態：使用 ref 讀取最新商品，避免 effect 因 state 改變反覆重建計時器。
   useEffect(() => {
     const refresh = async () => {
