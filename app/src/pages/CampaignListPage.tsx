@@ -78,6 +78,7 @@ export default function CampaignListPage() {
   }
   const productsRef = useRef<Product[]>([])
   const refreshInFlightRef = useRef(false)
+  const pendingFollowRefreshRef = useRef(false)
   const clock = useSharedClock()
   const clockRef = useRef(clock)
   useEffect(() => {
@@ -179,32 +180,54 @@ export default function CampaignListPage() {
   }, [])
 
   // Realtime：有人關注或退追時，一次批次重抓人數（防抖 1 秒，不逐件查詢）
+  // 分頁在背景時先記帳，回前景再一次補抓（避免空轉打資料庫）
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null
+    const refetch = () => {
+      void (async () => {
+        try {
+          const visibleIds = productsRef.current.map((p) => p.id)
+          if (visibleIds.length === 0) return
+          const { data: fc } = await supabase.rpc('product_follower_counts_by_ids', { p_ids: visibleIds })
+          const fm: Record<string, number> = {}
+          for (const r of (fc ?? []) as { product_id: string; follower_count: number }[]) {
+            fm[r.product_id] = Number(r.follower_count)
+          }
+          setFollowMap(fm)
+        } catch { /* ignore */ }
+      })()
+    }
     const ch = supabase.channel('follows-counts')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'product_follows' }, () => {
         if (timer) clearTimeout(timer)
         timer = setTimeout(() => {
-          void (async () => {
-            try {
-              const visibleIds = productsRef.current.map((p) => p.id)
-              if (visibleIds.length === 0) return
-              const { data: fc } = await supabase.rpc('product_follower_counts_by_ids', { p_ids: visibleIds })
-              const fm: Record<string, number> = {}
-              for (const r of (fc ?? []) as { product_id: string; follower_count: number }[]) {
-                fm[r.product_id] = Number(r.follower_count)
-              }
-              setFollowMap(fm)
-            } catch { /* ignore */ }
-          })()
+          if (document.hidden) {
+            pendingFollowRefreshRef.current = true
+            return
+          }
+          refetch()
         }, 1000)
       })
       .subscribe()
-    return () => { if (timer) clearTimeout(timer); supabase.removeChannel(ch) }
+    const onVisible = () => {
+      if (document.hidden) return
+      if (pendingFollowRefreshRef.current) {
+        pendingFollowRefreshRef.current = false
+        refetch()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      if (timer) clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+      supabase.removeChannel(ch)
+    }
   }, [])
 
   // 每 30 秒同步狀態：使用 ref 讀取最新商品，避免 effect 因 state 改變反覆重建計時器。
+  // 分頁在背景時暫停輪詢，回前景立即補抓一輪；每次觸發加隨機抖動，錯開大批同時在線的節奏。
   useEffect(() => {
+    let alive = true
     const refresh = async () => {
       if (refreshInFlightRef.current) return
       const ids = productsRef.current.map((p) => p.id)
@@ -267,8 +290,22 @@ export default function CampaignListPage() {
         refreshInFlightRef.current = false
       }
     }
-    const id = setInterval(() => { void refresh() }, 30_000)
-    return () => clearInterval(id)
+    const tick = () => {
+      if (!alive || document.hidden) return
+      void refresh()
+    }
+    const id = setInterval(tick, 30_000 + Math.floor(Math.random() * 5_000))
+    const onVisible = () => {
+      if (!alive || document.hidden) return
+      // 回前景立即補一輪，讓使用者切回來馬上看到最新庫存
+      void refresh()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      alive = false
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   // 問候語：依時段變化（使用共用時鐘）
