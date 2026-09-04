@@ -100,7 +100,7 @@ export default function CampaignListPage() {
 
       const { data } = await supabase
         .from('products')
-        .select('*')
+        .select('id, campaign_id, name, image_url, sku, original_price, minimum_price, price_interval_seconds, price_decrease, price_decrease_max, initial_stock, stock, max_per_customer, status, sale_start_at, forced_delist_at, created_at')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
 
