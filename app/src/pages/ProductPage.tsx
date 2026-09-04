@@ -75,7 +75,7 @@ function ProductGallery({ product }: { product: Product }) {
   if (gallery.length === 0) return <div className="mx-3 mt-3 md:mx-0 md:mt-4 bg-white rounded-[24px] border border-ink-100 shadow-sm overflow-hidden"><div className="aspect-square grid place-items-center bg-gradient-to-b from-ink-50/50 to-white"><span className="text-6xl opacity-15">🎁</span></div></div>
   return (
     <div className="mx-3 mt-3 md:mx-0 md:mt-4 bg-white rounded-[24px] border border-ink-100 shadow-[0_4px_24px_rgba(0,0,0,0.06),0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden relative select-none" onTouchStart={(e) => { touchX.current = e.touches[0].clientX }} onTouchEnd={(e) => { if (touchX.current == null) return; const dx = e.changedTouches[0].clientX - touchX.current; touchX.current = null; if (Math.abs(dx) > 40) go(safeIdx + (dx < 0 ? 1 : -1)) }}>
-      <div className="aspect-square flex items-center justify-center overflow-hidden bg-gradient-to-b from-ink-50/50 to-white"><img src={gallery[safeIdx]} alt={`${product.name} ${safeIdx + 1}/${gallery.length}`} className="w-full h-full object-cover transition-opacity duration-300" draggable={false} /></div>
+      <div className="aspect-square flex items-center justify-center overflow-hidden bg-gradient-to-b from-ink-50/50 to-white"><img src={gallery[safeIdx]} alt={`${product.name} ${safeIdx + 1}/${gallery.length}`} onError={(e) => { const img = e.currentTarget; if (safeIdx < gallery.length - 1) { go(safeIdx + 1) } else { img.style.visibility = "hidden"; const box = img.parentElement as HTMLElement | null; if (box && !box.querySelector("[data-img-fallback]")) { const f = document.createElement("span"); f.dataset.imgFallback = "1"; f.className = "text-6xl opacity-15"; f.textContent = "🎁"; box.appendChild(f) } } }} className="w-full h-full object-cover transition-opacity duration-300" draggable={false} /></div>
       {gallery.length > 1 && (
         <div className="flex items-center justify-center gap-4 py-3 border-t border-ink-100">
           <button aria-label="上一張" onClick={() => go(safeIdx - 1)} className="w-11 h-11 rounded-full border-2 border-ink-200 bg-white text-ink-700 grid place-items-center text-xl font-bold shadow-sm active:scale-95 hover:bg-ink-50 hover:border-ink-300 transition">‹</button>
@@ -376,7 +376,7 @@ export default function ProductPage() {
   if (loading) {
     return (
       <div className="min-h-dvh bg-[#fcfcfc] flex items-center justify-center">
-        <p className="text-[17px] text-ink-400">載入中…</p>
+        <p className="text-[17px] text-ink-500">載入中…</p>
       </div>
     )
   }
@@ -419,13 +419,13 @@ export default function ProductPage() {
           </button>
 
           <Link to="/" className="min-w-0 flex-1 text-center rounded-xl px-2 py-1 hover:bg-white/10 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="回到首頁">
-            <div className="text-[11px] tracking-[0.18em] text-white/85 font-bold">⚡ 先買先贏 · 荷蘭式降價</div>
+            <div className="text-[13px] tracking-wide text-white/95 font-bold">⚡ 先買先贏 · 荷蘭式降價</div>
             {buyState.kind === 'cart' ? (
               <>
                 <div className="text-[22px] md:text-[30px] font-extrabold text-white leading-tight tracking-tight">
                   🔒 價格已鎖定 {fmtMoney(buyState.lockedPrice)}
                 </div>
-                <div className="text-[11px] md:text-xs text-white/80 font-medium">結帳前不會再變動</div>
+                <div className="text-[12px] md:text-xs text-white/90 font-medium">結帳前不會再變動</div>
               </>
             ) : !atFloor ? (
               <>
@@ -436,7 +436,7 @@ export default function ProductPage() {
                 >
                   ⏰ {formatCountdown(live.nextDropIn)}
                 </div>
-                <div className="text-[11px] md:text-xs text-white/80 font-medium tracking-wide">下次降價倒數</div>
+                <div className="text-[12px] md:text-xs text-white/90 font-medium tracking-wide">下次降價倒數</div>
               </>
             ) : (
               <div className="text-xl md:text-2xl font-extrabold text-white leading-tight">✅ 已是最優惠價</div>
@@ -490,10 +490,10 @@ export default function ProductPage() {
               <p className="text-[15px] md:text-[16px] text-ink-600 leading-relaxed">{product.description}</p>
             )}
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-[13px] text-ink-400 bg-ink-50 border border-ink-100 rounded-full px-3 py-1">SKU：{product.sku}</span>
+              <span className="text-[13px] text-ink-500 bg-ink-50 border border-ink-100 rounded-full px-3 py-1">SKU：{product.sku}</span>
               {followerCount > 0 && (
                 <span className={`inline-flex items-center gap-1.5 text-[14px] px-3 py-1 rounded-full border shadow-sm ${followerCount >= 5 ? 'bg-red-50 border-red-200 text-red-700 font-bold' : 'bg-white border-ink-200 text-ink-600 font-medium'}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${followerCount >= 5 ? 'bg-red-500 animate-pulse' : 'bg-ink-400'}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${followerCount >= 5 ? 'bg-red-500 animate-pulse' : 'bg-ink-300'}`} />
                   {followerCount} 人正在關注
                 </span>
               )}
@@ -515,11 +515,11 @@ export default function ProductPage() {
 
             <div className="flex items-end justify-between gap-4">
               <div>
-                <div className="text-[13px] font-semibold tracking-wide text-ink-400 mb-1">原價</div>
-                <div className="text-[16px] text-ink-400 line-through decoration-ink-300">{fmtMoney(Number(product.original_price))}</div>
+                <div className="text-[13px] font-semibold tracking-wide text-ink-500 mb-1">原價</div>
+                <div className="text-[16px] text-ink-500 line-through decoration-ink-300">{fmtMoney(Number(product.original_price))}</div>
               </div>
               <div className="text-right">
-                <div className="text-[13px] font-semibold tracking-wide text-ink-400 mb-1">
+                <div className="text-[13px] font-semibold tracking-wide text-ink-500 mb-1">
                   {buyState.kind === 'cart' ? '已鎖定價格' : '目前價格'}
                 </div>
                 <div className={`text-[36px] md:text-[40px] font-extrabold tracking-tight leading-none transition-colors duration-500 ${priceFlash ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -726,7 +726,7 @@ export default function ProductPage() {
                 <div className="mt-4 space-y-1.5 text-[15px]">
                   <p className="text-ink-600">{product.name}</p>
                   <p className="text-ink-900">成交價格 <span className="font-extrabold">{fmtMoney(buyState.unitPrice)}</span> × {buyState.quantity}</p>
-                  <p className="text-[13px] text-ink-400 font-mono">訂單編號：{buyState.orderNo}</p>
+                  <p className="text-[13px] text-ink-600 font-mono">訂單編號：{buyState.orderNo}</p>
                 </div>
                 <p className="mt-4 text-[14px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-2xl py-2.5">商品已為您保留</p>
                 <div className="mt-6 grid grid-cols-2 gap-2.5">

@@ -56,7 +56,7 @@ function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
             >
               <span
                 className={[
-                  'w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs sm:text-sm font-extrabold shrink-0',
+                  'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-sm sm:text-base font-extrabold shrink-0',
                   isActive
                     ? 'bg-accent-500 text-white shadow'
                     : isDone
@@ -334,7 +334,7 @@ export default function CartPage() {
               <h2 className="mt-5 text-[20px] font-black text-ink-900 tracking-wide">購物車空空的</h2>
               <p className="mt-2 text-[15px] leading-relaxed text-ink-500">
                 別擔心，去逛逛團購好物吧！<br />
-                <span className="text-sm text-ink-400">看到喜歡的先加入購物車，價格會幫您鎖定 1 分鐘</span>
+                <span className="text-sm text-ink-500">看到喜歡的先加入購物車，價格會幫您鎖定 1 分鐘</span>
               </p>
               <Link
                 to="/"
@@ -342,7 +342,7 @@ export default function CartPage() {
               >
                 去逛團購 →
               </Link>
-              <p className="mt-4 text-xs text-ink-400">💡 提示：加入購物車後，1 分鐘內結帳可享鎖定價</p>
+              <p className="mt-4 text-[13px] text-ink-500">💡 提示：加入購物車後，1 分鐘內結帳可享鎖定價</p>
             </div>
 
             {/* 空車時的小幫手卡片 */}
@@ -374,7 +374,7 @@ export default function CartPage() {
                     <div className="flex gap-4">
                       <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-ink-50 border border-ink-100 overflow-hidden shrink-0 flex items-center justify-center">
                         {item.products?.image_url ? (
-                          <img src={item.products.image_url} alt={item.products.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                          <img src={item.products.image_url} alt={item.products.name} loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.visibility = "hidden" }} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-3xl opacity-30" aria-hidden>🎁</span>
                         )}
@@ -398,7 +398,7 @@ export default function CartPage() {
                             🔒 價格已鎖定
                           </span>
                         </div>
-                        <p className="mt-1 text-xs text-ink-400">
+                        <p className="mt-1 text-[13px] text-ink-500">
                           小計 <span className="font-bold text-ink-700 tabular-nums">{fmtMoney(lineTotal)}</span>
                         </p>
                       </div>

@@ -397,12 +397,12 @@ export default function CampaignListPage() {
           {noticeOpen && (
             <div className="px-4 pb-4">
               <div className="space-y-2 text-[14px] leading-[1.6] text-ink-700 pt-1">
-                <div className="flex gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-ink-900 text-white text-[11px] font-bold flex items-center justify-center mt-0.5">1</span><p>越晚越便宜，售完即下架，被人買走就沒有了。</p></div>
-                <div className="flex gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-ink-900 text-white text-[11px] font-bold flex items-center justify-center mt-0.5">2</span><p>放入購物車保留 60 秒，逾時即棄單，自動釋放庫存，讓給別人買。</p></div>
-                <div className="flex gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-ink-900 text-white text-[11px] font-bold flex items-center justify-center mt-0.5">3</span><p>結帳即確認，<b className="text-red-600 bg-red-50 px-1 py-0.5 rounded">無法自行取消</b>，請謹慎下單。</p></div>
-                <div className="flex gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-ink-900 text-white text-[11px] font-bold flex items-center justify-center mt-0.5">4</span><p>限量 1 件棄單後，系統冷卻 3 分鐘內不能再搶同一件商品。</p></div>
-                <div className="flex gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-ink-900 text-white text-[11px] font-bold flex items-center justify-center mt-0.5">5</span><p>結帳後請找窗口付款，付款後為您備貨。</p></div>
-                <div className="flex gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-ink-900 text-white text-[11px] font-bold flex items-center justify-center mt-0.5">6</span><p>備貨後通知領貨，取貨完成，訂單才算完成。</p></div>
+                <div className="flex gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-ink-900 text-white text-[13px] font-bold flex items-center justify-center mt-0.5">1</span><p>越晚越便宜，售完即下架，被人買走就沒有了。</p></div>
+                <div className="flex gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-ink-900 text-white text-[13px] font-bold flex items-center justify-center mt-0.5">2</span><p>放入購物車保留 60 秒，逾時即棄單，自動釋放庫存，讓給別人買。</p></div>
+                <div className="flex gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-ink-900 text-white text-[13px] font-bold flex items-center justify-center mt-0.5">3</span><p>結帳即確認，<b className="text-red-600 bg-red-50 px-1 py-0.5 rounded">無法自行取消</b>，請謹慎下單。</p></div>
+                <div className="flex gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-ink-900 text-white text-[13px] font-bold flex items-center justify-center mt-0.5">4</span><p>限量 1 件棄單後，系統冷卻 3 分鐘內不能再搶同一件商品。</p></div>
+                <div className="flex gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-ink-900 text-white text-[13px] font-bold flex items-center justify-center mt-0.5">5</span><p>結帳後請找窗口付款，付款後為您備貨。</p></div>
+                <div className="flex gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-ink-900 text-white text-[13px] font-bold flex items-center justify-center mt-0.5">6</span><p>備貨後通知領貨，取貨完成，訂單才算完成。</p></div>
               </div>
               <p className="mt-3 pt-3 border-t border-ink-100 text-center text-[13px] font-bold text-accent-600">❤️ 心動別猶豫，結帳前再確認一次！</p>
             </div>

@@ -25,7 +25,7 @@ function FollowItem({ product, onRemove, removing }: {
       >
         <div className="w-12 h-12 rounded-xl bg-ink-100 overflow-hidden shrink-0 flex items-center justify-center">
           {product.image_url ? (
-            <img src={product.image_url} alt={product.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+            <img src={product.image_url} alt={product.name} loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.visibility = "hidden" }} className="w-full h-full object-cover" />
           ) : (
             <span className="text-lg opacity-30">🎁</span>
           )}

@@ -63,6 +63,7 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
         <div className="aspect-square bg-ink-50 flex items-center justify-center overflow-hidden relative">
           {product.image_url ? (
             <img src={product.image_url} alt={product.name} loading={index > 1 ? 'lazy' : undefined} decoding="async"
+            onError={(e) => { e.currentTarget.style.visibility = "hidden" }}
               className="w-full h-full object-cover opacity-60 group-hover:scale-[1.02] transition-transform duration-700 ease-out" />
           ) : (
             <span className="text-6xl opacity-20">🎁</span>
@@ -173,6 +174,7 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
             alt={product.name}
             loading={index > 1 ? 'lazy' : undefined}
             decoding="async"
+            onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
             className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700 ease-out"
           />
         ) : (

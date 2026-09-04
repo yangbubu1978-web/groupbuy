@@ -98,7 +98,7 @@ export default function OrdersPage() {
     <div className="min-h-dvh bg-ink-50 pb-16">
       <header className="bg-white/90 backdrop-blur border-b border-ink-100 px-5 py-4 sticky top-0 z-10">
         <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between">
-          <Link to="/" className="w-9 h-9 -ml-1.5 rounded-full hover:bg-ink-100 text-ink-600" aria-label="返回">
+          <Link to="/" className="w-11 h-11 -ml-2 rounded-full hover:bg-ink-100 text-ink-600 grid place-items-center" aria-label="返回">
             ←
           </Link>
           <h1 className="text-base font-bold text-ink-900 font-display">我的訂單</h1>
@@ -243,7 +243,7 @@ export default function OrdersPage() {
                       </div>
                     ))}
                   </div>
-                  <div className="flex justify-between mt-1 text-[11px] text-ink-600">
+                  <div className="flex justify-between mt-1 text-[12px] text-ink-600">
                     <span>下單</span><span>結帳</span><span>付款</span><span>出貨</span><span>完成</span>
                   </div>
                 </div>

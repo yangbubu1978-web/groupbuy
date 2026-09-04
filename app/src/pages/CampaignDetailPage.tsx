@@ -21,14 +21,14 @@ function ProductCard({ product, followers = 0 }: { product: Product; followers?:
       {/* 圖片 */}
       <div className="aspect-square bg-ink-100 flex items-center justify-center overflow-hidden relative">
         {product.image_url ? (
-          <img src={product.image_url} alt={product.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+          <img src={product.image_url} alt={product.name} loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.visibility = "hidden" }} className="w-full h-full object-cover" />
         ) : (
           <span className="text-4xl opacity-20">🎁</span>
         )}
         {/* 關注人數徽章 */}
         {followers > 0 && (
           <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-black/55 backdrop-blur
-                           px-2.5 py-1 text-[11px] font-semibold text-white">
+                           px-2.5 py-1 text-[12px] font-semibold text-white">
             ❤️ {followers}
           </span>
         )}
@@ -46,7 +46,7 @@ function ProductCard({ product, followers = 0 }: { product: Product; followers?:
 
         <div className="mt-2 flex items-end justify-between">
           <div>
-            <span className="text-xs text-ink-400 line-through mr-2">
+            <span className="text-xs text-ink-500 line-through mr-2">
               {fmtMoney(Number(product.original_price))}
             </span>
             <span className="text-2xl font-extrabold text-ink-900 tracking-tight">
@@ -132,7 +132,7 @@ export default function CampaignDetailPage() {
   if (loading) {
     return (
       <div className="min-h-dvh bg-ink-50 flex items-center justify-center">
-        <p className="text-sm text-ink-400">載入中…</p>
+        <p className="text-sm text-ink-500">載入中…</p>
       </div>
     )
   }
@@ -172,7 +172,7 @@ export default function CampaignDetailPage() {
           >
             ←
           </button>
-          <div className="text-[11px] tracking-widest text-ink-400">⚡ 先買先贏</div>
+          <div className="text-[13px] tracking-wide text-ink-600 font-semibold">⚡ 先買先贏</div>
           <div className="w-9" />
         </div>
       </header>
@@ -212,7 +212,7 @@ export default function CampaignDetailPage() {
         <section className="space-y-4">
           {products.map((p) => <ProductCard key={p.id} product={p} followers={followMap[p.id] ?? 0} />)}
           {products.length === 0 && (
-            <p className="text-center text-sm text-ink-400 py-12">
+            <p className="text-center text-sm text-ink-500 py-12">
               此活動尚無商品
             </p>
           )}
