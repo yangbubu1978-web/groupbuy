@@ -39,7 +39,8 @@ export function corsHeadersFor(req: Request): Record<string, string> {
 export function handleCors(req: Request): Response | null {
   if (req.method !== "OPTIONS") return null;
   const headers = corsHeadersFor(req);
-  return new Response("ok", { status: 204, headers });
+  // 204 不可帶 body，帶了會在 Deno runtime 直接 TypeError → 500
+  return new Response(null, { status: 204, headers });
 }
 
 export function json(
