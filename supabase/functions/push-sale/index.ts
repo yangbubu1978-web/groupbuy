@@ -6,6 +6,7 @@
 // ============================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { corsHeaders, handleCors, json } from "../_shared/cors.ts";
+import { authorizePush } from "../_shared/push_auth.ts";
 import { getVapidConfig, sendPush } from "../_shared/webpush.ts";
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
@@ -25,8 +26,8 @@ Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
-  // 僅允許 POST/GET（cron 用 POST）
-  if (req.method !== "POST" && req.method !== "GET") {
+  // 僅允許 POST（排程與後台手動觸發皆用 POST；GET 不再開放）
+  if (req.method !== "POST") {
     return json({ ok: false, reason: "method_not_allowed" }, 405);
   }
 
@@ -45,6 +46,12 @@ Deno.serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  // 驗證呼叫身分：排程密鑰或管理員二選一，未通過直接拒絕
+  const auth = await authorizePush(req, admin);
+  if (!auth.ok) {
+    return json({ ok: false, reason: auth.reason }, auth.status);
+  }
+
   const now = new Date();
   const twoMinAgo = new Date(now.getTime() - 2 * 60 * 1000);
 
@@ -57,7 +64,8 @@ Deno.serve(async (req) => {
     .eq("status", "active");
 
   if (prodErr) {
-    return json({ ok: false, reason: "query_products_failed", detail: prodErr.message }, 500);
+    console.error("push-sale query_products_failed");
+    return json({ ok: false, reason: "query_products_failed" }, 500);
   }
   if (!products || products.length === 0) {
     return json({ ok: true, sent: 0, products: 0, reason: "no_new_sales" });

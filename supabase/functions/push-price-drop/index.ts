@@ -7,6 +7,7 @@
 // ============================================================
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { handleCors, json } from "../_shared/cors.ts";
+import { authorizePush } from "../_shared/push_auth.ts";
 import { getVapidConfig, sendPush } from "../_shared/webpush.ts";
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
@@ -52,7 +53,7 @@ function computeCurrentPrice(p: {
 Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
-  if (req.method !== "POST" && req.method !== "GET") {
+  if (req.method !== "POST") {
     return json({ ok: false, reason: "method_not_allowed" }, 405);
   }
 
@@ -67,6 +68,12 @@ Deno.serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  // 驗證呼叫身分：排程密鑰或管理員二選一，未通過直接拒絕
+  const auth = await authorizePush(req, admin);
+  if (!auth.ok) {
+    return json({ ok: false, reason: auth.reason }, auth.status);
+  }
+
   // 1) 拉候選商品（stock>0 + active + 有原價），在 JS 端算是否已達 30/50/70% 門檻
   const { data: products, error: prodErr } = await admin
     .from("products")
@@ -76,7 +83,10 @@ Deno.serve(async (req) => {
     .eq("status", "active")
     .gt("stock", 0);
 
-  if (prodErr) return json({ ok: false, reason: "query_products_failed", detail: prodErr.message }, 500);
+  if (prodErr) {
+    console.error("push-price-drop query_products_failed");
+    return json({ ok: false, reason: "query_products_failed" }, 500);
+  }
   if (!products || products.length === 0) return json({ ok: true, sent: 0, products: 0 });
 
   const candidates = (products as unknown as Array<{
