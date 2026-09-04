@@ -6,17 +6,11 @@
 // ============================================================
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { rateLimit, rateLimitKeyFrom } from '../_shared/rate_limit.ts'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-}
+import { handleCors, json } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const cors = handleCors(req)
+  if (cors) return cors
   try {
     const authHeader = req.headers.get('Authorization') ?? ''
     const supabase = createClient(
@@ -28,14 +22,14 @@ Deno.serve(async (req) => {
     // 驗證使用者
     const { data: userData, error: userErr } = await supabase.auth.getUser()
     if (userErr || !userData?.user) {
-      return json({ ok: false, reason: 'unauthenticated' }, 401)
+      return json({ ok: false, reason: 'unauthenticated' }, req, 401)
     }
 
     const body = await req.json().catch(() => null)
     const productId: string | undefined = body?.productId
     const quantity: number = Number(body?.quantity ?? 1)
     if (!productId || !Number.isInteger(quantity) || quantity < 1) {
-      return json({ ok: false, reason: 'bad_request' }, 400)
+      return json({ ok: false, reason: 'bad_request' }, req, 400)
     }
 
     // 限流：每個使用者每分鐘最多 12 次下單意圖（正常人按不出這麼多次）
@@ -55,10 +49,10 @@ Deno.serve(async (req) => {
       p_quantity: quantity,
     })
     if (reserveError) {
-      return json({ ok: false, reason: 'server_error' }, 500)
+      return json({ ok: false, reason: 'server_error' }, req, 500)
     }
     if (!reservation?.ok) {
-      return json(reservation, reservation?.reason === 'offer_ended' ? 410 : 409)
+      return json(reservation, req, reservation?.reason === 'offer_ended' ? 410 : 409)
     }
 
     const { data, error } = await supabase.rpc('checkout_reservation', {
@@ -66,17 +60,10 @@ Deno.serve(async (req) => {
     })
     if (error) {
       // 不在 Edge Function 內自行補庫存；DB transaction / cleanup 負責一致性。
-      return json({ ok: false, reason: 'server_error' }, 500)
+      return json({ ok: false, reason: 'server_error' }, req, 500)
     }
-    return json(data, data?.ok ? 200 : 409)
+    return json(data, req, data?.ok ? 200 : 409)
   } catch (_e) {
-    return json({ ok: false, reason: 'server_error' }, 500)
+    return json({ ok: false, reason: 'server_error' }, req, 500)
   }
 })
-
-function json(payload: unknown, status: number, extraHeaders: Record<string, string> = {}): Response {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json', ...extraHeaders },
-  })
-}

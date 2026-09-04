@@ -8,17 +8,11 @@
 // 部署: supabase functions deploy admin
 // ============================================================
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-}
+import { handleCors, json } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const cors = handleCors(req)
+  if (cors) return cors
   try {
     // service_role client（繞過 RLS，僅在驗證管理員後使用）
     const admin = createClient(
@@ -36,7 +30,7 @@ Deno.serve(async (req) => {
 
     const { data: userData, error: userErr } = await userClient.auth.getUser()
     if (userErr || !userData?.user) {
-      return json({ ok: false, reason: 'unauthenticated' }, 401)
+      return json({ ok: false, reason: 'unauthenticated' }, req, 401)
     }
 
     const body = await req.json().catch(() => null)
@@ -46,11 +40,11 @@ Deno.serve(async (req) => {
     if (action === 'updateOwnEmail') {
       const email = String(body.email ?? '').trim().toLowerCase()
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.includes('@phone.groupbuy.local') || email.includes('@name.groupbuy.local') || email.includes('@admin.groupbuy.local')) {
-        return json({ ok: false, reason: 'invalid_email' }, 400)
+        return json({ ok: false, reason: 'invalid_email' }, req, 400)
       }
       const { error } = await admin.auth.admin.updateUserById(userData.user.id, { email, email_confirm: true })
-      if (error) return json({ ok: false, reason: error.message.includes('already') ? 'exists' : error.message }, 409)
-      return json({ ok: true })
+      if (error) return json({ ok: false, reason: error.message.includes('already') ? 'exists' : error.message }, req, 409)
+      return json({ ok: true }, req)
     }
 
     // 其餘動作需管理員權限
@@ -60,7 +54,7 @@ Deno.serve(async (req) => {
       .eq('user_id', userData.user.id)
       .maybeSingle()
     if (!isAdminRow) {
-      return json({ ok: false, reason: 'forbidden' }, 403)
+      return json({ ok: false, reason: 'forbidden' }, req, 403)
     }
 
     // 手機號碼一律正規化後再使用（25. 手機格式）
@@ -84,10 +78,10 @@ Deno.serve(async (req) => {
         const { password, name } = body
         const pwd = String(password ?? '')
         if (!name || String(name).trim().length < 1 || !pwd || pwd.length < 6) {
-          return json({ ok: false, reason: 'bad_request' }, 400)
+          return json({ ok: false, reason: 'bad_request' }, req, 400)
         }
         if (body.phone && String(body.phone).trim() !== '' && !hasPhone) {
-          return json({ ok: false, reason: 'bad_request' }, 400)
+          return json({ ok: false, reason: 'bad_request' }, req, 400)
         }
         // email 策略：有手機 → phone@phone.groupbuy.local；無手機 → 名字轉 base64url@name.groupbuy.local
         let email: string
@@ -115,24 +109,25 @@ Deno.serve(async (req) => {
         if (error) {
           return json(
             { ok: false, reason: error.message.includes('already') ? 'exists' : error.message },
+            req,
             409,
           )
         }
-        return json({ ok: true, userId: data.user.id, email })
+        return json({ ok: true, userId: data.user.id, email }, req)
       }
 
       // ---------- 設定／移除管理員（by auth user_id，保留給腳本用） ----------
       case 'setAdminByUserId': {
         const { userId, isAdmin } = body
-        if (!userId) return json({ ok: false, reason: 'bad_request' }, 400)
+        if (!userId) return json({ ok: false, reason: 'bad_request' }, req, 400)
         if (isAdmin) {
           const { error } = await admin.from('admins').upsert({ user_id: userId })
-          if (error) return json({ ok: false, reason: error.message }, 500)
+          if (error) return json({ ok: false, reason: error.message }, req, 500)
         } else {
           const { error } = await admin.from('admins').delete().eq('user_id', userId)
-          if (error) return json({ ok: false, reason: error.message }, 500)
+          if (error) return json({ ok: false, reason: error.message }, req, 500)
         }
-        return json({ ok: true })
+        return json({ ok: true }, req)
       }
 
       // ---------- 重設密碼 ----------
@@ -140,79 +135,79 @@ Deno.serve(async (req) => {
         const phone = normalizePhone(body.phone)
         const { newPassword } = body
         if (!/^09\d{8}$/.test(phone) || !newPassword || String(newPassword).length < 6) {
-          return json({ ok: false, reason: 'bad_request' }, 400)
+          return json({ ok: false, reason: 'bad_request' }, req, 400)
         }
         const email = `${phone}@phone.groupbuy.local`
         const { data: found } = await admin.auth.admin.listUsers()
         const target = found?.users?.find((u) => u.email === email)
-        if (!target) return json({ ok: false, reason: 'not_found' }, 404)
+        if (!target) return json({ ok: false, reason: 'not_found' }, req, 404)
         const { error } = await admin.auth.admin.updateUserById(target.id, {
           password: newPassword,
         })
-        if (error) return json({ ok: false, reason: error.message }, 500)
-        return json({ ok: true })
+        if (error) return json({ ok: false, reason: error.message }, req, 500)
+        return json({ ok: true }, req)
       }
 
       // ---------- 訂單狀態轉移（電商狀態機：合法流轉＋庫存回補） ----------
       case 'transitionOrder': {
         const { orderId, status, reason } = body
         if (!orderId || typeof status !== 'string') {
-          return json({ ok: false, reason: 'bad_request' }, 400)
+          return json({ ok: false, reason: 'bad_request' }, req, 400)
         }
         const { data, error } = await admin
           .rpc('admin_transition_order', { p_order_id: orderId, p_next: status, p_reason: reason ?? null })
-        if (error) return json({ ok: false, reason: error.message }, 500)
+        if (error) return json({ ok: false, reason: error.message }, req, 500)
         const r = (Array.isArray(data) ? data[0] : data) as { ok?: boolean; reason?: string }
-        if (!r?.ok) return json({ ok: false, reason: r?.reason ?? 'invalid_transition' }, 400)
-        return json({ ok: true })
+        if (!r?.ok) return json({ ok: false, reason: r?.reason ?? 'invalid_transition' }, req, 400)
+        return json({ ok: true }, req)
       }
 
       // ---------- 指派／撤銷管理員（總管理功能） ----------
       case 'setAdmin': {
         const { customerId, makeAdmin } = body
         if (!customerId || typeof makeAdmin !== 'boolean') {
-          return json({ ok: false, reason: 'bad_request' }, 400)
+          return json({ ok: false, reason: 'bad_request' }, req, 400)
         }
         const { data: target } = await admin
           .from('customers')
           .select('id, auth_user_id, name, phone')
           .eq('id', customerId)
           .maybeSingle()
-        if (!target?.auth_user_id) return json({ ok: false, reason: 'not_found' }, 404)
+        if (!target?.auth_user_id) return json({ ok: false, reason: 'not_found' }, req, 404)
 
         // 防呆：不能把自己降級（避免最後一個管理員把自己鎖在外面）
         if (!makeAdmin && target.auth_user_id === userData.user.id) {
-          return json({ ok: false, reason: 'cannot_demote_self' }, 400)
+          return json({ ok: false, reason: 'cannot_demote_self' }, req, 400)
         }
 
         if (makeAdmin) {
           const { error } = await admin
             .from('admins')
             .upsert({ user_id: target.auth_user_id, note: `由後台指派（${target.name}）` })
-          if (error) return json({ ok: false, reason: error.message }, 500)
+          if (error) return json({ ok: false, reason: error.message }, req, 500)
         } else {
           const { error } = await admin
             .from('admins')
             .delete()
             .eq('user_id', target.auth_user_id)
-          if (error) return json({ ok: false, reason: error.message }, 500)
+          if (error) return json({ ok: false, reason: error.message }, req, 500)
         }
-        return json({ ok: true })
+        return json({ ok: true }, req)
       }
 
       // ---------- 刪除 auth 帳號（客戶刪除時一併清理） ----------
       case 'deleteAuthUser': {
         const phone = normalizePhone(body.phone)
         if (!/^09\d{8}$/.test(phone)) {
-          return json({ ok: false, reason: 'bad_request' }, 400)
+          return json({ ok: false, reason: 'bad_request' }, req, 400)
         }
         const email1 = `${phone}@phone.groupbuy.local`
         const { data: found } = await admin.auth.admin.listUsers()
         const target = found?.users?.find((u) => u.email === email1 || u.phone === phone)
-        if (!target) return json({ ok: false, reason: 'not_found' }, 404)
+        if (!target) return json({ ok: false, reason: 'not_found' }, req, 404)
         const { error } = await admin.auth.admin.deleteUser(target.id)
-        if (error) return json({ ok: false, reason: error.message }, 500)
-        return json({ ok: true })
+        if (error) return json({ ok: false, reason: error.message }, req, 500)
+        return json({ ok: true }, req)
       }
 
       // ---------- 更新客戶登入資訊（改名／改手機／重設密碼，一次搞定） ----------
@@ -220,16 +215,16 @@ Deno.serve(async (req) => {
         const phone = normalizePhone(body.phone)
         const { newPhone, newName, newPassword } = body
         if (!/^09\d{8}$/.test(phone)) {
-          return json({ ok: false, reason: 'bad_request' }, 400)
+          return json({ ok: false, reason: 'bad_request' }, req, 400)
         }
         const email2 = `${phone}@phone.groupbuy.local`
         const { data: found2 } = await admin.auth.admin.listUsers()
         const target2 = found2?.users?.find((u) => u.email === email2 || u.phone === phone)
-        if (!target2) return json({ ok: false, reason: 'not_found' }, 404)
+        if (!target2) return json({ ok: false, reason: 'not_found' }, req, 404)
 
         // 新手機也要過格式檢查（有填才更新）
         if (newPhone && !/^09\d{8}$/.test(normalizePhone(newPhone))) {
-          return json({ ok: false, reason: 'invalid_new_phone' }, 400)
+          return json({ ok: false, reason: 'invalid_new_phone' }, req, 400)
         }
 
         const update: Record<string, unknown> = {}
@@ -241,46 +236,40 @@ Deno.serve(async (req) => {
         if (newName) update.user_metadata = { ...(update.user_metadata ?? {}), name: newName }
         if (newPassword) {
           if (String(newPassword).length < 6) {
-            return json({ ok: false, reason: 'weak_password' }, 400)
+            return json({ ok: false, reason: 'weak_password' }, req, 400)
           }
           update.password = newPassword
         }
-        if (Object.keys(update).length === 0) return json({ ok: true })
+        if (Object.keys(update).length === 0) return json({ ok: true }, req)
 
         const { error } = await admin.auth.admin.updateUserById(target2.id, update)
         if (error) {
           return json(
             { ok: false, reason: error.message.includes('already') ? 'phone_exists' : error.message },
+            req,
             409,
           )
         }
-        return json({ ok: true, newPhone: update.email ? String(update.email).split('@')[0] : undefined })
+        return json({ ok: true, newPhone: update.email ? String(update.email).split('@')[0] : undefined }, req)
       }
 
       case 'updateCustomerEmail': {
         const email = String(body.email ?? '').trim().toLowerCase()
         const { customerId } = body
         if (!customerId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.includes('@phone.groupbuy.local')) {
-          return json({ ok: false, reason: 'invalid_email' }, 400)
+          return json({ ok: false, reason: 'invalid_email' }, req, 400)
         }
         const { data: cust } = await admin.from('customers').select('auth_user_id').eq('id', customerId).maybeSingle()
-        if (!cust?.auth_user_id) return json({ ok: false, reason: 'not_found' }, 404)
+        if (!cust?.auth_user_id) return json({ ok: false, reason: 'not_found' }, req, 404)
         const { error } = await admin.auth.admin.updateUserById(cust.auth_user_id, { email, email_confirm: true })
-        if (error) return json({ ok: false, reason: error.message.includes('already') ? 'exists' : error.message }, 409)
-        return json({ ok: true })
+        if (error) return json({ ok: false, reason: error.message.includes('already') ? 'exists' : error.message }, req, 409)
+        return json({ ok: true }, req)
       }
 
       default:
-        return json({ ok: false, reason: 'unknown_action' }, 400)
+        return json({ ok: false, reason: 'unknown_action' }, req, 400)
     }
   } catch (_e) {
-    return json({ ok: false, reason: 'server_error' }, 500)
+    return json({ ok: false, reason: 'server_error' }, req, 500)
   }
 })
-
-function json(payload: unknown, status: number): Response {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
-}
