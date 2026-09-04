@@ -39,7 +39,7 @@ export const ORDER_STATUS_ICON: Record<OrderStatus, string> = {
 
 /**
  * 電商狀態機：每個狀態可前往的下一站
- * ⚠️ 必須與 SQL `admin_transition_order`（20260903_order_lifecycle.sql）一致。
+ * ⚠️ 必須與 SQL `admin_transition_order`（20260919_align_admin_state_machine.sql）一致。
  * 前端此表僅決定「顯示哪些按鈕」；真正的合法性檢查在 DB 端狀態機，
  * 兩者飄移時 DB 會擋下並回 invalid_transition，不會寫壞資料。
  */
