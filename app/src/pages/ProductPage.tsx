@@ -392,6 +392,9 @@ export default function ProductPage() {
   const displayPrice = buyState.kind === 'cart' ? buyState.lockedPrice : live.price
   const original = Number(product.original_price)
   const minimum = Math.min(Number(product.minimum_price), original)
+  const isLocked = buyState.kind === 'cart'
+  const hasFloorRange = Number.isFinite(minimum) && minimum < original
+  const maxSave = Math.max(0, displayPrice - minimum)
   const atFloor = displayPrice <= minimum
   const dropped = original - displayPrice
   const dropPct = original > 0 ? Math.max(0, Math.min(100, (dropped / original) * 100)) : 0
@@ -528,6 +531,29 @@ export default function ProductPage() {
               </div>
             </div>
 
+            {/* 底價透明行 — 雅布拍板公開底價：越晚越便宜、越早越保險 */}
+            {hasFloorRange && !isLocked && !atFloor && maxSave > 0 && (
+              <p className="flex items-center gap-1.5 text-[15px] text-ink-600 leading-snug" aria-label={`最低價${fmtMoney(minimum)}，最多還能再省${fmtMoney(maxSave)}`}>
+                🔒 <span className="font-semibold text-ink-700">最低價</span>
+                <span className="font-extrabold text-ink-900 tabular-nums">{fmtMoney(minimum)}</span>
+                <span className="text-ink-300" aria-hidden="true">・</span>
+                <span>最多再省 <span className="font-extrabold text-emerald-700 tabular-nums">{fmtMoney(maxSave)}</span></span>
+              </p>
+            )}
+            {hasFloorRange && !isLocked && atFloor && (
+              <p className="flex items-center gap-1.5 text-[15px] font-bold text-emerald-700 leading-snug">
+                ✅ 已到最低價 {fmtMoney(minimum)}，不會再降價
+              </p>
+            )}
+            {hasFloorRange && isLocked && (
+              <p className="flex items-center gap-1.5 text-[15px] text-ink-600 leading-snug">
+                🔒 <span className="font-semibold text-ink-700">最低價</span>
+                <span className="font-extrabold text-ink-900 tabular-nums">{fmtMoney(minimum)}</span>
+                <span className="text-ink-300" aria-hidden="true">・</span>
+                <span>已鎖定價格，結帳前不再變動</span>
+              </p>
+            )}
+
             {!atFloor && (
               <p className="text-[14px] text-ink-500 leading-relaxed bg-ink-50 rounded-xl px-3.5 py-2.5 border border-ink-100">
                 💡 再等等還會更便宜，但庫存有限、不保證買得到。
@@ -580,6 +606,10 @@ export default function ProductPage() {
                 />
               </div>
             </div>
+            {/* 平台主張 — 底價透明，機會不等人 */}
+            <p className="pt-3.5 border-t border-dashed border-ink-200 text-center text-[14px] md:text-[15px] font-bold text-ink-600 tracking-wide">
+              底價透明，機會不等人
+            </p>
           </section>
 
           {/* ─── 庫存卡 — 內嵌式 shadcn ─── */}

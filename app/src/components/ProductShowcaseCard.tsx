@@ -112,6 +112,10 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
 
   const dropped = Math.max(0, original - live.price)
   const dropPct = original > 0 ? Math.round((dropped / original) * 100) : 0
+  const minimum = Math.min(Number(product.minimum_price ?? original), original)
+  const hasFloorRange = Number.isFinite(minimum) && minimum < original
+  const cardAtFloor = live.price <= minimum
+  const cardMaxSave = Math.max(0, live.price - minimum)
   const stockPct = Math.max(0, Math.min(100, (live.stock / Math.max(1, product.initial_stock)) * 100))
   const soldOut = live.stock <= 0
   const endingSoon =
@@ -222,6 +226,18 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
         {dropped > 0 && !soldOut && (
           <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-100 px-2.5 py-1 text-xs font-bold text-red-600">
             🔥 已省 {fmtMoney(dropped)}
+          </p>
+        )}
+        {/* 底價透明行 — 與已省膠囊同一視覺區，不新增行高 */}
+        {hasFloorRange && !soldOut && (
+          <p className="mt-2 flex items-center justify-between gap-2">
+            <span className="shrink-0 text-[13px] font-semibold text-ink-600 tabular-nums whitespace-nowrap">
+              {cardAtFloor ? (
+                <span className="font-bold text-emerald-700">✅ 已到最低價 {fmtMoney(minimum)}</span>
+              ) : (
+                <>🔒 底價 {fmtMoney(minimum)}{cardMaxSave > 0 && <>・還可省 {fmtMoney(cardMaxSave)}</>}</>
+              )}
+            </span>
           </p>
         )}
 
