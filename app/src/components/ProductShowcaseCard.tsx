@@ -136,7 +136,7 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
       {/* 促銷帶 — 多段漸層 + 內發光 + 玻璃 +N */}
       {primaryPromo && (
         <div
-          className="relative bg-gradient-to-r from-accent-500 via-[#ff6b35] to-accent-600 text-white px-4 py-2.5
+          className="relative bg-gradient-to-r from-accent-500 via-accent-400 to-accent-600 text-white px-4 py-2.5
                         flex items-center justify-between gap-3 overflow-hidden"
           title={extraCount > 0 ? `${primaryPromo.name} 等 ${promos.length} 項活動` : primaryPromo.name}
         >
