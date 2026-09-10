@@ -60,7 +60,7 @@ function ProductCard({ product, followers = 0 }: { product: Product; followers?:
             </div>
           </div>
         </div>
-        {/* 底價透明行 — 與列表首頁卡保持一致 */}
+        {/* 底價透明行 — 與列表首頁卡保持一致（加強版：淺綠底色塊） */}
         {(() => {
           const original = Number(product.original_price)
           const minimum = Math.min(Number(product.minimum_price ?? original), original)
@@ -68,13 +68,15 @@ function ProductCard({ product, followers = 0 }: { product: Product; followers?:
           if (!hasRange || live.stock <= 0) return null
           const atFloor = live.price <= minimum
           return (
-            <p className="mt-2 text-[13px] font-semibold text-ink-600 tabular-nums whitespace-nowrap">
-              {atFloor ? (
-                <span className="font-bold text-emerald-700">✅ 已到最低價 {fmtMoney(minimum)}</span>
-              ) : (
-                <>🔒 底價 {fmtMoney(minimum)}</>
-              )}
-            </p>
+            <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-emerald-50/70 border border-emerald-100 px-3 py-2">
+              <span className="text-[14px] font-bold text-ink-700 tabular-nums whitespace-nowrap">
+                {atFloor ? (
+                  <span className="font-extrabold text-emerald-700">✅ 已到最低價 {fmtMoney(minimum)}</span>
+                ) : (
+                  <>🔒 底價 <span className="text-[16px] font-extrabold text-ink-900">{fmtMoney(minimum)}</span></>
+                )}
+              </span>
+            </div>
           )
         })()}
 

@@ -531,27 +531,29 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* 底價透明行 — 雅布拍板公開底價：越晚越便宜、越早越保險 */}
+            {/* 底價透明行 — 雅布拍板公開底價：越晚越便宜、越早越保險（加強版：底價放大） */}
             {hasFloorRange && !isLocked && !atFloor && maxSave > 0 && (
-              <p className="flex items-center gap-1.5 text-[15px] text-ink-600 leading-snug" aria-label={`最低價${fmtMoney(minimum)}，最多還能再省${fmtMoney(maxSave)}`}>
-                🔒 <span className="font-semibold text-ink-700">最低價</span>
-                <span className="font-extrabold text-ink-900 tabular-nums">{fmtMoney(minimum)}</span>
-                <span className="text-ink-300" aria-hidden="true">・</span>
-                <span>最多再省 <span className="font-extrabold text-emerald-700 tabular-nums">{fmtMoney(maxSave)}</span></span>
-              </p>
+              <div className="flex items-center justify-between gap-3 flex-wrap rounded-2xl bg-emerald-50/70 border border-emerald-200 px-4 py-3" aria-label={`最低價${fmtMoney(minimum)}，最多還能再省${fmtMoney(maxSave)}`}>
+                <span className="flex items-baseline gap-2 text-ink-700">
+                  <span className="text-[16px] md:text-[17px] font-bold">🔒 最低價</span>
+                  <span className="text-[22px] md:text-[24px] font-extrabold text-ink-900 tabular-nums leading-none">{fmtMoney(minimum)}</span>
+                </span>
+                <span className="text-[15px] md:text-[16px] font-bold text-emerald-700 tabular-nums whitespace-nowrap">最多再省 {fmtMoney(maxSave)}</span>
+              </div>
             )}
             {hasFloorRange && !isLocked && atFloor && (
-              <p className="flex items-center gap-1.5 text-[15px] font-bold text-emerald-700 leading-snug">
+              <div className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 border border-emerald-600 px-4 py-3 text-white text-[17px] md:text-[18px] font-extrabold tracking-wide shadow-sm">
                 ✅ 已到最低價 {fmtMoney(minimum)}，不會再降價
-              </p>
+              </div>
             )}
             {hasFloorRange && isLocked && (
-              <p className="flex items-center gap-1.5 text-[15px] text-ink-600 leading-snug">
-                🔒 <span className="font-semibold text-ink-700">最低價</span>
-                <span className="font-extrabold text-ink-900 tabular-nums">{fmtMoney(minimum)}</span>
-                <span className="text-ink-300" aria-hidden="true">・</span>
-                <span>已鎖定價格，結帳前不再變動</span>
-              </p>
+              <div className="flex items-center justify-between gap-3 flex-wrap rounded-2xl bg-ink-50 border border-ink-200 px-4 py-3">
+                <span className="flex items-baseline gap-2 text-ink-700">
+                  <span className="text-[16px] md:text-[17px] font-bold">🔒 最低價</span>
+                  <span className="text-[22px] md:text-[24px] font-extrabold text-ink-900 tabular-nums leading-none">{fmtMoney(minimum)}</span>
+                </span>
+                <span className="text-[14px] md:text-[15px] font-bold text-ink-600 whitespace-nowrap">已鎖定價格，結帳前不再變動</span>
+              </div>
             )}
 
             {!atFloor && (
