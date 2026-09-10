@@ -14,9 +14,9 @@ body {
   line-height: 1.75;
 }
 
-/* UI UX Pro Max · 高檔有機美妝 */
-::selection { background: #DCE8DF; color: #1E3D34; }
-:focus-visible { outline: 2px solid #2E5B4A; outline-offset: 2px; }
+/* UI UX Pro Max · 日系霧藍優化 */
+::selection { background: #C8D9E8; color: #1E3A5F; }
+:focus-visible { outline: 2px solid #5B8DBE; outline-offset: 2px; }
 
 /* 數字用等寬，倒數計時不跳動 */
 .tabular-nums {
@@ -52,17 +52,17 @@ body {
   }
 }
 
-/* ===== 骨架屏：苔綠版 ===== */
+/* ===== 骨架屏：霧藍版 ===== */
 .skeleton {
   border-radius: 0.75rem;
-  background: linear-gradient(90deg, #E7EEE9 25%, #F2F6F3 45%, #E7EEE9 65%);
+  background: linear-gradient(90deg, #E8EFF6 25%, #F0F5F9 45%, #E8EFF6 65%);
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
 }
 
 /* ===== 卡片柔和陰影（Soft UI Evolution） ===== */
-.card-soft { box-shadow: 0 6px 24px rgba(30,61,52,.08); }
-.card-soft:hover { box-shadow: 0 10px 36px rgba(30,61,52,.12); }
+.card-soft { box-shadow: 0 6px 24px rgba(30,58,95,.08); }
+.card-soft:hover { box-shadow: 0 10px 36px rgba(30,58,95,.12); }
 
 /* ===== iOS 安全區域 ===== */
 .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }

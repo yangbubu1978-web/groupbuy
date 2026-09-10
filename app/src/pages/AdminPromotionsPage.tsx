@@ -275,7 +275,7 @@ export default function AdminPromotionsPage() {
                   <label key={p.id} className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer hover:bg-ink-50">
                     <input type="checkbox" checked={form.product_ids.includes(p.id)}
                       onChange={() => toggleProduct(p.id)}
-                      className="w-4 h-4 accent-accent-500" />
+                      className="w-4 h-4 accent-[var(--accent-500,#e07a3f)]" />
                     <span className="flex-1 min-w-0 text-sm text-ink-900 truncate">{p.name}</span>
                     <span className="text-[10px] text-ink-400 shrink-0">{p.sku}</span>
                   </label>
