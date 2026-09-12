@@ -43,6 +43,9 @@ export default {
       boxShadow: {
         'soft': '0 6px 24px rgba(74,63,53,.08)',
         'soft-lg': '0 10px 36px rgba(74,63,53,.12)',
+        // 橘色系陰影：一律以 accent-500 #FF6B35 為基準，避免散落字面 rgba
+        'accent-sm': '0 4px 24px rgba(255,107,53,.25), 0 1px 3px rgba(0,0,0,.08)',
+        'accent-lg': '0 6px 20px rgba(255,107,53,.35), 0 1px 3px rgba(0,0,0,.08)',
       },
     },
   },

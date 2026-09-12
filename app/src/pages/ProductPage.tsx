@@ -411,7 +411,7 @@ export default function ProductPage() {
   return (
     <div className="min-h-dvh bg-[#fcfcfc] pb-32">
       {/* ─── 頂部倒數 — 玻璃漸層 header（shadcn 陰影 + BeUI 微動） ─── */}
-      <header className="sticky top-0 z-10 bg-gradient-to-br from-accent-500 via-accent-500 to-accent-600 shadow-[0_4px_24px_rgba(238,77,45,0.25),0_1px_3px_rgba(0,0,0,0.08)]">
+      <header className="sticky top-0 z-10 bg-gradient-to-br from-accent-500 via-accent-500 to-accent-600 shadow-accent-sm">
         <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between gap-3 px-4 py-3.5">
           <button
             onClick={() => { if (window.history.length > 1) navigate(-1); else navigate('/', { replace: true }) }}
@@ -698,7 +698,7 @@ export default function ProductPage() {
               <div className="grid grid-cols-[1fr_auto] gap-2.5">
                 <button
                   onClick={checkoutCart}
-                  className="h-[56px] rounded-full bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-600 text-white text-[16px] font-extrabold tracking-wide shadow-[0_6px_20px_rgba(238,77,45,0.35),0_1px_3px_rgba(0,0,0,0.08)] active:scale-[0.97] transition-all border border-accent-600/20"
+                  className="h-[56px] rounded-full bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-600 text-white text-[16px] font-extrabold tracking-wide shadow-accent-lg active:scale-[0.97] transition-all border border-accent-600/20"
                 >
                   ✔ 結帳｜{fmtMoney(buyState.lockedPrice)} × {buyState.quantity}
                 </button>

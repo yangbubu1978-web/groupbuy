@@ -226,7 +226,7 @@ export default function ProfilePage() {
               <p className="text-sm font-bold text-ink-800">💌 E-MAIL 通知信箱</p>
               <p className="text-xs text-ink-500 mt-1 break-all">{userEmail ? `目前：${userEmail}` : '尚未設定 — 至「我的關注」設定'}{emailMsg ? ` · ${emailMsg}` : ''}</p>
             </div>
-            <a href="#/me/follows" className="h-9 px-4 rounded-full bg-[#FF8A65] text-white text-sm font-bold grid place-items-center shrink-0">去設定</a>
+            <a href="#/me/follows" className="h-9 px-4 rounded-full bg-accent-300 text-white text-sm font-bold grid place-items-center shrink-0">去設定</a>
           </div>
 
           {/* 方案 A：手機後補 — 未填手機時顯示提醒與補填表單 */}

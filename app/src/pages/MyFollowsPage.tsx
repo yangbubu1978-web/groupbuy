@@ -165,7 +165,7 @@ export default function MyFollowsPage() {
           <p className="text-xs text-ink-500">填寫真實信箱，才能同時收到上架/降價 E-MAIL 通知</p>
           <div className="flex gap-2">
             <input type="email" placeholder="you@example.com" value={emailInput} onChange={e=>setEmailInput(e.target.value)} className="flex-1 h-10 px-4 rounded-full border border-ink-200 bg-white text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400" />
-            <button onClick={saveEmail} disabled={emailBusy || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())} className="h-10 px-5 rounded-full bg-[#FF8A65] text-white text-sm font-bold disabled:opacity-40 shrink-0">儲存</button>
+            <button onClick={saveEmail} disabled={emailBusy || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())} className="h-10 px-5 rounded-full bg-accent-300 text-white text-sm font-bold disabled:opacity-40 shrink-0">儲存</button>
           </div>
           {emailMsg && <p className="text-xs text-center">{emailMsg}</p>}
         </div>
