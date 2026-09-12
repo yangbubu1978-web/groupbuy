@@ -1,7 +1,7 @@
 // Service Worker — PWA 殼層快取
 // 策略：HTML 導航 network-first（部署新版後裝置立刻拿到）；靜態資源 stale-while-revalidate；
 //       API 一律不快取（價格/庫存必須即時）
-const CACHE = 'groupbuy-shell-v2'
+const CACHE = 'groupbuy-shell-v3'
 const SHELL = ['/', '/index.html', '/manifest.webmanifest']
 
 self.addEventListener('install', (e) => {

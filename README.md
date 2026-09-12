@@ -86,7 +86,7 @@ git add -A && git commit -m "deploy: 更新" && git push origin gh-pages
 ```
 
 ⚠️ **快取注意**：
-- `public/sw.js` 的 `CACHE` 版本號每次改殼層結構時要遞增（目前 `groupbuy-shell-v2`）
+- `public/sw.js` 的 `CACHE` 版本號每次改殼層結構時要遞增（目前 `groupbuy-shell-v3`）
 - HTML 已是 network-first，部署後裝置重新整理即可拿到新版
 - GitHub Pages 本身有 10 分鐘 CDN 快取，剛 push 完看不到新版是正常的
 
