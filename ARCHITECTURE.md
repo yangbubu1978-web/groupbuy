@@ -10,7 +10,7 @@
 手機 / 桌面瀏覽器（PWA，可加入主畫面）
         │ HTTPS
         ▼
-Cloudflare Pages（Free）── React + Vite 靜態檔
+Vercel（Hobby Free）── React + Vite 靜態檔
         │                        │
         │ supabase-js（REST/Realtime）
         ▼                        ▼
@@ -22,11 +22,15 @@ Supabase（Free）
   └─ Storage       商品圖片（選用）
 ```
 
+> **部署現況**：前端原規劃 Cloudflare Pages，實作階段改採 **Vercel（Hobby Free）**，
+> 線上網址為 https://store-mvp.vercel.app/ ，Vercel 專案根目錄是 `app/`。
+> 部署步驟與注意事項見 `README.md` Phase F。
+
 ### 為什麼不用 VPS / Docker / Redis？
 - 規格明確要求免費優先、不自行維運伺服器。
 - 30～100 人規模，PostgreSQL 單機交易鎖足以支撐搶購序列化，
   不需要 Redis 分散式鎖（那是十萬級併發的問題）。
-- Supabase Free + Cloudflare Pages Free = $0 固定成本。
+- Supabase Free + Vercel Hobby Free = $0 固定成本。
 
 ## 2. Database Schema
 

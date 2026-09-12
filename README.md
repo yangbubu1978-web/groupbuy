@@ -68,27 +68,30 @@ npm run dev
 
 `.env.local` 已被 `.gitignore` 排除，不會進版控。
 
-### Phase F：部署（實際採用：GitHub Pages）
+### Phase F：部署（實際採用：Vercel）
 
-**目前線上網址**：https://yangbubu1978-web.github.io/groupbuy/
-（repo `yangbubu1978-web/groupbuy`，`gh-pages` 分支、根目錄、HashRouter）
+**目前線上網址**：https://store-mvp.vercel.app/
+（repo `yangbubu1978-web/groupbuy`，Vercel 專案 `store-mvp`，**專案根目錄＝`app/`**，HashRouter）
+
+> 沿革：最初部署在 GitHub Pages（`gh-pages` 分支），後來改為 Vercel。
+> `gh-pages` 分支已不存在，舊網址 `https://yangbubu1978-web.github.io/groupbuy/` 實測為 404。
 
 **更新部署流程**：
 
 ```bash
-cd app && npm run build
-cd /tmp && rm -rf gp_deploy
-git clone --branch gh-pages --depth 1 https://github.com/yangbubu1978-web/groupbuy.git gp_deploy
-cd gp_deploy
-rsync -a --delete --exclude '.git' --exclude '.nojekyll' \
-  /Users/yang.bubu/.openclaw/workspace/groupbuy/app/dist/ ./
-git add -A && git commit -m "deploy: 更新" && git push origin gh-pages
+cd app
+npm run build            # 本機先確認 build 過
+vercel whoami            # 確認已登入 Vercel
+vercel deploy --prod --yes
 ```
 
-⚠️ **快取注意**：
+⚠️ **部署注意**：
+- **一定要在 `app/` 目錄下執行**：Vercel 專案根在 `app/`（`.vercel/project.json` 就在該目錄），在 repo 根目錄跑會部署到錯的內容。
+- 成功判準是輸出出現 **`▲ Aliased  https://store-mvp.vercel.app`**；只拿到 `store-xxxx-....vercel.app` 代表還在 preview，尚未上正式網域。
+- 部署完成後線上立即生效。驗證方式：抓線上 entry JS 內的 lazy chunk 檔名，再 `curl` 該分包比對內容，或比對 CSS 的 sha256。
 - `public/sw.js` 的 `CACHE` 版本號每次改殼層結構時要遞增（目前 `groupbuy-shell-v3`）
 - HTML 已是 network-first，部署後裝置重新整理即可拿到新版
-- GitHub Pages 本身有 10 分鐘 CDN 快取，剛 push 完看不到新版是正常的
+- 只有 `app/` 內的改動需要部署；repo 根目錄的 `.md` 文檔不影響 Vercel build
 
 ### Phase G：建立第一個團購活動
 
