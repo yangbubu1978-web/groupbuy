@@ -263,6 +263,10 @@ export default function CampaignListPage() {
         const nowMs = clockRef.current.nowMs + clockRef.current.offsetMs
         const fresh = data as { id: string; status: string; stock: number; forced_delist_at: string | null; sale_start_at: string | null }[]
         const aliveIds = new Set(fresh.filter((x) => x.status === 'active' && x.stock > 0 && (!x.forced_delist_at || new Date(x.forced_delist_at).getTime() > nowMs)).map((x) => x.id))
+        // 這一輪尚未開賣的商品：輪詢要重新分類，否則「即將開賣」商品會被複製進一般區（9/3 引入的 bug）
+        const upcomingIds = new Set(
+          fresh.filter((x) => x.sale_start_at && new Date(x.sale_start_at).getTime() > nowMs).map((x) => x.id),
+        )
         const livePromoIds = new Set<string>()
         for (const promo of (stillRunning ?? []) as { promotion_items?: { product_id: string }[] }[]) {
           for (const item of promo.promotion_items ?? []) livePromoIds.add(item.product_id)
@@ -278,11 +282,11 @@ export default function CampaignListPage() {
           .filter((p) => aliveIds.has(p.id))
           .map((p) => ({ ...p, ...(freshMap.get(p.id) ?? {}) } as Product))
         setPromoProducts((prev): Product[] => update(prev).filter((p) => livePromoIds.has(p.id)))
-        setUpcomingProducts((prev): Product[] => update(prev))
+        setUpcomingProducts((prev): Product[] => update(prev).filter((p) => upcomingIds.has(p.id)))
         setRegularProducts((prev): Product[] => {
           const current = update(prev)
           const moved = productsRef.current
-            .filter((p) => aliveIds.has(p.id) && !livePromoIds.has(p.id) && !current.some((q) => q.id === p.id))
+            .filter((p) => aliveIds.has(p.id) && !livePromoIds.has(p.id) && !upcomingIds.has(p.id) && !current.some((q) => q.id === p.id))
             .map((p) => ({ ...p, ...(freshMap.get(p.id) ?? {}) } as Product))
           return [...current, ...moved]
         })

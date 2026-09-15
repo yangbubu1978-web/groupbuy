@@ -45,10 +45,14 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
   const clock = useSharedClock()
   const nowMs = clock.nowMs + clock.offsetMs
   const original = Number(product.original_price)
-  const isUpcoming = upcoming === true
-  const saleRemain = isUpcoming && product.sale_start_at
-    ? Math.max(0, (new Date(product.sale_start_at).getTime() - (clock.nowMs + clock.offsetMs)) / 1000)
+  const saleStartMs = product.sale_start_at ? new Date(product.sale_start_at).getTime() : 0
+  const saleRemain = upcoming === true && saleStartMs > 0
+    ? Math.max(0, (saleStartMs - nowMs) / 1000)
     : 0
+  // 開賣時刻一到就自己切回正常卡（不等 30 秒輪詢重分類）；sale_start_at 為 null → saleRemain=0，不誤判成鎖定態
+  const isUpcoming = upcoming === true && saleRemain > 0
+  const minimum = Math.min(Number(product.minimum_price ?? original), original)
+  const hasFloorRange = Number.isFinite(minimum) && minimum < original
 
   if (isUpcoming) {
     return (
@@ -83,10 +87,27 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
         </div>
         <div className="p-5">
           <h3 className="font-bold text-[15px] text-ink-900 leading-snug line-clamp-2 tracking-tight">{product.name}</h3>
-          <div className="mt-2.5 flex items-baseline gap-1.5">
-            <span className="text-sm font-extrabold text-ink-400">$</span>
-            <span className="text-[22px] font-extrabold text-ink-600 tracking-tight tabular-nums leading-none">{fmtMoney(original)}</span>
+          {/* 起始價＋底價一起呈現（雅布指定 2026-09-15）：開賣那天就是從起始價開始往下掉 */}
+          <div className="mt-2.5 min-w-0">
+            <div className="text-[13px] font-semibold tracking-wide text-ink-500 mb-1">起始價</div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-sm font-extrabold text-ink-600">$</span>
+              <span className="text-[22px] font-extrabold text-ink-600 tracking-tight tabular-nums leading-none">{fmtMoney(original)}</span>
+            </div>
           </div>
+          {hasFloorRange && (
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl bg-emerald-50/70 border border-emerald-100 px-3 py-2">
+              <span className="flex items-baseline gap-1.5 whitespace-nowrap">
+                <span className="text-[13px] font-bold text-ink-700">🔒 底價</span>
+                <span className="text-[17px] font-extrabold text-ink-900 tabular-nums">{fmtMoney(minimum)}</span>
+              </span>
+              {minimum < original && (
+                <span className="shrink-0 text-[13px] font-bold text-emerald-700 tabular-nums whitespace-nowrap">
+                  還可省 {fmtMoney(original - minimum)}
+                </span>
+              )}
+            </div>
+          )}
           <div className="mt-3">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-ink-900 text-white px-3.5 py-1.5 text-xs font-bold tabular-nums shadow-sm tracking-wide">
               <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
@@ -112,8 +133,6 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
 
   const dropped = Math.max(0, original - live.price)
   const dropPct = original > 0 ? Math.round((dropped / original) * 100) : 0
-  const minimum = Math.min(Number(product.minimum_price ?? original), original)
-  const hasFloorRange = Number.isFinite(minimum) && minimum < original
   const cardAtFloor = live.price <= minimum
   const cardMaxSave = Math.max(0, live.price - minimum)
   const stockPct = Math.max(0, Math.min(100, (live.stock / Math.max(1, product.initial_stock)) * 100))
