@@ -263,7 +263,7 @@ export default function OrdersPage() {
                   <button
                     onClick={() => confirmOrder(o)}
                     disabled={busyId === o.id}
-                    className="flex-1 h-12 rounded-xl bg-gradient-to-r from-accent-700 to-accent-800 text-white
+                    className="flex-1 h-12 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 text-white
                                text-base font-bold shadow-md shadow-accent-500/25
                                active:scale-[0.98] transition disabled:opacity-50"
                   >
