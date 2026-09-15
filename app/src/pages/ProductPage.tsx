@@ -446,7 +446,7 @@ export default function ProductPage() {
       style={ctaBarH > 0 ? { paddingBottom: ctaBarH + 24 } : undefined}
     >
       {/* ─── 頂部倒數 — 玻璃漸層 header（shadcn 陰影 + BeUI 微動） ─── */}
-      <header className="sticky top-0 z-10 bg-gradient-to-br from-accent-500 via-accent-500 to-accent-600 shadow-accent-sm">
+      <header className="sticky top-0 z-10 bg-gradient-to-br from-accent-700 via-accent-700 to-accent-800 shadow-accent-sm">
         <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between gap-3 px-4 py-3.5">
           <button
             onClick={() => { if (window.history.length > 1) navigate(-1); else navigate('/', { replace: true }) }}
@@ -457,7 +457,7 @@ export default function ProductPage() {
           </button>
 
           <Link to="/" className="min-w-0 flex-1 text-center rounded-xl px-2 py-1 hover:bg-white/10 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60" aria-label="回到首頁">
-            <div className="text-[13px] tracking-wide text-white/95 font-bold">⚡ 先買先贏 · 荷蘭式降價</div>
+            <div className="text-[13px] tracking-wide text-white font-bold">⚡ 先買先贏 · 荷蘭式降價</div>
             {buyState.kind === 'cart' ? (
               <>
                 <div className="text-[22px] md:text-[30px] font-extrabold text-white leading-tight tracking-tight">

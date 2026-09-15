@@ -250,7 +250,7 @@ export default function CartPage() {
   return (
     <div className="min-h-dvh bg-ink-50 pb-28">
       {/* 頂部 — 漸層＋步驟指示同區，長輩一眼看懂流程 */}
-      <header className="bg-gradient-to-br from-accent-500 via-accent-500 to-accent-600 px-4 md:px-6 pt-3 pb-4 md:py-5 sticky top-0 z-10 shadow-lg shadow-accent-500/20">
+      <header className="bg-gradient-to-br from-accent-700 via-accent-700 to-accent-800 px-4 md:px-6 pt-3 pb-4 md:py-5 sticky top-0 z-10 shadow-lg shadow-accent-500/20">
         <div className="max-w-md md:max-w-3xl mx-auto space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -258,18 +258,18 @@ export default function CartPage() {
                 <span className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-lg shrink-0" aria-hidden>🛒</span>
                 購物車
                 {items.length > 0 && (
-                  <span className="ml-1 bg-white text-accent-600 text-xs font-black px-2.5 py-1 rounded-full shadow-sm">
+                  <span className="ml-1 bg-white text-accent-700 text-xs font-black px-2.5 py-1 rounded-full shadow-sm">
                     {items.length} 件
                   </span>
                 )}
               </h1>
-              <p className="text-[13px] text-white/90 mt-1 leading-relaxed">
+              <p className="text-[13px] text-white mt-1 leading-relaxed">
                 每件商品保留 <span className="font-black text-white">1 分鐘</span>，逾時自動取消釋回庫存
               </p>
             </div>
             <Link
               to="/"
-              className="shrink-0 h-10 px-4 inline-flex items-center justify-center rounded-full bg-white text-accent-600 text-sm font-extrabold shadow-md active:scale-[0.97] transition"
+              className="shrink-0 h-10 px-4 inline-flex items-center justify-center rounded-full bg-white text-accent-700 text-sm font-extrabold shadow-md active:scale-[0.97] transition"
             >
               ← 繼續逛
             </Link>
