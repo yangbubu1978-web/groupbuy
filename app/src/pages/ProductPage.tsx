@@ -733,7 +733,7 @@ export default function ProductPage() {
               <div className="grid grid-cols-[1fr_auto] gap-2.5">
                 <button
                   onClick={checkoutCart}
-                  className="h-[56px] rounded-full bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-600 text-white text-[16px] font-extrabold tracking-wide shadow-accent-lg active:scale-[0.97] transition-all border border-accent-600/20"
+                  className="h-[56px] rounded-full bg-gradient-to-r from-accent-700 to-accent-800 hover:from-accent-800 hover:to-accent-800 text-white text-[16px] font-extrabold tracking-wide shadow-accent-lg active:scale-[0.97] transition-all border border-accent-800/20"
                 >
                   ✔ 結帳｜{fmtMoney(buyState.lockedPrice)} × {buyState.quantity}
                 </button>

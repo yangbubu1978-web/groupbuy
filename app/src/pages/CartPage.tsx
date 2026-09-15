@@ -338,7 +338,7 @@ export default function CartPage() {
               </p>
               <Link
                 to="/"
-                className="mt-6 inline-flex h-14 px-8 items-center justify-center rounded-full bg-gradient-to-r from-accent-500 to-accent-600 text-white text-[16px] font-black shadow-lg shadow-accent-500/25 active:scale-[0.98] transition"
+                className="mt-6 inline-flex h-14 px-8 items-center justify-center rounded-full bg-gradient-to-r from-accent-700 to-accent-800 text-white text-[16px] font-black shadow-lg shadow-accent-500/25 active:scale-[0.98] transition"
               >
                 去逛團購 →
               </Link>
@@ -414,7 +414,7 @@ export default function CartPage() {
                       <button
                         onClick={() => checkoutItem(item.id)}
                         disabled={busyId === item.id}
-                        className="h-14 min-w-0 rounded-full bg-gradient-to-r from-accent-500 to-accent-600 text-white text-[16px] font-black shadow-lg shadow-accent-500/25 active:scale-[0.98] transition disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-1.5 px-4"
+                        className="h-14 min-w-0 rounded-full bg-gradient-to-r from-accent-700 to-accent-800 text-white text-[16px] font-black shadow-lg shadow-accent-500/25 active:scale-[0.98] transition disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-1.5 px-4"
                         aria-label={`結帳 ${item.products?.name ?? '商品'}，金額 ${fmtMoney(lineTotal)}`}
                       >
                         {busyId === item.id ? (

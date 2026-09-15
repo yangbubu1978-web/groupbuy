@@ -284,7 +284,7 @@ export default function AdminPromotionsPage() {
             </div>
 
             <button onClick={submit} disabled={busy}
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 text-white
+              className="w-full h-11 rounded-xl bg-gradient-to-r from-accent-700 to-accent-800 text-white
                          text-sm font-bold shadow-md shadow-accent-500/25 active:scale-[0.99] transition disabled:opacity-50">
               {busy ? '儲存中…' : form.asDraft ? (editId ? '更新草稿' : '儲存草稿') : (editId ? '發布活動' : '建立並發布')}
             </button>

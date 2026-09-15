@@ -85,7 +85,7 @@ export default function ChangePasswordPage() {
           )}
 
           <button type="submit" disabled={busy}
-            className="w-full h-12 rounded-xl bg-gradient-to-r from-accent-500 to-accent-600 text-white
+            className="w-full h-12 rounded-xl bg-gradient-to-r from-accent-700 to-accent-800 text-white
                        text-base font-bold shadow-lg shadow-accent-500/25
                        active:scale-[0.98] transition disabled:opacity-50">
             {busy ? '設定中…' : '完成設定'}
