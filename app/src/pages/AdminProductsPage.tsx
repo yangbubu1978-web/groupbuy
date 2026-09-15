@@ -539,19 +539,29 @@ export default function AdminProductsPage() {
                     <input type="number" min="1" value={form.price_interval_seconds} onChange={(e) => setForm({ ...form, price_interval_seconds: e.target.value })} className={inputCls48} />
                     <span className="block text-[13px] text-ink-600">＝ 每 {formatInterval(Math.max(1, Number(form.price_interval_seconds) || 1))}降一次</span>
                   </label>
-                  <div className="col-span-2 flex flex-wrap gap-1.5">
-                    {[['5 分鐘', 5], ['10 分鐘', 10], ['30 分鐘', 30], ['1 小時', 60], ['2 小時', 120]].map(([label, min]) => (
-                      <button key={label} type="button" onClick={() => setForm({ ...form, drop_minutes: String(min) })}
-                        className={`h-9 px-3.5 rounded-full text-[13px] font-bold ring-1 ring-inset transition ${Number(form.drop_minutes) === min ? 'bg-ink-900 text-white ring-ink-900' : 'bg-white text-ink-600 ring-ink-200 hover:bg-ink-50'}`}>
-                        {label}
-                      </button>
-                    ))}
-                    {[['10 秒', 10], ['30 秒', 30], ['1 分鐘', 60], ['5 分鐘', 300]].map(([label, sec]) => (
-                      <button key={label} type="button" onClick={() => setForm({ ...form, price_interval_seconds: String(sec) })}
-                        className={`h-9 px-3.5 rounded-full text-[13px] font-bold ring-1 ring-inset transition ${Number(form.price_interval_seconds) === sec ? 'bg-ink-900 text-white ring-ink-900' : 'bg-white text-ink-600 ring-ink-200 hover:bg-ink-50'}`}>
-                        每 {label}
-                      </button>
-                    ))}
+                  <div className="col-span-2 rounded-2xl border border-ink-200 bg-ink-50/60 p-3 space-y-2">
+                    <p className="text-[13px] font-semibold text-ink-600">快速選：降價總時間（分鐘）</p>
+                    <div className="flex flex-wrap gap-2" role="group" aria-label="快速選：降價總時間（分鐘）">
+                      {[['5 分鐘', 5], ['10 分鐘', 10], ['30 分鐘', 30], ['1 小時', 60], ['2 小時', 120]].map(([label, min]) => (
+                        <button key={label} type="button" onClick={() => setForm({ ...form, drop_minutes: String(min) })}
+                          aria-pressed={Number(form.drop_minutes) === min}
+                          className={`h-11 px-4 rounded-full text-[13px] font-bold whitespace-nowrap ring-1 ring-inset transition ${Number(form.drop_minutes) === min ? 'bg-ink-900 text-white ring-ink-900' : 'bg-white text-ink-700 ring-ink-300 hover:bg-ink-100'}`}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="col-span-2 rounded-2xl border border-ink-200 bg-ink-50/60 p-3 space-y-2">
+                    <p className="text-[13px] font-semibold text-ink-600">快速選：降價間隔（秒）</p>
+                    <div className="flex flex-wrap gap-2" role="group" aria-label="快速選：降價間隔（秒）">
+                      {[['10 秒', 10], ['30 秒', 30], ['1 分鐘', 60], ['5 分鐘', 300]].map(([label, sec]) => (
+                        <button key={label} type="button" onClick={() => setForm({ ...form, price_interval_seconds: String(sec) })}
+                          aria-pressed={Number(form.price_interval_seconds) === sec}
+                          className={`h-11 px-4 rounded-full text-[13px] font-bold whitespace-nowrap ring-1 ring-inset transition ${Number(form.price_interval_seconds) === sec ? 'bg-ink-900 text-white ring-ink-900' : 'bg-white text-ink-700 ring-ink-300 hover:bg-ink-100'}`}>
+                          每 {label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </>
               ) : (
