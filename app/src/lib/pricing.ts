@@ -149,12 +149,8 @@ export interface DropScheduleSummary {
   intervalSeconds: number
   /** 管理員設定的降價總時間（秒） */
   totalSeconds: number
-  /** 理想變價次數（＝floor(降價總時間 ÷ 降價間隔)，未經整除調整） */
-  idealSteps: number
-  /** 實際變價次數 N（為讓每步金額整除可能自動調整） */
+  /** 變價次數 N */
   steps: number
-  /** 是否因「讓每步金額整除」而自動調整過變價次數 */
-  stepsAdjusted: boolean
   /** 每步降幅（元）— 最後一步可能更大 */
   stepAmount: number
   /** 最後一步實際降幅（吸收餘數後，元） */
@@ -198,32 +194,6 @@ const toInt = (v: unknown): number => {
 export const MAX_DROP_STEPS = 1000
 
 /**
- * 變價次數決策（2026-09-15 雅布拍板）：**自動調整次數，讓每步金額整除**。
- *   理想次數 idealSteps = floor(降價總時間 ÷ 降價間隔)
- *   1) 總降價金額能被 idealSteps 整除 → 直接用（不必調整）
- *   2) 否則找「最接近 idealSteps 的因數」（同距離取較小＝不超時；上限 2×idealSteps）
- *   3) 極端情形（價差是質數等，最佳因數 < 2）→ 退回 idealSteps，每步取整、最後一步吸收餘數
- * ⚠️ 與 Server `public.drop_schedule_steps()`（migration 20260922）逐行對齊，改一邊要同步另一邊。
- */
-export function resolveDropSteps(totalDrop: number, idealSteps: number): { steps: number; adjusted: boolean; exact: boolean } {
-  if (idealSteps < 1 || totalDrop <= 0) return { steps: idealSteps, adjusted: false, exact: false }
-  if (totalDrop % idealSteps === 0) return { steps: idealSteps, adjusted: false, exact: true }
-
-  let dLo = 1
-  for (let d = idealSteps; d >= 1; d--) {
-    if (totalDrop % d === 0) { dLo = d; break }
-  }
-  let dHi = 0
-  const hiCap = Math.min(idealSteps * 2, totalDrop)
-  for (let d = idealSteps + 1; d <= hiCap; d++) {
-    if (totalDrop % d === 0) { dHi = d; break }
-  }
-  const best = dHi === 0 || idealSteps - dLo <= dHi - idealSteps ? dLo : dHi
-  if (best < 2) return { steps: idealSteps, adjusted: false, exact: false }
-  return { steps: best, adjusted: best !== idealSteps, exact: true }
-}
-
-/**
  * 新模式參數試算（不產生時間表，可安心每秒呼叫）
  * ⚠️ 與 Server `compute_current_price`（20260922 版）逐行對齊
  */
@@ -233,16 +203,14 @@ export function dropScheduleSummary(input: DropScheduleInput): DropScheduleSumma
   const intervalSeconds = Math.max(1, toInt(input.priceIntervalSeconds))
   const totalSeconds = Math.max(0, toInt(input.dropTotalSeconds))
   const totalDrop = originalPrice - minimumPrice
-  const idealSteps = Math.floor(totalSeconds / intervalSeconds)
-  const resolved = resolveDropSteps(totalDrop, idealSteps)
-  const steps = resolved.steps
+  const steps = Math.floor(totalSeconds / intervalSeconds)
 
   const errors: string[] = []
   if (originalPrice <= 0) errors.push('起始價格必須大於 0')
   if (minimumPrice >= originalPrice) errors.push('最低價格（底價）必須小於起始價格')
   if (totalSeconds <= 0) errors.push('降價總時間必須大於 0')
   if (toInt(input.priceIntervalSeconds) < 1) errors.push('降價間隔至少要 1 秒')
-  if (idealSteps < 1) errors.push(`降價總時間必須至少等於一個降價間隔（${intervalSeconds} 秒），才會有降價次數`)
+  if (steps < 1) errors.push(`降價總時間必須至少等於一個降價間隔（${intervalSeconds} 秒），才會有降價次數`)
 
   const stepAmount = steps >= 1 && totalDrop > 0 ? Math.floor(totalDrop / steps) : 0
   if (steps >= 1 && totalDrop > 0 && stepAmount < 1) {
@@ -258,9 +226,7 @@ export function dropScheduleSummary(input: DropScheduleInput): DropScheduleSumma
     minimumPrice,
     intervalSeconds,
     totalSeconds,
-    idealSteps,
     steps,
-    stepsAdjusted: resolved.adjusted,
     stepAmount,
     lastDropAmount: steps >= 1 ? totalDrop - (steps - 1) * stepAmount : 0,
     totalDrop,

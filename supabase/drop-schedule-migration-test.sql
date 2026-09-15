@@ -27,12 +27,12 @@ create temp table dsc (
 );
 insert into dsc (sid, orig, minp, total, ivl, legacy, lo, hi) values
   ('A', 399,  99,  600,  60,  false, null, null),  -- 正常整除：N=10、每步 30
-  ('B', 999,  299, 1800, 60,  false, null, null),  -- 非整除→自動調整：理想 30 次 → 28 次、每步 25
-  ('C', 1000, 500, 600,  10,  false, null, null),  -- 間隔 10 秒：理想 60 次 → 50 次、每步 10
+  ('B', 999,  299, 1800, 60,  false, null, null),  -- 無法整除：N=30、每步 23、最後一步 33
+  ('C', 1000, 500, 600,  10,  false, null, null),  -- 間隔 10 秒：N=60、每步 8
   ('D', 1000, 500, 600,  30,  false, null, null),  -- 間隔 30 秒：N=20、每步 25
   ('E', 1000, 500, 600,  60,  false, null, null),  -- 間隔 1 分鐘：N=10、每步 50
   ('F', 1000, 500, 600,  300, false, null, null),  -- 間隔 5 分鐘：N=2、每步 250
-  ('G', 1500, 1000, 7200, 60, false, null, null),  -- 長時程 2 小時：理想 120 次 → 125 次、每步 4
+  ('G', 1500, 1000, 7200, 60, false, null, null),  -- 長時程 2 小時：N=120、每步 4
   ('H', 500,  100, 0,    60,  true,  50,  50),     -- 舊模式對照：固定降 50
   ('I', 600,  100, 0,    100, true,  1,   20);     -- 舊模式對照：每次降 1~20 隨機
 
@@ -108,14 +108,12 @@ select pg_temp.chk('①(7) 整條序列 399→369→…→99',
   (select string_agg(pg_temp.pts('A',g), ',' order by g) from generate_series(0,10) g));
 
 -- ══════════════════════════════════════════════════════════════
--- ② 非整除 → 自動調整次數（2026-09-15 雅布拍板）：999 → 299、總 30 分鐘、間隔 1 分鐘
---    理想 30 次；總降價 700 無法被 30 整除 → 取最接近的因數 28（每步 25、實際總時間 28 分鐘）
+-- ② 無法整除：999 → 299、總 30 分鐘、間隔 1 分鐘
+--    N=30、每步 floor(700/30)=23、最後一步吸收餘數 33
 -- ══════════════════════════════════════════════════════════════
-select pg_temp.chk('②(1) k=1 ＝ 974（每步 25）', '974', pg_temp.pts('B', 1));
-select pg_temp.chk('②(2) k=27 ＝ 324（999−27×25）', '324', pg_temp.pts('B', 27));
-select pg_temp.chk('②(3) k=28 ＝ 299（第 28 次剛好到底價）', '299', pg_temp.pts('B', 28));
-select pg_temp.chk('②(6) k=29 之後不再降（維持 299）', '299', pg_temp.pts('B', 29));
-select pg_temp.chk('②(7) drop_schedule_steps(700,30) ＝ 28（取最接近因數）', '28', public.drop_schedule_steps(700,30)::text);
+select pg_temp.chk('②(1) k=1 ＝ 976（每步 23）', '976', pg_temp.pts('B', 1));
+select pg_temp.chk('②(2) k=29 ＝ 332（999−29×23）', '332', pg_temp.pts('B', 29));
+select pg_temp.chk('②(3) k=30 ＝ 299（最後一步降 33，精確到底價）', '299', pg_temp.pts('B', 30));
 select pg_temp.chk('②(4) 全程不低於底價（k=0..90 最小值 ≥ 299）', 'true',
   (select (min(pg_temp.price_at('B',g)) >= 299)::text from generate_series(0,90) g));
 select pg_temp.chk('②(5) 起點仍是起始價 999', '999', pg_temp.pts('B',0,0.9));
@@ -123,19 +121,18 @@ select pg_temp.chk('②(5) 起點仍是起始價 999', '999', pg_temp.pts('B',0,
 -- ══════════════════════════════════════════════════════════════
 -- ③ 降價間隔 10 秒／30 秒／1 分鐘／5 分鐘（同樣 1000→500、總 10 分鐘）
 -- ══════════════════════════════════════════════════════════════
-select pg_temp.chk('③(1) 間隔 10 秒：k=1 ＝ 990（理想 60 → 調整 50 次、每步 10）', '990', pg_temp.pts('C', 1));
-select pg_temp.chk('③(2) 間隔 10 秒：k=50 ＝ 500（第 50 次到底價）', '500', pg_temp.pts('C', 50));
+select pg_temp.chk('③(1) 間隔 10 秒：k=1 ＝ 992（N=60、每步 8）', '992', pg_temp.pts('C', 1));
+select pg_temp.chk('③(2) 間隔 10 秒：k=60 ＝ 500', '500', pg_temp.pts('C', 60));
 select pg_temp.chk('③(3) 間隔 30 秒：k=1 ＝ 975（N=20、每步 25）', '975', pg_temp.pts('D', 1));
 select pg_temp.chk('③(4) 間隔 30 秒：k=20 ＝ 500', '500', pg_temp.pts('D', 20));
 select pg_temp.chk('③(5) 間隔 1 分鐘：k=1 ＝ 950（N=10、每步 50）', '950', pg_temp.pts('E', 1));
 select pg_temp.chk('③(6) 間隔 1 分鐘：k=10 ＝ 500', '500', pg_temp.pts('E', 10));
 select pg_temp.chk('③(7) 間隔 5 分鐘：k=1 ＝ 750（N=2、每步 250）', '750', pg_temp.pts('F', 1));
 select pg_temp.chk('③(8) 間隔 5 分鐘：k=2 ＝ 500', '500', pg_temp.pts('F', 2));
-select pg_temp.chk('③(9) 四種節奏的第 1 步價格都不同', '990|975|950|750',
+select pg_temp.chk('③(9) 同樣 10 分鐘到底：四種節奏的第 1 步價格都不同', '992|975|950|750',
   pg_temp.pts('C', 1) || '|' || pg_temp.pts('D', 1) || '|' || pg_temp.pts('E', 1) || '|' || pg_temp.pts('F', 1));
-select pg_temp.chk('③(10) 長時程 2 小時：k=1 ＝ 1496（理想 120 → 調整 125 次、每步 4）', '1496', pg_temp.pts('G', 1));
-select pg_temp.chk('③(11) 長時程 2 小時：k=120 ＝ 1020（尚未到底價）', '1020', pg_temp.pts('G', 120));
-select pg_temp.chk('③(12) 長時程 2 小時：k=125 ＝ 1000（第 125 次到底價）', '1000', pg_temp.pts('G', 125));
+select pg_temp.chk('③(10) 長時程 2 小時：k=1 ＝ 1496（N=120、每步 4）', '1496', pg_temp.pts('G', 1));
+select pg_temp.chk('③(11) 長時程 2 小時：k=120 ＝ 1000', '1000', pg_temp.pts('G', 120));
 
 -- ══════════════════════════════════════════════════════════════
 -- ④ 到達底價後不再繼續降價（價格永不回彈）

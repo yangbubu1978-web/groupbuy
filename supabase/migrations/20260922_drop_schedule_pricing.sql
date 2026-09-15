@@ -8,14 +8,13 @@
 --
 -- 新模式公式（與前端 app/src/lib/pricing.ts 的 dropScheduleSummary 逐行對齊）：
 --   總降價金額 = 起始價格 − 最低價格（底價）
---   變價次數 N：理想 = floor(降價總時間 ÷ 降價間隔)；若總降價金額無法被整除，
---               以 public.drop_schedule_steps() 自動取「最接近的因數」→ 每步金額整除
---               （雅布 2026-09-15 拍板：寧可次數與設定不同，也要每步金額漂亮）
---   每步降幅   = 總降價金額 ÷ N（整除，每步相同）
---   第 k 步價格 = 起始價 − k × 每步降幅；k ≥ N 之後固定為底價
+--   變價次數 N = floor(降價總時間 ÷ 降價間隔)   ← 除不盡取 floor
+--   每步降幅   = floor(總降價金額 ÷ N)          ← 價格一律整數元
+--   第 k 步價格 = max(底價, 起始價 − k × 每步降幅)；k ≥ N 之後固定為底價
+--   最後一步吸收餘數 → 最終價格精確等於底價、絕不低於底價
 --   真實觸底時刻 = sale_start_at + N × 降價間隔
---   極端情形（價差為質數等，找不到 ≥2 的近似因數）→ 退回理想次數，每步取整、最後一步吸收餘數，
---   仍保證最終價格精確等於底價、絕不低於底價
+--   （2026-09-15 雅布拍板：維持「次數不變、最後一步吸收餘數」的單一規則；
+--     曾短暫實作的「自動調整次數讓每步整除」已於同日移除）
 --
 -- ⚠️ 本檔的兩支函式本體取自線上 DB 的 pg_get_functiondef（線上版本比 repo 舊 migration 新：
 --    含「只降一輪」與 cart_reservations 守衛），僅在其中插入新模式分支，
@@ -42,56 +41,7 @@ begin
       check (drop_total_seconds is null or drop_total_seconds >= 1);
   end if;
 end $$;
-
--- 2) 變價次數決策（2026-09-15 雅布拍板）：**自動調整次數，讓每步金額整除**
---    理想次數 = floor(降價總時間 ÷ 降價間隔)
---    可整除 → 直接用；否則取「最接近的因數」（同距離取較小＝不超時，上限 2×理想次數）；
---    極端情形（價差為質數等，最佳因數 < 2）→ 退回理想次數（每步取整、最後一步吸收餘數）。
---    ⚠️ 與前端 app/src/lib/pricing.ts 的 resolveDropSteps() 逐行對齊，改一邊要同步另一邊。
-create or replace function public.drop_schedule_steps(p_range int, p_ideal int)
- RETURNS int
- LANGUAGE plpgsql
- IMMUTABLE
-AS $function$
-declare
-  v_dl int;
-  v_dh int;
-  v_i  int;
-begin
-  if p_ideal < 1 or p_range <= 0 then
-    return greatest(1, p_ideal);
-  end if;
-  if p_range % p_ideal = 0 then
-    return p_ideal;
-  end if;
-
-  v_dl := 1;                                    -- 往下找：最大因數 ≤ 理想次數
-  for v_i in reverse p_ideal..1 loop
-    if p_range % v_i = 0 then
-      v_dl := v_i;
-      exit;
-    end if;
-  end loop;
-
-  v_dh := 0;                                    -- 往上找：最小因數 > 理想次數
-  for v_i in (p_ideal + 1)..least(p_ideal * 2, p_range) loop
-    if p_range % v_i = 0 then
-      v_dh := v_i;
-      exit;
-    end if;
-  end loop;
-
-  if v_dh = 0 or (p_ideal - v_dl) <= (v_dh - p_ideal) then
-    if v_dl < 2 then
-      return p_ideal;                           -- 極端情形：維持原次數，最後一步吸收餘數
-    end if;
-    return v_dl;
-  end if;
-  return v_dh;
-end;
-$function$;
-
--- 3) 降價引擎：新模式分流（價格只降不漲、單程到底，兩模式共用）
+-- 2) 降價引擎：新模式分流（價格只降不漲、單程到底，兩模式共用）
 create or replace function public.compute_current_price(p products)
  RETURNS numeric
  LANGUAGE plpgsql
@@ -132,7 +82,7 @@ begin
     if v_range_i <= 0 then
       return p.original_price;         -- 沒有價差 → 恆為起始價
     end if;
-    v_n := public.drop_schedule_steps(v_range_i, p.drop_total_seconds / v_interval);
+    v_n := p.drop_total_seconds / v_interval;   -- 整數除法＝floor(總時間 ÷ 間隔)
     if v_n < 1 then
       return p.original_price;         -- 總時間不足一個間隔 → 不降價
     end if;
@@ -217,7 +167,7 @@ begin
     if v_orig_i - v_min_i <= 0 then
       return false;                    -- 沒有價差＝永遠不觸底（與舊模式一致）
     end if;
-    v_n := public.drop_schedule_steps(v_orig_i - v_min_i, p.drop_total_seconds / v_interval);
+    v_n := p.drop_total_seconds / v_interval;
     if v_n < 1 then
       return false;                    -- 總時間不足一個間隔＝不會降價
     end if;
@@ -265,4 +215,8 @@ begin
 end;
 $function$;
 
+-- 4) 授權
 grant execute on function public.product_is_settled(public.products) to anon, authenticated;
+
+-- 5) 清理：曾短暫上線的 drop_schedule_steps（2026-09-15 同日改回單一規則）
+drop function if exists public.drop_schedule_steps(int, int);

@@ -618,12 +618,6 @@ export default function AdminProductsPage() {
                     <div className="rounded-xl bg-ink-50 border border-ink-100 py-2.5">
                       <div className="text-[13px] font-medium text-ink-600">變價次數</div>
                       <div className="mt-0.5 text-[18px] font-extrabold tabular-nums text-ink-900">{schedule.steps} 次</div>
-                      {schedule.stepsAdjusted && (
-                        <div className="mt-0.5 text-[13px] leading-snug text-ink-600">
-                          原 {schedule.idealSteps} 次
-                          <br />（調整為整除）
-                        </div>
-                      )}
                     </div>
                     <div className="rounded-xl bg-ink-50 border border-ink-100 py-2.5">
                       <div className="text-[13px] font-medium text-ink-600">平均每次降價</div>
@@ -641,13 +635,6 @@ export default function AdminProductsPage() {
                     {formatDurationZh(schedule.effectiveTotalSeconds)}後到最低價 {fmtMoney(schedule.minimumPrice)}
                     {!schedule.amountExact && schedule.steps >= 1 && `（最後一次降 ${fmtMoney(schedule.lastDropAmount)}，吸收餘數精確到底價）`}。
                   </p>
-                  {schedule.stepsAdjusted && (
-                    <p className="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-[13px] font-medium text-emerald-900 leading-relaxed">
-                      ℹ️ 為了讓每次降幅是整數，變價次數已由 {schedule.idealSteps} 次自動調整為 <b>{schedule.steps} 次</b>，
-                      實際總降價時間為 {formatDurationZh(schedule.effectiveTotalSeconds)}（設定為 {formatDurationZh(schedule.totalSeconds)}），
-                      每次降價固定 {fmtMoney(schedule.stepAmount)}。
-                    </p>
-                  )}
 
                   {/* 驗證與除不盡提示 */}
                   {schedule.errors.map((err) => (
