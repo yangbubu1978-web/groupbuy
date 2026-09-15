@@ -220,7 +220,6 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
             <span className="text-[26px] font-extrabold text-accent-600 tracking-tight tabular-nums leading-none">
               {fmtMoney(live.price)}
             </span>
-            <span className="text-[13px] text-ink-400 line-through font-medium">{fmtMoney(original)}</span>
           </div>
         </div>
         {dropped > 0 && !soldOut && (
@@ -228,14 +227,24 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
             🔥 已省 {fmtMoney(dropped)}
           </p>
         )}
-        {/* 底價透明行 — 與已省膠囊同一視覺區（加強版：獨立淺綠底色塊） */}
+        {/* 價格區間 — 起始價與底價一起呈現（雅布指定 2026-09-15） */}
         {hasFloorRange && !soldOut && (
-          <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-emerald-50/70 border border-emerald-100 px-3 py-2">
-            <span className="text-[14px] font-bold text-ink-700 tabular-nums whitespace-nowrap">
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl bg-emerald-50/70 border border-emerald-100 px-3 py-2">
+            <span className="flex items-baseline gap-1.5 whitespace-nowrap">
+              {dropped > 0 && (
+                <>
+                  <span className="text-[13px] font-semibold text-ink-500">起始價</span>
+                  <span className="text-[16px] font-bold text-ink-500 tabular-nums line-through decoration-ink-300">{fmtMoney(original)}</span>
+                  <span className="text-[14px] text-ink-400" aria-hidden="true">→</span>
+                </>
+              )}
               {cardAtFloor ? (
-                <span className="font-extrabold text-emerald-700">✅ 已到最低價 {fmtMoney(minimum)}</span>
+                <span className="text-[15px] font-extrabold text-emerald-700">✅ 最低價 {fmtMoney(minimum)}</span>
               ) : (
-                <>🔒 底價 <span className="text-[16px] font-extrabold text-ink-900">{fmtMoney(minimum)}</span></>
+                <>
+                  <span className="text-[13px] font-bold text-ink-700">🔒 底價</span>
+                  <span className="text-[17px] font-extrabold text-ink-900 tabular-nums">{fmtMoney(minimum)}</span>
+                </>
               )}
             </span>
             {!cardAtFloor && cardMaxSave > 0 && (
