@@ -141,8 +141,9 @@ export default function CampaignListPage() {
         }
       }
       if (alive) {
-        setPromoProducts(all.filter((p) => promoIds.has(p.id)))
-        setUpcomingProducts(all.filter((p) => !promoIds.has(p.id) && isUpcoming(p)))
+        // 未開賣商品不進促銷區（否則會以「正常可買」的樣子出現在置頂促銷帶）→ 一律進即將開賣區
+        setPromoProducts(all.filter((p) => promoIds.has(p.id) && !isUpcoming(p)))
+        setUpcomingProducts(all.filter((p) => isUpcoming(p)))
         setRegularProducts(all.filter((p) => !promoIds.has(p.id) && !isUpcoming(p)))
         productsRef.current = all
         setPromoInfo(promoInfoMap)
@@ -278,21 +279,16 @@ export default function CampaignListPage() {
           const first = removed[0].name ?? '商品'
           setSoldOutNotice(removed.length === 1 ? `「${first}」剛被買走了，下手要快` : `「${first}」等 ${removed.length} 件商品剛被買走，下手要快`)
         }
-        const update = (prev: Product[]): Product[] => prev
-          .filter((p) => aliveIds.has(p.id))
-          .map((p) => ({ ...p, ...(freshMap.get(p.id) ?? {}) } as Product))
-        setPromoProducts((prev): Product[] => update(prev).filter((p) => livePromoIds.has(p.id)))
-        setUpcomingProducts((prev): Product[] => update(prev).filter((p) => upcomingIds.has(p.id)))
-        setRegularProducts((prev): Product[] => {
-          const current = update(prev)
-          const moved = productsRef.current
-            .filter((p) => aliveIds.has(p.id) && !livePromoIds.has(p.id) && !upcomingIds.has(p.id) && !current.some((q) => q.id === p.id))
-            .map((p) => ({ ...p, ...(freshMap.get(p.id) ?? {}) } as Product))
-          return [...current, ...moved]
-        })
-        productsRef.current = productsRef.current
+        // 三區一律由「本輪真實狀態」重建（與載入時同一套分類規則）：
+        // 避免重複上架、商品憑空消失、促銷結束不回歸一般區等差分錯誤。
+        // 未開賣商品不進促銷區，一律收進「即將開賣」區。
+        const liveProducts = productsRef.current
           .map((p) => ({ ...p, ...(freshMap.get(p.id) ?? {}) } as Product))
           .filter((p) => aliveIds.has(p.id))
+        setPromoProducts(liveProducts.filter((p) => livePromoIds.has(p.id) && !upcomingIds.has(p.id)))
+        setUpcomingProducts(liveProducts.filter((p) => upcomingIds.has(p.id)))
+        setRegularProducts(liveProducts.filter((p) => !livePromoIds.has(p.id) && !upcomingIds.has(p.id)))
+        productsRef.current = liveProducts
         // 關注人數跟著同一輪刷新：一次批次查詢，只算畫面上這些商品
         try {
           if (ids.length > 0) {
