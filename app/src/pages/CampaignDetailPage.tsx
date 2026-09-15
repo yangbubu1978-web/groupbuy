@@ -44,14 +44,12 @@ function ProductCard({ product, followers = 0 }: { product: Product; followers?:
           )}
         </div>
 
-        <div className="mt-2 flex items-end justify-between">
-          <div>
-            <span className="text-xs text-ink-500 line-through mr-2">
-              {fmtMoney(Number(product.original_price))}
-            </span>
-            <span className="text-2xl font-extrabold text-ink-900 tracking-tight">
+        <div className="mt-2 flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[13px] font-semibold tracking-wide text-ink-500 mb-1">現在價格</div>
+            <div className="text-2xl font-extrabold text-ink-900 tracking-tight tabular-nums leading-none">
               {fmtMoney(live.price)}
-            </span>
+            </div>
           </div>
           <div className="text-right text-xs text-ink-500 tabular-nums">
             <div>下一次降價 {formatCountdown(live.nextDropIn)}</div>
@@ -60,22 +58,39 @@ function ProductCard({ product, followers = 0 }: { product: Product; followers?:
             </div>
           </div>
         </div>
-        {/* 底價透明行 — 與列表首頁卡保持一致（加強版：淺綠底色塊） */}
+        {/* 價格區間 — 與首頁卡一致：起始價 → 底價 一起呈現（雅布指定 2026-09-15） */}
         {(() => {
           const original = Number(product.original_price)
           const minimum = Math.min(Number(product.minimum_price ?? original), original)
           const hasRange = Number.isFinite(minimum) && minimum < original
           if (!hasRange || live.stock <= 0) return null
           const atFloor = live.price <= minimum
+          const floorDropped = Math.max(0, original - live.price)
+          const floorMaxSave = Math.max(0, live.price - minimum)
           return (
-            <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-emerald-50/70 border border-emerald-100 px-3 py-2">
-              <span className="text-[14px] font-bold text-ink-700 tabular-nums whitespace-nowrap">
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl bg-emerald-50/70 border border-emerald-100 px-3 py-2">
+              <span className="flex items-baseline gap-1.5 whitespace-nowrap">
+                {floorDropped > 0 && (
+                  <>
+                    <span className="text-[13px] font-semibold text-ink-500">起始價</span>
+                    <span className="text-[15px] font-bold text-ink-500 tabular-nums line-through decoration-ink-300">{fmtMoney(original)}</span>
+                    <span className="text-[14px] text-ink-400" aria-hidden="true">→</span>
+                  </>
+                )}
                 {atFloor ? (
-                  <span className="font-extrabold text-emerald-700">✅ 已到最低價 {fmtMoney(minimum)}</span>
+                  <span className="text-[14px] font-extrabold text-emerald-700">✅ 最低價 {fmtMoney(minimum)}</span>
                 ) : (
-                  <>🔒 底價 <span className="text-[16px] font-extrabold text-ink-900">{fmtMoney(minimum)}</span></>
+                  <>
+                    <span className="text-[13px] font-bold text-ink-700">🔒 底價</span>
+                    <span className="text-[16px] font-extrabold text-ink-900 tabular-nums">{fmtMoney(minimum)}</span>
+                  </>
                 )}
               </span>
+              {!atFloor && floorMaxSave > 0 && (
+                <span className="shrink-0 text-[13px] font-bold text-emerald-700 tabular-nums whitespace-nowrap">
+                  還可省 {fmtMoney(floorMaxSave)}
+                </span>
+              )}
             </div>
           )
         })()}
