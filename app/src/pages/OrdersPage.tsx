@@ -232,7 +232,7 @@ export default function OrdersPage() {
                       <div key={s} className="flex-1 flex items-center last:flex-none">
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0 transition-colors ${
-                            idx <= pIdx ? 'bg-accent-500 text-white' : 'bg-ink-100 text-ink-400'
+                            idx <= pIdx ? 'bg-accent-700 text-white' : 'bg-ink-100 text-ink-400'
                           }`}
                         >
                           {idx < pIdx ? '✓' : idx + 1}

@@ -92,7 +92,7 @@ export default function FollowButton({
   } else {
     // 未關注：亮橘樣式
     variant =
-      'bg-accent-500 border-accent-500 text-white hover:bg-accent-600 focus-visible:ring-accent-400 shadow-sm'
+      'bg-accent-700 border-accent-700 text-white hover:bg-accent-800 focus-visible:ring-accent-500 shadow-sm'
   }
 
   const label = disabledByState
