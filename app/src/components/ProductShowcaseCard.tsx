@@ -214,8 +214,9 @@ function ProductShowcaseCard({ product, index, promo, upcoming, followCount = 0 
             <DropTimer seconds={live.nextDropIn} />
           </div>
         )}
-        <div className="mt-3 flex items-end justify-between gap-2">
-          <div className="min-w-0 flex items-baseline gap-1.5 flex-wrap">
+        <div className="mt-3 min-w-0">
+          <div className="text-[13px] font-semibold tracking-wide text-ink-500 mb-1">現在價格</div>
+          <div className="flex items-baseline gap-1.5 flex-wrap">
             <span className="text-sm font-extrabold text-accent-600">$</span>
             <span className="text-[26px] font-extrabold text-accent-600 tracking-tight tabular-nums leading-none">
               {fmtMoney(live.price)}
