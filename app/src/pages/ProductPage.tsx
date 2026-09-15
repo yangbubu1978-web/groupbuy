@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Campaign, Product } from '../lib/types'
@@ -107,6 +107,27 @@ export default function ProductPage() {
   const [priceFlash, setPriceFlash] = useState(false)
   const [activePromos, setActivePromos] = useState<PromoTag[]>([])
 
+  // ---------- 底部固定 CTA 高度量測（只決定頁面底部留白，不碰價格／庫存／結帳邏輯） ----------
+  // 固定列高度會隨狀態變動（鎖價倒數、未開賣關注鈕、結帳通知列…），
+  // 量出實際高度再換成頁面底部留白，最後一個區塊才不會被它蓋住。
+  const [ctaBarH, setCtaBarH] = useState(0)
+  const ctaBarEl = useRef<HTMLDivElement | null>(null)
+  const ctaBarRo = useRef<ResizeObserver | null>(null)
+  const measureCtaBar = useCallback(() => {
+    const el = ctaBarEl.current
+    if (el) setCtaBarH(Math.ceil(el.getBoundingClientRect().height))
+  }, [])
+  const attachCtaBar = useCallback((node: HTMLDivElement | null) => {
+    ctaBarRo.current?.disconnect()
+    ctaBarRo.current = null
+    ctaBarEl.current = node
+    if (!node) return
+    measureCtaBar()
+    const ro = new ResizeObserver(measureCtaBar)
+    ro.observe(node)
+    ctaBarRo.current = ro
+  }, [measureCtaBar])
+
   // ---------- 關注（Follow）狀態 ----------
   const [following, setFollowing] = useState(false)
   const [followerCount, setFollowerCount] = useState(0)
@@ -152,6 +173,16 @@ export default function ProductPage() {
     })()
     return () => { alive = false }
   }, [productId])
+
+  // 轉向／視窗尺寸改變（iOS 安全區域會跟著變）時重新量測底部 CTA
+  useEffect(() => {
+    window.addEventListener('resize', measureCtaBar)
+    window.addEventListener('orientationchange', measureCtaBar)
+    return () => {
+      window.removeEventListener('resize', measureCtaBar)
+      window.removeEventListener('orientationchange', measureCtaBar)
+    }
+  }, [measureCtaBar])
 
   // 載入既有預約
   useEffect(() => {
@@ -408,8 +439,12 @@ export default function ProductPage() {
   const canBuy = saleOpen && live.stock >= quantity && buyState.kind !== 'buying'
   const qtyMax = Math.min(product.max_per_customer, live.stock)
 
+  // 底部留白：保底 .page-cta-pad，量到固定列高度後以 inline style 覆寫成「固定列高度 + 24px 間距」。
   return (
-    <div className="min-h-dvh bg-[#fcfcfc] pb-32">
+    <div
+      className="min-h-dvh bg-[#fcfcfc] page-cta-pad"
+      style={ctaBarH > 0 ? { paddingBottom: ctaBarH + 24 } : undefined}
+    >
       {/* ─── 頂部倒數 — 玻璃漸層 header（shadcn 陰影 + BeUI 微動） ─── */}
       <header className="sticky top-0 z-10 bg-gradient-to-br from-accent-500 via-accent-500 to-accent-600 shadow-accent-sm">
         <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between gap-3 px-4 py-3.5">
@@ -648,16 +683,16 @@ export default function ProductPage() {
           {/* ─── 數量選擇 — 分段式 stepper（BeUI 膠囊） ─── */}
           <section className="bg-white rounded-[20px] border border-ink-100 shadow-sm p-5">
             <div className="flex items-center justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <div className="text-[15px] font-bold text-ink-800">購買數量</div>
-                <div className="text-[13px] text-ink-500 mt-0.5">每人限購 {product.max_per_customer} {product.unit ?? '件'}</div>
+                <div className="text-[13px] text-ink-600 mt-0.5">每人限購 {product.max_per_customer} {product.unit ?? '件'}</div>
               </div>
               {/* Segmented stepper */}
-              <div className="inline-flex items-center gap-1 bg-ink-50 border border-ink-200 rounded-full p-1.5 shadow-inner">
+              <div className="shrink-0 inline-flex items-center gap-1 bg-ink-50 border border-ink-200 rounded-full p-1.5 shadow-inner">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   disabled={quantity <= 1}
-                  className="w-10 h-10 rounded-full bg-white border border-ink-200 text-ink-700 text-lg font-bold shadow-sm flex items-center justify-center transition active:scale-90 disabled:opacity-30 disabled:shadow-none hover:border-ink-300 hover:shadow"
+                  className="w-11 h-11 rounded-full bg-white border border-ink-200 text-ink-700 text-lg font-bold shadow-sm flex items-center justify-center transition active:scale-90 disabled:opacity-30 disabled:shadow-none hover:border-ink-300 hover:shadow"
                   aria-label="減少數量"
                 >
                   −
@@ -666,7 +701,7 @@ export default function ProductPage() {
                 <button
                   onClick={() => setQuantity((q) => Math.min(qtyMax, q + 1))}
                   disabled={quantity >= qtyMax}
-                  className="w-10 h-10 rounded-full bg-white border border-ink-200 text-ink-700 text-lg font-bold shadow-sm flex items-center justify-center transition active:scale-90 disabled:opacity-30 disabled:shadow-none hover:border-ink-300 hover:shadow"
+                  className="w-11 h-11 rounded-full bg-white border border-ink-200 text-ink-700 text-lg font-bold shadow-sm flex items-center justify-center transition active:scale-90 disabled:opacity-30 disabled:shadow-none hover:border-ink-300 hover:shadow"
                   aria-label="增加數量"
                 >
                   +
@@ -678,8 +713,8 @@ export default function ProductPage() {
       </main>
 
       {/* ─── 底部 Sticky CTA — 懸浮卡片（shadcn + 漸層按鈕） ─── */}
-      <div className="fixed bottom-0 inset-x-0 z-20">
-        <div className="max-w-md md:max-w-3xl mx-auto bg-white/95 backdrop-blur-xl border-t border-ink-100 shadow-[0_-8px_32px_rgba(0,0,0,0.08)] rounded-t-[20px] md:rounded-t-[24px] px-4 pt-4 pb-4 md:pb-5 pb-safe">
+      <div ref={attachCtaBar} className="fixed bottom-0 inset-x-0 z-20">
+        <div className="max-w-md md:max-w-3xl mx-auto bg-white/95 backdrop-blur-xl border-t border-ink-100 shadow-[0_-8px_32px_rgba(0,0,0,0.08)] rounded-t-[20px] md:rounded-t-[24px] px-4 pt-4 pb-safe">
           {checkoutNotice && (
             <div className="mb-3 rounded-2xl border-2 border-blue-200 bg-blue-50 px-4 py-3 text-center text-[14px] font-bold text-blue-800" role="status" aria-live="polite">
               ⏳ {checkoutNotice}
@@ -739,7 +774,7 @@ export default function ProductPage() {
             </button>
           )}
           {saleOpen && live.stock > 0 && buyState.kind !== 'cart' && (
-            <div className="mt-2.5 text-center text-[13px] text-ink-500 space-y-1">
+            <div className="mt-2.5 text-center text-[13px] text-ink-600 space-y-1">
               {!atFloor && <p>再等等還會降，但庫存有限、不保證有貨</p>}
               <p>放入購物車鎖價 60 秒，結帳即成立訂單、無法自行取消</p>
             </div>

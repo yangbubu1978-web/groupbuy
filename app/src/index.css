@@ -65,4 +65,16 @@ body {
 .card-soft:hover { box-shadow: 0 10px 36px rgba(30,58,95,.12); }
 
 /* ===== iOS 安全區域 ===== */
-.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+/* 底部固定 CTA 用：安全區域「加在」既有底部內距之上（1rem，md 1.25rem）。
+   舊寫法只宣告 padding-bottom，和同一元素上的 pb-4 / md:pb-5 是同一個 property、
+   同特異度，後定義者勝 → 沒有 home indicator 的裝置（Android／桌機）底部內距會塌成 0。 */
+.pb-safe { padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 768px) {
+  .pb-safe { padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ===== 底部固定 CTA：頁面底部保底留白 ===== */
+/* 實際值由 ProductPage 量測固定列高度後以 inline style 覆寫；這裡是量測前的保底值：
+   實測固定列最高 292px（iPhone 375/390 鎖價中＋結帳通知列）＋ 24px 間距 → 取 300px，
+   再加 iPhone 安全區域（量測值本身已含固定列自己的 safe-area 內距，故只有保底值要加）。 */
+.page-cta-pad { padding-bottom: calc(300px + env(safe-area-inset-bottom, 0px)); }
