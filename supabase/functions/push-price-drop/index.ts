@@ -22,14 +22,16 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
 
 declare const Deno: { env: { get(k: string): string | undefined } };
 
-// JS 版 compute_current_price 鏡像（與 migration 20260822 隨機降價版一致）
-// 若 price_decrease_max 為空則視為固定降幅
+// JS 版 compute_current_price 鏡像
+// ・新模式（drop_total_seconds 非 null）：與 migrations/20260922_drop_schedule_pricing.sql 完全同公式
+// ・舊模式：維持原雛形的平均降幅近似（與 migration 20260822 隨機降價版的差異為既有狀況，本次不動）
 function computeCurrentPrice(p: {
   original_price: number;
   minimum_price: number;
   price_interval_seconds: number;
   price_decrease: number;
   price_decrease_max?: number | null;
+  drop_total_seconds?: number | null;
   sale_start_at: string | null;
 }): number {
   const start = p.sale_start_at ? new Date(p.sale_start_at) : null;
@@ -38,6 +40,21 @@ function computeCurrentPrice(p: {
   const interval = Math.max(1, p.price_interval_seconds);
   const steps = Math.floor(elapsed / interval);
   if (steps <= 0) return Number(p.original_price);
+
+  // 新模式：管理員只設定起始價、底價、降價總時間、降價間隔，其餘系統算
+  if (p.drop_total_seconds != null) {
+    const orig = Math.round(Number(p.original_price));
+    const vMin = Math.min(Math.round(Number(p.minimum_price)), orig);
+    const range = orig - vMin;
+    if (range <= 0) return Number(p.original_price);
+    const total = Math.max(0, Math.round(Number(p.drop_total_seconds)));
+    const n = Math.floor(total / interval); // 變價次數
+    if (n < 1) return Number(p.original_price);
+    if (steps >= n) return vMin; // 最後一步精確到底價，絕不低於底價
+    const step = Math.floor(range / n); // 每步降幅（整數元）
+    return Math.max(vMin, orig - steps * step);
+  }
+
   const lo = Math.max(0, Math.round(Number(p.price_decrease)));
   const hi = p.price_decrease_max != null ? Math.max(lo, Math.round(Number(p.price_decrease_max))) : lo;
   if (lo === 0 && hi === 0) return Number(p.original_price);
@@ -78,7 +95,7 @@ Deno.serve(async (req) => {
   const { data: products, error: prodErr } = await admin
     .from("products")
     .select(
-      "id, name, image_url, campaign_id, stock, original_price, minimum_price, price_interval_seconds, price_decrease, price_decrease_max, sale_start_at, status",
+      "id, name, image_url, campaign_id, stock, original_price, minimum_price, price_interval_seconds, price_decrease, price_decrease_max, drop_total_seconds, sale_start_at, status",
     )
     .eq("status", "active")
     .gt("stock", 0);
@@ -100,6 +117,7 @@ Deno.serve(async (req) => {
     price_interval_seconds: number;
     price_decrease: number;
     price_decrease_max: number | null;
+    drop_total_seconds: number | null;
     sale_start_at: string | null;
   }>).filter((p) => {
     if (!p.original_price || Number(p.original_price) <= 0) return false;

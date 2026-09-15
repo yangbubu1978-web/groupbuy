@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Campaign, Company, CustomerGroup, Product, Promotion } from '../lib/types'
 import { fmtMoney } from '../lib/types'
-import { formatInterval } from '../lib/pricing'
+import { formatInterval, formatCountdown, dropScheduleSummary, planDropSchedule, formatDurationZh } from '../lib/pricing'
 import { useAuth } from '../context/AuthContext'
 import { useConfirm } from '../components/ConfirmDialog'
 
@@ -77,7 +77,11 @@ export default function AdminProductsPage() {
     campaign_id: '', name: '', description: '', image_url: '', image_url_2: '', image_url_3: '', sku: '',
     item_no: '',
     original_price: '1500', minimum_price: '900',
-    price_interval_seconds: '7200', price_decrease: '1', price_decrease_max: '20',
+    // 新模式：只決定「從多少錢、在多久之內降到多少錢」，其餘系統算
+    drop_minutes: '10', price_interval_seconds: '60',
+    // 以下兩欄僅舊模式（手動設定每次降幅）使用
+    price_decrease: '1', price_decrease_max: '20',
+    pricing_mode: 'schedule' as 'schedule' | 'legacy',
     initial_stock: '20', max_per_customer: '2',
     unit: '件', items_per_unit: '1',
     sale_start_at: '',
@@ -169,9 +173,12 @@ export default function AdminProductsPage() {
           item_no: (p as unknown as { item_no?: string }).item_no ?? '',
           original_price: String(p.original_price),
           minimum_price: String(p.minimum_price),
+          drop_minutes: p.drop_total_seconds != null ? String(p.drop_total_seconds / 60) : '',
           price_interval_seconds: String(p.price_interval_seconds),
           price_decrease: String(p.price_decrease),
           price_decrease_max: p.price_decrease_max != null ? String(p.price_decrease_max) : '',
+          // 既有商品：沒有 drop_total_seconds ＝ 舊隨機模式，表單維持舊欄位可編輯（行為完全不變）
+          pricing_mode: p.drop_total_seconds != null ? 'schedule' : 'legacy',
           initial_stock: String(p.initial_stock),
           max_per_customer: String(p.max_per_customer),
           unit: p.unit ?? '件',
@@ -195,9 +202,38 @@ export default function AdminProductsPage() {
     if (data) setProducts(data as Product[])
   }
 
+  /** 新模式（設定總降價時間）即時試算 — 後台預覽與存檔共用同一份計算 */
+  const dropTotalSeconds = Math.max(0, Math.round((Number(form.drop_minutes) || 0) * 60))
+  const schedule = useMemo(
+    () => planDropSchedule({
+      originalPrice: Number(form.original_price),
+      minimumPrice: Number(form.minimum_price),
+      priceIntervalSeconds: Number(form.price_interval_seconds),
+      dropTotalSeconds,
+    }),
+    [form.original_price, form.minimum_price, form.price_interval_seconds, dropTotalSeconds],
+  )
+  const isScheduleMode = form.pricing_mode === 'schedule'
+
   const submit = async () => {
     setBusy(true); setMsg(null)
     try {
+      if (isScheduleMode && !schedule.valid) throw new Error(schedule.errors[0] ?? '降價設定不完整')
+      // 降價設定：新模式寫入 drop_total_seconds（＝模式判別），每次降幅自動帶入「每步降幅」
+      // 供既有的報表／列表文案沿用；舊模式則原封不動（drop_total_seconds 保持 null）
+      const pricingPayload = isScheduleMode
+        ? {
+            drop_total_seconds: dropTotalSeconds,
+            price_interval_seconds: Number(form.price_interval_seconds),
+            price_decrease: schedule.stepAmount,
+            price_decrease_max: schedule.stepAmount,
+          }
+        : {
+            drop_total_seconds: null,
+            price_interval_seconds: Number(form.price_interval_seconds),
+            price_decrease: Number(form.price_decrease),
+            price_decrease_max: form.price_decrease_max ? Number(form.price_decrease_max) : null,
+          }
       let targetCampaign = form.campaign_id
       if (!targetCampaign) {
         const { data: existing } = await supabase.from('campaigns').select('id').limit(1)
@@ -227,9 +263,7 @@ export default function AdminProductsPage() {
           campaign_id: campaignId, name: form.name, description: form.description || null,
           image_url: form.image_url || null, image_url_2: (form as unknown as { image_url_2?: string }).image_url_2 || null, image_url_3: (form as unknown as { image_url_3?: string }).image_url_3 || null, sku: form.sku, item_no: form.item_no.trim() || null,
           original_price: Number(form.original_price), minimum_price: Number(form.minimum_price),
-          price_interval_seconds: Number(form.price_interval_seconds),
-          price_decrease: Number(form.price_decrease),
-          price_decrease_max: form.price_decrease_max ? Number(form.price_decrease_max) : null,
+          ...pricingPayload,
           initial_stock: newInitial, stock: newStock,
           max_per_customer: Number(form.max_per_customer),
           unit: form.unit.trim() || '件',
@@ -248,9 +282,7 @@ export default function AdminProductsPage() {
           campaign_id: campaignId, name: form.name, description: form.description || null,
           image_url: form.image_url || null, image_url_2: (form as unknown as { image_url_2?: string }).image_url_2 || null, image_url_3: (form as unknown as { image_url_3?: string }).image_url_3 || null, sku: form.sku, item_no: form.item_no.trim() || null,
           original_price: Number(form.original_price), minimum_price: Number(form.minimum_price),
-          price_interval_seconds: Number(form.price_interval_seconds),
-          price_decrease: Number(form.price_decrease),
-          price_decrease_max: form.price_decrease_max ? Number(form.price_decrease_max) : null,
+          ...pricingPayload,
           initial_stock: Number(form.initial_stock), stock: Number(form.initial_stock),
           max_per_customer: Number(form.max_per_customer),
           unit: form.unit.trim() || '件',
@@ -334,8 +366,10 @@ export default function AdminProductsPage() {
       campaign_id: p.campaign_id, name: `${p.name}（副本）`, description: p.description ?? '',
       image_url: p.image_url ?? '', image_url_2: (p as unknown as { image_url_2?: string }).image_url_2 ?? '', image_url_3: (p as unknown as { image_url_3?: string }).image_url_3 ?? '', sku: `${p.sku}-COPY`, item_no: (p as unknown as { item_no?: string }).item_no ?? '',
       original_price: String(p.original_price), minimum_price: String(p.minimum_price),
+      drop_minutes: p.drop_total_seconds != null ? String(p.drop_total_seconds / 60) : '',
       price_interval_seconds: String(p.price_interval_seconds), price_decrease: String(p.price_decrease),
       price_decrease_max: p.price_decrease_max != null ? String(p.price_decrease_max) : '',
+      pricing_mode: p.drop_total_seconds != null ? 'schedule' : 'legacy',
       initial_stock: String(p.initial_stock), max_per_customer: String(p.max_per_customer),
       unit: p.unit ?? '件', items_per_unit: String(p.items_per_unit ?? 1),
       sale_start_at: '', _origSaleStartNull: true,
@@ -347,7 +381,33 @@ export default function AdminProductsPage() {
   }
 
   const inputCls = 'w-full h-11 px-3.5 rounded-xl border border-ink-200 bg-white text-[15px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-accent-400 transition'
+  /** 價格設定欄位：48px 高（熟齡友善），內文 16px 避免 iOS 自動放大 */
+  const inputCls48 = 'w-full h-12 px-3.5 rounded-xl border border-ink-200 bg-white text-[16px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-accent-400 transition'
   const labelCls = 'text-[13px] font-semibold text-ink-700'
+
+  /** 列表／卡片用的降價摘要（新模式＝總降價時間排程；舊模式＝每次降幅隨機） */
+  const dropSummaryLines = (p: Product): [string, string] => {
+    if (p.drop_total_seconds != null) {
+      const s = dropScheduleSummary({
+        originalPrice: Number(p.original_price),
+        minimumPrice: Number(p.minimum_price),
+        priceIntervalSeconds: Number(p.price_interval_seconds),
+        dropTotalSeconds: Number(p.drop_total_seconds),
+      })
+      if (!s.valid) return ['降價設定異常', '請開編輯確認']
+      return [
+        `每 ${formatInterval(s.intervalSeconds)} −${fmtMoney(s.stepAmount)}`,
+        `${formatDurationZh(s.effectiveTotalSeconds)}內到 ${fmtMoney(s.minimumPrice)}`,
+      ]
+    }
+    const lo = Number(p.price_decrease)
+    const hi = p.price_decrease_max != null ? Number(p.price_decrease_max) : null
+    return [
+      `每 ${formatInterval(p.price_interval_seconds)}`,
+      hi != null && hi !== lo ? `−${fmtMoney(lo)}~${fmtMoney(hi)}` : `−${fmtMoney(lo)}`,
+    ]
+  }
+  const dropSummaryText = (p: Product) => dropSummaryLines(p).join(' · ')
 
   const counts: Record<StatusFilter, number> = {
     all: products.length,
@@ -460,42 +520,196 @@ export default function AdminProductsPage() {
             <p className={`${labelCls} mb-2`}>價格與庫存</p>
             <div className="grid grid-cols-2 gap-3">
               <label className="space-y-1.5">
-                <span className="text-xs font-medium text-ink-500">原價</span>
-                <input type="number" min="0" value={form.original_price} onChange={(e) => setForm({ ...form, original_price: e.target.value })} className={inputCls} />
+                <span className="text-[13px] font-medium text-ink-600">起始價格（元）</span>
+                <input type="number" min="0" value={form.original_price} onChange={(e) => setForm({ ...form, original_price: e.target.value })} className={inputCls48} />
               </label>
               <label className="space-y-1.5">
-                <span className="text-xs font-medium text-ink-500">最低價格</span>
-                <input type="number" min="0" value={form.minimum_price} onChange={(e) => setForm({ ...form, minimum_price: e.target.value })} className={inputCls} />
+                <span className="text-[13px] font-medium text-ink-600">最低價格／底價（元）</span>
+                <input type="number" min="0" value={form.minimum_price} onChange={(e) => setForm({ ...form, minimum_price: e.target.value })} className={inputCls48} />
+              </label>
+              {isScheduleMode ? (
+                <>
+                  <label className="space-y-1.5">
+                    <span className="text-[13px] font-medium text-ink-600">降價總時間（分鐘）</span>
+                    <input type="number" min="0.5" step="0.5" value={form.drop_minutes} onChange={(e) => setForm({ ...form, drop_minutes: e.target.value })} className={inputCls48} />
+                    <span className="block text-[13px] text-ink-600">＝ {formatDurationZh(dropTotalSeconds)}內降到最低價</span>
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-[13px] font-medium text-ink-600">降價間隔（秒）</span>
+                    <input type="number" min="1" value={form.price_interval_seconds} onChange={(e) => setForm({ ...form, price_interval_seconds: e.target.value })} className={inputCls48} />
+                    <span className="block text-[13px] text-ink-600">＝ 每 {formatInterval(Math.max(1, Number(form.price_interval_seconds) || 1))}降一次</span>
+                  </label>
+                  <div className="col-span-2 flex flex-wrap gap-1.5">
+                    {[['5 分鐘', 5], ['10 分鐘', 10], ['30 分鐘', 30], ['1 小時', 60], ['2 小時', 120]].map(([label, min]) => (
+                      <button key={label} type="button" onClick={() => setForm({ ...form, drop_minutes: String(min) })}
+                        className={`h-9 px-3.5 rounded-full text-[13px] font-bold ring-1 ring-inset transition ${Number(form.drop_minutes) === min ? 'bg-ink-900 text-white ring-ink-900' : 'bg-white text-ink-600 ring-ink-200 hover:bg-ink-50'}`}>
+                        {label}
+                      </button>
+                    ))}
+                    {[['10 秒', 10], ['30 秒', 30], ['1 分鐘', 60], ['5 分鐘', 300]].map(([label, sec]) => (
+                      <button key={label} type="button" onClick={() => setForm({ ...form, price_interval_seconds: String(sec) })}
+                        className={`h-9 px-3.5 rounded-full text-[13px] font-bold ring-1 ring-inset transition ${Number(form.price_interval_seconds) === sec ? 'bg-ink-900 text-white ring-ink-900' : 'bg-white text-ink-600 ring-ink-200 hover:bg-ink-50'}`}>
+                        每 {label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label className="space-y-1.5">
+                    <span className="text-[13px] font-medium text-ink-600">降價間隔（秒）</span>
+                    <input type="number" min="1" value={form.price_interval_seconds} onChange={(e) => setForm({ ...form, price_interval_seconds: e.target.value })} className={inputCls48} />
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-[13px] font-medium text-ink-600">每次降價（元）</span>
+                    <input type="number" min="0" value={form.price_decrease} onChange={(e) => setForm({ ...form, price_decrease: e.target.value })} className={inputCls48} />
+                  </label>
+                  <label className="col-span-2 space-y-1.5">
+                    <span className="text-[13px] font-medium text-ink-600">每次降價－最高（留空＝固定降幅）</span>
+                    <input type="number" min="0" placeholder="留空＝固定" value={form.price_decrease_max} onChange={(e) => setForm({ ...form, price_decrease_max: e.target.value })} className={inputCls48} />
+                  </label>
+                </>
+              )}
+              <label className="space-y-1.5">
+                <span className="text-[13px] font-medium text-ink-600">初始庫存</span>
+                <input type="number" min="0" value={form.initial_stock} onChange={(e) => setForm({ ...form, initial_stock: e.target.value })} className={inputCls48} />
               </label>
               <label className="space-y-1.5">
-                <span className="text-xs font-medium text-ink-500">降價間隔（秒）</span>
-                <input type="number" min="1" value={form.price_interval_seconds} onChange={(e) => setForm({ ...form, price_interval_seconds: e.target.value })} className={inputCls} />
+                <span className="text-[13px] font-medium text-ink-600">每人限購</span>
+                <input type="number" min="1" value={form.max_per_customer} onChange={(e) => setForm({ ...form, max_per_customer: e.target.value })} className={inputCls48} />
               </label>
               <label className="space-y-1.5">
-                <span className="text-xs font-medium text-ink-500">每次降價（元）</span>
-                <input type="number" min="0" value={form.price_decrease} onChange={(e) => setForm({ ...form, price_decrease: e.target.value })} className={inputCls} />
+                <span className="text-[13px] font-medium text-ink-600">銷售單位</span>
+                <input value={form.unit} placeholder="件" onChange={(e) => setForm({ ...form, unit: e.target.value })} className={inputCls48} />
               </label>
               <label className="space-y-1.5">
-                <span className="text-xs font-medium text-ink-500">每次降價－最高</span>
-                <input type="number" min="0" placeholder="留空＝固定" value={form.price_decrease_max} onChange={(e) => setForm({ ...form, price_decrease_max: e.target.value })} className={inputCls} />
-              </label>
-              <label className="space-y-1.5">
-                <span className="text-xs font-medium text-ink-500">初始庫存</span>
-                <input type="number" min="0" value={form.initial_stock} onChange={(e) => setForm({ ...form, initial_stock: e.target.value })} className={inputCls} />
-              </label>
-              <label className="space-y-1.5">
-                <span className="text-xs font-medium text-ink-500">每人限購</span>
-                <input type="number" min="1" value={form.max_per_customer} onChange={(e) => setForm({ ...form, max_per_customer: e.target.value })} className={inputCls} />
-              </label>
-              <label className="space-y-1.5">
-                <span className="text-xs font-medium text-ink-500">銷售單位</span>
-                <input value={form.unit} placeholder="件" onChange={(e) => setForm({ ...form, unit: e.target.value })} className={inputCls} />
-              </label>
-              <label className="col-span-2 sm:col-span-1 space-y-1.5">
-                <span className="text-xs font-medium text-ink-500">單位入數</span>
-                <input type="number" min="1" value={form.items_per_unit} onChange={(e) => setForm({ ...form, items_per_unit: e.target.value })} className={inputCls} />
+                <span className="text-[13px] font-medium text-ink-600">單位入數</span>
+                <input type="number" min="1" value={form.items_per_unit} onChange={(e) => setForm({ ...form, items_per_unit: e.target.value })} className={inputCls48} />
               </label>
             </div>
+
+            {/* 降價方式切換 */}
+            <div className="mt-3 rounded-2xl border border-ink-200 bg-ink-50/60 p-4 space-y-3">
+              <p className="text-[13px] font-bold tracking-wide text-ink-600">降價方式</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button type="button" onClick={() => setForm({ ...form, pricing_mode: 'schedule' })}
+                  className={`text-left rounded-xl p-3 ring-1 ring-inset transition ${isScheduleMode ? 'bg-white ring-accent-400 shadow-sm' : 'bg-white/60 ring-ink-200 hover:bg-white'}`}>
+                  <span className="block text-[14px] font-bold text-ink-900">⏱ 設定總降價時間（推薦）</span>
+                  <span className="mt-1 block text-[13px] text-ink-600 leading-relaxed">只要決定「從多少錢、在多久之內降到多少錢」，每次降多少由系統自動算。</span>
+                </button>
+                <button type="button" onClick={() => setForm({ ...form, pricing_mode: 'legacy' })}
+                  className={`text-left rounded-xl p-3 ring-1 ring-inset transition ${!isScheduleMode ? 'bg-white ring-accent-400 shadow-sm' : 'bg-white/60 ring-ink-200 hover:bg-white'}`}>
+                  <span className="block text-[14px] font-bold text-ink-900">🎲 手動設定每次降幅（舊）</span>
+                  <span className="mt-1 block text-[13px] text-ink-600 leading-relaxed">自己填每次降價金額與上限，步長每次隨機（既有商品沿用此法）。</span>
+                </button>
+              </div>
+            </div>
+
+            {isScheduleMode && (
+              <div className="mt-3 space-y-3">
+                {/* 即時試算 */}
+                <div className="rounded-2xl border border-ink-200 bg-white p-4 space-y-3">
+                  <p className="text-[13px] font-bold tracking-wide text-ink-600">系統自動計算（儲存前確認）</p>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-xl bg-ink-50 border border-ink-100 py-2.5">
+                      <div className="text-[13px] font-medium text-ink-600">總降價金額</div>
+                      <div className="mt-0.5 text-[18px] font-extrabold tabular-nums text-ink-900">{fmtMoney(schedule.totalDrop)}</div>
+                    </div>
+                    <div className="rounded-xl bg-ink-50 border border-ink-100 py-2.5">
+                      <div className="text-[13px] font-medium text-ink-600">變價次數</div>
+                      <div className="mt-0.5 text-[18px] font-extrabold tabular-nums text-ink-900">{schedule.steps} 次</div>
+                      {schedule.stepsAdjusted && (
+                        <div className="mt-0.5 text-[13px] leading-snug text-ink-600">
+                          原 {schedule.idealSteps} 次
+                          <br />（調整為整除）
+                        </div>
+                      )}
+                    </div>
+                    <div className="rounded-xl bg-ink-50 border border-ink-100 py-2.5">
+                      <div className="text-[13px] font-medium text-ink-600">平均每次降價</div>
+                      <div className="mt-0.5 text-[18px] font-extrabold tabular-nums text-ink-900">
+                        {schedule.steps >= 1
+                          ? (Number.isInteger(schedule.totalDrop / schedule.steps)
+                            ? fmtMoney(schedule.totalDrop / schedule.steps)
+                            : `$${(schedule.totalDrop / schedule.steps).toFixed(1)}`)
+                          : '—'}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-[13px] text-ink-700 leading-relaxed">
+                    每 {formatInterval(schedule.intervalSeconds)}降 {fmtMoney(schedule.stepAmount)}，
+                    {formatDurationZh(schedule.effectiveTotalSeconds)}後到最低價 {fmtMoney(schedule.minimumPrice)}
+                    {!schedule.amountExact && schedule.steps >= 1 && `（最後一次降 ${fmtMoney(schedule.lastDropAmount)}，吸收餘數精確到底價）`}。
+                  </p>
+                  {schedule.stepsAdjusted && (
+                    <p className="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-[13px] font-medium text-emerald-900 leading-relaxed">
+                      ℹ️ 為了讓每次降幅是整數，變價次數已由 {schedule.idealSteps} 次自動調整為 <b>{schedule.steps} 次</b>，
+                      實際總降價時間為 {formatDurationZh(schedule.effectiveTotalSeconds)}（設定為 {formatDurationZh(schedule.totalSeconds)}），
+                      每次降價固定 {fmtMoney(schedule.stepAmount)}。
+                    </p>
+                  )}
+
+                  {/* 驗證與除不盡提示 */}
+                  {schedule.errors.map((err) => (
+                    <p key={err} className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-[13px] font-bold text-red-700 leading-relaxed">⛔ {err}</p>
+                  ))}
+                  {schedule.valid && !schedule.timeExact && (
+                    <p className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-[13px] font-medium text-amber-800 leading-relaxed">
+                      ⚠️ 降價間隔無法整除降價總時間：實際總降價時間為 {schedule.steps} × {formatInterval(schedule.intervalSeconds)} = {formatDurationZh(schedule.effectiveTotalSeconds)}（比設定的 {formatDurationZh(schedule.totalSeconds)} 少 {formatDurationZh(schedule.totalSeconds - schedule.effectiveTotalSeconds)}）。
+                    </p>
+                  )}
+                  {schedule.valid && !schedule.amountExact && (
+                    <p className="rounded-xl bg-ink-50 border border-ink-200 px-3 py-2 text-[13px] font-medium text-ink-700 leading-relaxed">
+                      ℹ️ 總降價金額無法整除變價次數：每步降 {fmtMoney(schedule.stepAmount)}，最後一步降 {fmtMoney(schedule.lastDropAmount)}，最終價格精確等於底價 {fmtMoney(schedule.minimumPrice)}。
+                    </p>
+                  )}
+                  {/* 舊商品切換到新模式的操作提醒：價格曲線一律從「開賣時間」起算 */}
+                  {editId && form.sale_start_at && new Date(form.sale_start_at).getTime() < Date.now() && (
+                    <p className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-[13px] font-medium text-amber-800 leading-relaxed">
+                      ⚠️ 此商品已開賣，價格一律從「開賣時間」起算：若已開賣超過設定的降價總時間（{formatDurationZh(schedule.effectiveTotalSeconds)}），儲存後價格會直接落在最低價 {fmtMoney(schedule.minimumPrice)}。要從起始價重新降一輪，請用列表的「🔄 重新上架」。
+                    </p>
+                  )}
+                </div>
+
+                {/* 完整價格時間表預覽 */}
+                <div className="rounded-2xl border border-ink-200 bg-white overflow-hidden">
+                  <div className="flex items-center justify-between gap-2 bg-ink-50 px-3.5 py-2.5 border-b border-ink-200">
+                    <span className="text-[13px] font-bold text-ink-700">價格時間表預覽（共 {schedule.rows.length} 列）</span>
+                    <span className="text-[13px] font-medium text-ink-600">可在框內往下捲看完整</span>
+                  </div>
+                  {schedule.rows.length === 0 ? (
+                    <p className="px-3.5 py-4 text-[13px] text-ink-500">設定還不完整，先填好上方四個欄位。</p>
+                  ) : (
+                    <div className="max-h-72 overflow-auto">
+                      <table className="w-full text-[14px] tabular-nums">
+                        <thead className="sticky top-0 z-10 bg-white border-b border-ink-200">
+                          <tr className="text-[13px] font-bold text-ink-600">
+                            <th className="px-3.5 py-2 text-left whitespace-nowrap">時間</th>
+                            <th className="px-3.5 py-2 text-right whitespace-nowrap">價格</th>
+                            <th className="px-3.5 py-2 text-right whitespace-nowrap">本步降幅</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-ink-100">
+                          {schedule.rows.map((row, i) => {
+                            const isLast = i === schedule.rows.length - 1
+                            return (
+                              <tr key={row.step} className={isLast ? 'bg-emerald-50/80' : i === 0 ? 'bg-ink-50/50' : ''}>
+                                <td className="px-3.5 py-2 text-ink-700 whitespace-nowrap">{formatCountdown(row.atSeconds)}</td>
+                                <td className="px-3.5 py-2 text-right">
+                                  <span className={`whitespace-nowrap ${isLast ? 'font-extrabold text-emerald-700' : 'font-semibold text-ink-900'}`}>{fmtMoney(row.price)}</span>
+                                  {isLast && <span className="block text-[13px] font-bold text-emerald-700 leading-snug">＝ 底價（最後一次降幅 {fmtMoney(row.dropAmount)} 元）</span>}
+                                </td>
+                                <td className="px-3.5 py-2 text-right text-ink-600 whitespace-nowrap">{row.dropAmount > 0 ? `−${fmtMoney(row.dropAmount)}` : '—'}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-3">
@@ -581,10 +795,18 @@ export default function AdminProductsPage() {
           )}
 
           <div className="rounded-xl bg-accent-50 border border-accent-200 px-4 py-3 text-sm text-ink-700 leading-relaxed">
-            自動降價：{fmtMoney(Number(form.original_price))} 起，每 {formatInterval(Number(form.price_interval_seconds))} 降 {fmtMoney(Number(form.price_decrease))}{form.price_decrease_max ? `~${fmtMoney(Number(form.price_decrease_max))}` : ''}，最低 {fmtMoney(Number(form.minimum_price))}。
+            {isScheduleMode ? (
+              schedule.valid ? (
+                <>自動降價：{fmtMoney(schedule.originalPrice)} 起，每 {formatInterval(schedule.intervalSeconds)}降 {fmtMoney(schedule.stepAmount)}，{formatDurationZh(schedule.effectiveTotalSeconds)}後到最低價 {fmtMoney(schedule.minimumPrice)}（共 {schedule.steps} 次）。</>
+              ) : (
+                <>自動降價：降價設定尚未完成，請看上方紅字提示。</>
+              )
+            ) : (
+              <>自動降價：{fmtMoney(Number(form.original_price))} 起，每 {formatInterval(Number(form.price_interval_seconds))} 降 {fmtMoney(Number(form.price_decrease))}{form.price_decrease_max ? `~${fmtMoney(Number(form.price_decrease_max))}` : ''}，最低 {fmtMoney(Number(form.minimum_price))}（舊模式：每次降幅隨機）。</>
+            )}
           </div>
 
-          <button onClick={submit} disabled={busy || !form.name || !form.sku}
+          <button onClick={submit} disabled={busy || !form.name || !form.sku || (isScheduleMode && !schedule.valid)}
             className="w-full h-11 rounded-xl bg-ink-900 text-white text-sm font-bold shadow-sm hover:bg-ink-800 active:scale-[0.98] disabled:opacity-40 transition">
             {busy ? '儲存中…' : editId ? '儲存變更' : duplicateMode ? '建立副本' : '建立商品'}
           </button>
@@ -673,7 +895,7 @@ export default function AdminProductsPage() {
                         <span className="text-ink-400"> / {p.initial_stock}</span>
                       </td>
                       <td className="px-3 py-3 text-xs text-ink-600 whitespace-nowrap">
-                        每 {formatInterval(p.price_interval_seconds)} −{p.price_decrease_max != null && Number(p.price_decrease_max) !== Number(p.price_decrease) ? `${fmtMoney(Number(p.price_decrease))}~${fmtMoney(Number(p.price_decrease_max))}` : fmtMoney(Number(p.price_decrease))}
+                        {dropSummaryText(p)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1.5 flex-wrap">
@@ -735,7 +957,7 @@ export default function AdminProductsPage() {
                   </div>
                   <div className="text-center">
                     <div className="text-[11px] font-bold tracking-wide text-ink-400">降價</div>
-                    <div className="mt-0.5 text-xs font-semibold text-ink-700 leading-tight">每 {formatInterval(p.price_interval_seconds)}<br />−{p.price_decrease_max != null && Number(p.price_decrease_max) !== Number(p.price_decrease) ? `${fmtMoney(Number(p.price_decrease))}~${fmtMoney(Number(p.price_decrease_max))}` : fmtMoney(Number(p.price_decrease))}</div>
+                    <div className="mt-0.5 text-xs font-semibold text-ink-700 leading-tight">{dropSummaryLines(p)[0]}<br />{dropSummaryLines(p)[1]}</div>
                   </div>
                 </div>
 

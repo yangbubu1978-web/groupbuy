@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Campaign, Product } from '../lib/types'
 import { fmtMoney } from '../lib/types'
-import { formatCountdown, formatInterval } from '../lib/pricing'
+import { formatCountdown, formatInterval, formatDurationZh, dropScheduleSummary } from '../lib/pricing'
 import { useLivePrice } from '../lib/useLivePrice'
 import type { PromoTag } from '../components/ProductShowcaseCard'
 import { useAuth } from '../context/AuthContext'
@@ -436,6 +436,15 @@ export default function ProductPage() {
   const decLo = Number(product.price_decrease)
   const decHi = product.price_decrease_max != null ? Number(product.price_decrease_max) : decLo
   const dropLabel = decLo === decHi ? fmtMoney(decLo) : `${fmtMoney(decLo)} ~ ${fmtMoney(decHi)}`
+  // 新模式（設定總降價時間）→ 顯示系統算出的確定性降幅與降價總時間；舊模式維持隨機降幅文案
+  const scheduleInfo = product.drop_total_seconds != null
+    ? dropScheduleSummary({
+        originalPrice: Number(product.original_price),
+        minimumPrice: Number(product.minimum_price),
+        priceIntervalSeconds: Number(product.price_interval_seconds),
+        dropTotalSeconds: Number(product.drop_total_seconds),
+      })
+    : null
   const canBuy = saleOpen && live.stock >= quantity && buyState.kind !== 'buying'
   const qtyMax = Math.min(product.max_per_customer, live.stock)
 
@@ -618,7 +627,11 @@ export default function ProductPage() {
 
             {/* 降價規則條 — 柔和內嵌卡 */}
             <div className="flex items-center justify-between gap-3 rounded-2xl bg-ink-50 border border-ink-100 px-4 py-3.5">
-              <span className="text-[14px] font-medium text-ink-700">每 {formatInterval(product.price_interval_seconds)} 隨機降 {dropLabel}</span>
+              <span className="text-[14px] font-medium text-ink-700">
+                {scheduleInfo
+                  ? <>每 {formatInterval(scheduleInfo.intervalSeconds)}降 {fmtMoney(scheduleInfo.stepAmount)}，{formatDurationZh(scheduleInfo.effectiveTotalSeconds)}後降到最低價 {fmtMoney(scheduleInfo.minimumPrice)}</>
+                  : <>每 {formatInterval(product.price_interval_seconds)} 隨機降 {dropLabel}</>}
+              </span>
               {buyState.kind === 'cart' ? (
                 <span className="text-[13px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">🔒 已鎖定</span>
               ) : (

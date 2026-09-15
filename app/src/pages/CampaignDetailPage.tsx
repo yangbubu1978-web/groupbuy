@@ -119,7 +119,7 @@ export default function CampaignDetailPage() {
         setCampaign(c as Campaign)
         const { data: ps } = await supabase
           .from('products')
-          .select('id, campaign_id, name, image_url, sku, original_price, minimum_price, price_interval_seconds, price_decrease, price_decrease_max, initial_stock, stock, max_per_customer, status, sale_start_at, forced_delist_at, created_at')
+          .select('id, campaign_id, name, image_url, sku, original_price, minimum_price, price_interval_seconds, price_decrease, price_decrease_max, drop_total_seconds, initial_stock, stock, max_per_customer, status, sale_start_at, forced_delist_at, created_at')
           .eq('campaign_id', campaignId ?? '')
           .order('created_at', { ascending: true })
         if (alive && ps) {

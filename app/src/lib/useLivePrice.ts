@@ -43,6 +43,8 @@ export function useLivePrice(product: Product | null) {
     priceIntervalSeconds: product.price_interval_seconds,
     priceDecrease: Number(product.price_decrease),
     priceDecreaseMax: product.price_decrease_max != null ? Number(product.price_decrease_max) : null,
+    // 新模式（設定總降價時間）判別；null/undefined＝舊隨機模式（既有商品不受影響）
+    dropTotalSeconds: product.drop_total_seconds != null ? Number(product.drop_total_seconds) : null,
   }
 
   return {

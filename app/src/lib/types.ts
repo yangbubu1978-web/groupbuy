@@ -70,6 +70,9 @@ export interface Product {
   price_interval_seconds: number
   price_decrease: number
   price_decrease_max?: number | null
+  /** 降價總時間（秒）— 新模式「設定總降價時間，自動計算降價價格」；
+   *  null/undefined＝舊的隨機步長模式（既有商品完全不受影響） */
+  drop_total_seconds?: number | null
   initial_stock: number
   stock: number
   max_per_customer: number

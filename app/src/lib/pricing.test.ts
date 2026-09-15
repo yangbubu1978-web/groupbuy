@@ -5,6 +5,10 @@ import {
   formatCountdown,
   formatInterval,
   randStep,
+  dropScheduleSummary,
+  planDropSchedule,
+  computeScheduledPrice,
+  formatDurationZh,
 } from './pricing'
 
 // 固定降幅（相容舊設定）：原 1500 底 1000 每 60 秒降 10
@@ -121,6 +125,189 @@ describe('回歸測試：前台顯示價必須與 Server SQL rand_step（SHA-256
   it('k=1、k=3 也與 Server 一致', () => {
     expect(computeCurrentPrice(cfg, 1 * 600, pid)).toBe(132)
     expect(computeCurrentPrice(cfg, 3 * 600, pid)).toBe(108)
+  })
+})
+
+// ══════════════════════════════════════════════════════════════
+// 新模式：設定總降價時間，自動計算降價價格（2026-09-15 雅布大人拍板）
+// 這些期望值同時由本機 PostgreSQL 實跑 compute_current_price 驗證過
+// （supabase/drop-schedule-migration-test.sql），即前後端同公式的回歸鎖。
+// ══════════════════════════════════════════════════════════════
+const sched = (originalPrice: number, minimumPrice: number, totalSeconds: number, interval: number) => ({
+  originalPrice, minimumPrice, priceIntervalSeconds: interval, priceDecrease: 0, priceDecreaseMax: null,
+  dropTotalSeconds: totalSeconds,
+})
+
+describe('computeCurrentPrice：新模式（設定總降價時間）', () => {
+  it('雅布大人原始情境：399→99、10 分鐘、每 1 分鐘 → 每步 30', () => {
+    const cfg = sched(399, 99, 600, 60)
+    const seq = Array.from({ length: 11 }, (_, k) => computeCurrentPrice(cfg, k * 60 + 20))
+    expect(seq).toEqual([399, 369, 339, 309, 279, 249, 219, 189, 159, 129, 99])
+    expect(dropScheduleSummary({ originalPrice: 399, minimumPrice: 99, priceIntervalSeconds: 60, dropTotalSeconds: 600 }))
+      .toMatchObject({ steps: 10, stepAmount: 30, lastDropAmount: 30, totalDrop: 300, timeExact: true, amountExact: true, valid: true })
+  })
+
+  it('未滿一期＝起始價；到底價後永不低於底價、不再繼續降', () => {
+    const cfg = sched(399, 99, 600, 60)
+    expect(computeCurrentPrice(cfg, 0)).toBe(399)
+    expect(computeCurrentPrice(cfg, 59.9)).toBe(399)
+    expect(computeCurrentPrice(cfg, 600)).toBe(99)
+    expect(computeCurrentPrice(cfg, 660)).toBe(99)
+    expect(computeCurrentPrice(cfg, 60000)).toBe(99)
+  })
+
+  it('整除調整：999→299、30 分鐘、每 1 分鐘 → 理想 30 次，自動調整為 28 次、每步 25（整數）', () => {
+    const cfg = sched(999, 299, 1800, 60)
+    const s = dropScheduleSummary({ originalPrice: 999, minimumPrice: 299, priceIntervalSeconds: 60, dropTotalSeconds: 1800 })
+    expect(s).toMatchObject({ idealSteps: 30, steps: 28, stepsAdjusted: true, stepAmount: 25, lastDropAmount: 25,
+                              totalDrop: 700, amountExact: true, effectiveTotalSeconds: 1680, valid: true })
+    expect(computeCurrentPrice(cfg, 1 * 60 + 20)).toBe(974)
+    expect(computeCurrentPrice(cfg, 12 * 60 + 20)).toBe(699)
+    expect(computeCurrentPrice(cfg, 28 * 60 + 20)).toBe(299)   // 第 28 次剛好到底價
+    expect(computeCurrentPrice(cfg, 29 * 60 + 20)).toBe(299)
+    expect(computeCurrentPrice(cfg, 999 * 60 + 20)).toBe(299)
+  })
+
+  it('降價間隔 10 秒／30 秒／1 分鐘／5 分鐘：同樣 10 分鐘到底，節奏不同', () => {
+    const c = sched(1000, 500, 600, 10)
+    const d = sched(1000, 500, 600, 30)
+    const e = sched(1000, 500, 600, 60)
+    const f = sched(1000, 500, 600, 300)
+    expect(computeCurrentPrice(c, 10 + 3)).toBe(990)   // 理想 60 次 → 調整 50 次、每步 10
+    expect(computeCurrentPrice(c, 500 + 3)).toBe(500)
+    expect(computeCurrentPrice(d, 30 + 10)).toBe(975)  // N=20、每步 25
+    expect(computeCurrentPrice(d, 600 + 10)).toBe(500)
+    expect(computeCurrentPrice(e, 60 + 20)).toBe(950)  // N=10、每步 50
+    expect(computeCurrentPrice(e, 600 + 20)).toBe(500)
+    expect(computeCurrentPrice(f, 300 + 100)).toBe(750) // N=2、每步 250
+    expect(computeCurrentPrice(f, 600 + 100)).toBe(500)
+  })
+
+  it('整除調整取較近因數：1500→1000、2 小時、每 1 分鐘 → 理想 120 次，調整為 125 次、每步 4', () => {
+    const cfg = sched(1500, 1000, 7200, 60)
+    expect(computeCurrentPrice(cfg, 60 + 20)).toBe(1496)
+    expect(computeCurrentPrice(cfg, 125 * 60 + 20)).toBe(1000)
+    expect(dropScheduleSummary({ originalPrice: 1500, minimumPrice: 1000, priceIntervalSeconds: 60, dropTotalSeconds: 7200 }))
+      .toMatchObject({ idealSteps: 120, steps: 125, stepsAdjusted: true, stepAmount: 4, lastDropAmount: 4, effectiveTotalSeconds: 7500 })
+  })
+
+  it('極端情形（價差為質數找不到近似因數）→ 退回理想次數，最後一步吸收餘數且精確到底價', () => {
+    // 1000→3：價差 997（質數）、理想 30 次
+    const s = dropScheduleSummary({ originalPrice: 1000, minimumPrice: 3, priceIntervalSeconds: 60, dropTotalSeconds: 1800 })
+    expect(s).toMatchObject({ idealSteps: 30, steps: 30, stepsAdjusted: false, stepAmount: 33, lastDropAmount: 40, amountExact: false, valid: true })
+    const cfg = sched(1000, 3, 1800, 60)
+    expect(computeCurrentPrice(cfg, 30 * 60 + 20)).toBe(3)    // 最後一步吸收餘數，精確到底價
+    expect(computeCurrentPrice(cfg, 999 * 60 + 20)).toBe(3)
+  })
+
+  it('永遠不會低於底價、永遠不高於起始價（大量取樣）', () => {
+    for (const cfg of [sched(399, 99, 600, 60), sched(999, 299, 1800, 60), sched(1000, 500, 600, 10)]) {
+      for (let t = 0; t < 5000; t += 7) {
+        const p = computeCurrentPrice(cfg, t)
+        expect(p).toBeGreaterThanOrEqual(cfg.minimumPrice)
+        expect(p).toBeLessThanOrEqual(cfg.originalPrice)
+      }
+    }
+  })
+
+  it('決定性：同一 elapsed 永遠同一價格（重新整理不變）', () => {
+    const cfg = sched(999, 299, 1800, 60)
+    for (const t of [0, 1, 60, 900, 1800, 5000]) {
+      expect(computeCurrentPrice(cfg, t)).toBe(computeCurrentPrice(cfg, t))
+    }
+  })
+
+  it('secondsToNextDrop：未到底回 1~間隔秒；到底回 0', () => {
+    const cfg = sched(399, 99, 600, 60)
+    expect(secondsToNextDrop(cfg, 0)).toBe(60)
+    expect(secondsToNextDrop(cfg, 60 + 20)).toBe(40)
+    expect(secondsToNextDrop(cfg, 600 + 1)).toBe(0)
+    expect(secondsToNextDrop(cfg, 60000)).toBe(0)
+    for (let t = 0; t < 600; t += 3) {
+      const n = secondsToNextDrop(cfg, t)
+      expect(n).toBeGreaterThanOrEqual(1)
+      expect(n).toBeLessThanOrEqual(60)
+    }
+  })
+
+  it('除不盡與設定錯誤的提示（後台即時預警用）', () => {
+    // 總時間無法被間隔整除：400 秒 / 60 秒 → N=6、實際總時間 360 秒
+    const s = dropScheduleSummary({ originalPrice: 1000, minimumPrice: 400, priceIntervalSeconds: 60, dropTotalSeconds: 400 })
+    expect(s.steps).toBe(6)
+    expect(s.timeExact).toBe(false)
+    expect(s.effectiveTotalSeconds).toBe(360)
+    // 底價 ≥ 起始價 → 不合法
+    expect(dropScheduleSummary({ originalPrice: 100, minimumPrice: 100, priceIntervalSeconds: 60, dropTotalSeconds: 600 }).valid).toBe(false)
+    // 總時間不足一個間隔 → N=0 → 不合法
+    expect(dropScheduleSummary({ originalPrice: 1000, minimumPrice: 100, priceIntervalSeconds: 60, dropTotalSeconds: 30 }).valid).toBe(false)
+    // 價差太小（每步不足 1 元）→ 不合法
+    expect(dropScheduleSummary({ originalPrice: 100, minimumPrice: 99, priceIntervalSeconds: 1, dropTotalSeconds: 600 }).valid).toBe(false)
+    // 變價次數過多（2 小時 ÷ 1 秒 = 7200 次）→ 不合法（防呆上限 1000）
+    const tooMany = dropScheduleSummary({ originalPrice: 10000, minimumPrice: 1000, priceIntervalSeconds: 1, dropTotalSeconds: 7200 })
+    expect(tooMany.steps).toBe(9000)
+    expect(tooMany.valid).toBe(false)
+    // 上限內仍合法（2 小時 ÷ 10 秒 = 720 次）
+    expect(dropScheduleSummary({ originalPrice: 10000, minimumPrice: 1000, priceIntervalSeconds: 10, dropTotalSeconds: 7200 }).valid).toBe(true)
+  })
+
+  it('planDropSchedule：列數 = N+1、末列必為底價、單調不增', () => {
+    for (const [orig, min, total, ivl] of [[399, 99, 600, 60], [999, 299, 1800, 60], [1000, 500, 600, 10], [1500, 1000, 7200, 60]]) {
+      const plan = planDropSchedule({ originalPrice: orig, minimumPrice: min, priceIntervalSeconds: ivl, dropTotalSeconds: total })
+      expect(plan.rows.length).toBe(plan.steps + 1)
+      expect(plan.rows[0]).toMatchObject({ atSeconds: 0, price: orig, dropAmount: 0 })
+      expect(plan.rows[plan.rows.length - 1].price).toBe(min)
+      expect(plan.rows[plan.rows.length - 1].dropAmount).toBe(plan.lastDropAmount)
+      for (let i = 1; i < plan.rows.length; i++) {
+        expect(plan.rows[i].price).toBeLessThanOrEqual(plan.rows[i - 1].price)
+        expect(plan.rows[i].atSeconds).toBe(i * ivl)
+      }
+    }
+  })
+
+  it('新模式不影響舊模式：dropTotalSeconds 為 null 時走舊隨機公式', () => {
+    expect(computeScheduledPrice({ ...fixed, dropTotalSeconds: null }, 60)).toBeNull()
+    expect(computeCurrentPrice({ ...fixed, dropTotalSeconds: null }, 60, 'p1')).toBe(
+      computeCurrentPrice(fixed, 60, 'p1'),
+    )
+    expect(computeCurrentPrice(fixed, 60, 'p1')).toBe(1490)
+  })
+
+  it('formatDurationZh：中文時長', () => {
+    expect(formatDurationZh(0)).toBe('0 秒')
+    expect(formatDurationZh(30)).toBe('30 秒')
+    expect(formatDurationZh(600)).toBe('10 分')
+    expect(formatDurationZh(630)).toBe('10 分 30 秒')
+    expect(formatDurationZh(7200)).toBe('2 小時')
+    expect(formatDurationZh(3900)).toBe('1 小時 5 分')
+  })
+})
+
+describe('回歸測試：新模式前台顯示價必須與 Server SQL（20260922）一致', () => {
+  // 期望值由本機 PostgreSQL 16 實跑 public.compute_current_price 取得
+  // （supabase/drop-schedule-migration-test.sql⑧ 的 PROBE 273 列，全數一致）
+  const cases: Array<[number, number, number, number, number, number]> = [
+    // orig, min, total, ivl, k, 期望價格
+    [399, 99, 600, 60, 0, 399],
+    [399, 99, 600, 60, 3, 309],
+    [399, 99, 600, 60, 10, 99],
+    [399, 99, 600, 60, 42, 99],
+    [999, 299, 1800, 60, 1, 974],
+    [999, 299, 1800, 60, 12, 699],
+    [999, 299, 1800, 60, 29, 299],
+    [999, 299, 1800, 60, 30, 299],
+    [1000, 500, 600, 10, 59, 500],
+    [1000, 500, 600, 30, 19, 525],
+    [1000, 500, 600, 300, 1, 750],
+    [1000, 500, 600, 300, 2, 500],
+    [1500, 1000, 7200, 60, 119, 1024],
+    [1500, 1000, 7200, 60, 120, 1020],
+    [1500, 1000, 7200, 60, 125, 1000],
+  ]
+  it('逐點與 Server SQL 相同', () => {
+    for (const [orig, min, total, ivl, k, expected] of cases) {
+      const cfg = sched(orig, min, total, ivl)
+      expect(computeCurrentPrice(cfg, k * ivl + 0.33 * ivl)).toBe(expected)
+    }
   })
 })
 
