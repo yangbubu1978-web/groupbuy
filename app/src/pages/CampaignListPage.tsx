@@ -330,11 +330,11 @@ export default function CampaignListPage() {
   return (
     <div className="min-h-dvh bg-ink-50 pb-24">
       {/* 頂部：台灣電商風橘色漸層橫幅 */}
-      <header className="bg-gradient-to-r from-accent-700 to-accent-800 px-3 md:px-5 py-3 md:py-4 sticky top-0 z-10 shadow-md">
+      <header className="bg-gradient-to-r from-accent-500 to-accent-600 px-3 md:px-5 py-3 md:py-4 sticky top-0 z-10 shadow-md">
         <div className="max-w-md md:max-w-3xl mx-auto flex items-center justify-between gap-2">
           {/* 標題區：可點回首頁 */}
           <Link to="/" className="min-w-0 hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-lg" aria-label="回到首頁">
-            <div className="text-xs md:text-base tracking-widest text-white font-bold whitespace-nowrap">⚡ 先買先贏</div>
+            <div className="text-xs md:text-base tracking-widest text-accent-100 font-bold whitespace-nowrap">⚡ 先買先贏</div>
             <h1 className="text-base md:text-lg font-extrabold text-white tracking-wide whitespace-nowrap truncate">
               吸引力生活好物
             </h1>
@@ -365,7 +365,7 @@ export default function CampaignListPage() {
             <Link
               to="/profile"
               aria-label="我的帳號"
-              className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center text-sm md:text-base font-bold text-accent-700 shadow-sm"
+              className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center text-sm md:text-base font-bold text-accent-600 shadow-sm"
             >
               {customer?.name?.slice(0, 1) ?? '?'}
             </Link>
