@@ -25,7 +25,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             <p className="text-sm text-ink-400 mt-1 mb-5">請重新整理；若持續發生，請回報小布。</p>
             <button
               onClick={() => window.location.reload()}
-              className="h-10 px-4 rounded-xl bg-accent-700 text-white text-sm font-semibold active:scale-[0.98] transition"
+              className="h-10 px-4 rounded-xl bg-accent-500 text-white text-sm font-semibold active:scale-[0.98] transition"
             >
               重新整理
             </button>

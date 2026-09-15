@@ -176,7 +176,7 @@ export default function MyFollowsPage() {
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 flex items-center gap-2">
             <span className="text-sm">{pushState==='denied' ? '🔕 通知被封鎖' : '🔔 開啟推播'}</span>
             <span className="text-xs text-ink-500 flex-1">{pushState==='denied' ? '請到瀏覽器設定允許通知' : '關掉網頁也能收到上架/降價通知'}</span>
-            <button onClick={enablePush} className="h-8 px-3 rounded-full bg-accent-700 text-white text-xs font-bold active:scale-[0.98]">{pushState==='denied' ? '重試' : '開啟'}</button>
+            <button onClick={enablePush} className="h-8 px-3 rounded-full bg-accent-500 text-white text-xs font-bold active:scale-[0.98]">{pushState==='denied' ? '重試' : '開啟'}</button>
           </div>
         </div>
       )}
@@ -187,7 +187,7 @@ export default function MyFollowsPage() {
             <p className="text-4xl mb-3">🔔</p>
             <p className="text-base text-ink-600">尚未關注任何商品</p>
             <p className="text-sm text-ink-400 mt-1">看到喜歡的即將上架商品，按「🔔 關注上架」即可</p>
-            <Link to="/" className="inline-block mt-4 h-10 px-6 rounded-xl bg-accent-700 text-white text-sm font-bold leading-10">去逛逛</Link>
+            <Link to="/" className="inline-block mt-4 h-10 px-6 rounded-xl bg-accent-500 text-white text-sm font-bold leading-10">去逛逛</Link>
           </div>
         ) : (
           <div className="grid gap-3">{products.map((p) => <FollowCard key={p.id} product={p} onUnfollow={unfollow} />)}</div>

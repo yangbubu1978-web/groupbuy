@@ -58,9 +58,9 @@ function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
                 className={[
                   'w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-sm sm:text-base font-extrabold shrink-0',
                   isActive
-                    ? 'bg-accent-700 text-white shadow'
+                    ? 'bg-accent-500 text-white shadow'
                     : isDone
-                      ? 'bg-accent-700 text-white'
+                      ? 'bg-accent-500 text-white'
                       : 'bg-white/25 text-white',
                 ].join(' ')}
               >
@@ -119,7 +119,7 @@ function CountdownBar({ expiresAt, onExpire }: { expiresAt: string; onExpire: (i
         <span
           className={[
             'w-9 h-9 rounded-full flex items-center justify-center text-base shrink-0',
-            urgent ? 'bg-red-500 text-white' : warning ? 'bg-amber-500 text-white' : 'bg-accent-700 text-white',
+            urgent ? 'bg-red-500 text-white' : warning ? 'bg-amber-500 text-white' : 'bg-accent-500 text-white',
           ].join(' ')}
           aria-hidden
         >
