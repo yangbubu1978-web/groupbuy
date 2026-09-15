@@ -463,7 +463,7 @@ export default function ProductPage() {
                 <div className="text-[22px] md:text-[30px] font-extrabold text-white leading-tight tracking-tight">
                   🔒 價格已鎖定 {fmtMoney(buyState.lockedPrice)}
                 </div>
-                <div className="text-[12px] md:text-xs text-white/90 font-medium">結帳前不會再變動</div>
+                <div className="text-[13px] text-white font-medium">結帳前不會再變動</div>
               </>
             ) : !atFloor ? (
               <>
@@ -474,7 +474,7 @@ export default function ProductPage() {
                 >
                   ⏰ {formatCountdown(live.nextDropIn)}
                 </div>
-                <div className="text-[12px] md:text-xs text-white/90 font-medium tracking-wide">下次降價倒數</div>
+                <div className="text-[13px] text-white font-medium tracking-wide">下次降價倒數</div>
               </>
             ) : (
               <div className="text-xl md:text-2xl font-extrabold text-white leading-tight">✅ 已是最優惠價</div>
@@ -528,7 +528,7 @@ export default function ProductPage() {
               <p className="text-[15px] md:text-[16px] text-ink-600 leading-relaxed">{product.description}</p>
             )}
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-[13px] text-ink-500 bg-ink-50 border border-ink-100 rounded-full px-3 py-1">SKU：{product.sku}</span>
+              <span className="text-[13px] text-ink-700 bg-ink-50 border border-ink-100 rounded-full px-3 py-1">SKU：{product.sku}</span>
               {followerCount > 0 && (
                 <span className={`inline-flex items-center gap-1.5 text-[14px] px-3 py-1 rounded-full border shadow-sm ${followerCount >= 5 ? 'bg-red-50 border-red-200 text-red-700 font-bold' : 'bg-white border-ink-200 text-ink-600 font-medium'}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${followerCount >= 5 ? 'bg-red-500 animate-pulse' : 'bg-ink-300'}`} />
